@@ -1,0 +1,78 @@
+# CI stack for ExpenseWise: Jenkins + SonarQube + their databases.
+# Run this from the ci/ folder:  docker compose up -d
+# This is SEPARATE from the app's own docker-compose.yml at the repo root.
+#
+# Everything sits on one Docker network called "ci" so the containers can
+# reach each other by service name (jenkins -> sonarqube:9000,
+# build -> ci-postgres:5432) with no host ports needed between them.
+
+services:
+  # The Jenkins controller: the web UI and pipeline engine. lts-jdk21 gives us
+  # a Jenkins that already runs on Java 21, the same version the backend needs
+  # to compile — so the Maven build inside this container uses a matching JDK.
+  jenkins:
+    image: jenkins/jenkins:lts-jdk21
+    container_name: expensewise-jenkins
+    restart: unless-stopped
+    ports:
+      - "8080:8080"    # web UI at http://localhost:8080
+      - "50000:50000"  # port for future distributed build agents (unused for now)
+    volumes:
+      - jenkins_home:/var/jenkins_home  # persists jobs, plugins, config across restarts
+    networks: [ci]
+
+  # SonarQube server: analyses code quality and hosts the results UI.
+  sonarqube:
+    image: sonarqube:lts-community
+    container_name: expensewise-sonarqube
+    restart: unless-stopped
+    depends_on: [sonar-db]
+    ports:
+      - "9000:9000"    # web UI at http://localhost:9000
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://sonar-db:5432/sonar
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: sonar
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    networks: [ci]
+
+  # SonarQube's own database. This is NOT the app database — it stores Sonar's
+  # analysis history, issues, and settings. Kept separate on purpose.
+  sonar-db:
+    image: postgres:16
+    container_name: expensewise-sonar-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sonar
+      POSTGRES_PASSWORD: sonar
+      POSTGRES_DB: sonar
+    volumes:
+      - sonar_db_data:/var/lib/postgresql/data
+    networks: [ci]
+
+  # A throwaway Postgres for the backend's integration tests during a build.
+  # Same db/user/password as the app's local docker-compose, so the tests need
+  # no new config — the pipeline just points DB_URL at ci-postgres:5432.
+  # No named volume: its data is disposable and need not survive restarts.
+  ci-postgres:
+    image: postgres:16
+    container_name: expensewise-ci-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: expensewise
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: devpass
+    networks: [ci]
+
+networks:
+  ci:
+
+volumes:
+  jenkins_home:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
+  sonar_db_data:

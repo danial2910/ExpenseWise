@@ -12,7 +12,10 @@ export default defineConfig({
     baseURL: 'http://localhost:5173',
     trace: 'retain-on-failure',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  // channel: 'chrome' uses the system-installed Google Chrome instead of
+  // Playwright's bundled "Chrome for Testing" build, which Windows Smart App
+  // Control blocks (unsigned chrome_elf.dll). Chrome is properly signed.
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'], channel: 'chrome' } }],
   webServer: {
     command: 'npm run dev',
     url: 'http://localhost:5173',

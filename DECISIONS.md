@@ -35,6 +35,31 @@ Non-obvious decisions and their rationale, logged as they're made.
   Confirmed with the project owner as a DB-level safety net consistent with the project's
   "boring, explicit" ethos.
 
+## 2026-07-26 — CI setup phase
+
+- **GitHub Actions, two parallel jobs (`backend`, `frontend`)** in a single
+  `ci.yml`, triggered on push to `main` and every pull request. Kept as one
+  workflow for a solo project; split later only if job counts grow.
+- **Integration tests run against a Postgres 16 service container**, mapped to
+  host port `5433` so `application-local.yml`'s default `DB_URL` works with zero
+  extra config. This is the Linux-CI environment DECISIONS.md always intended
+  the integration tests for — no Windows/Testcontainers npipe bug here.
+- **`JWT_SECRET` supplied as a fixed dummy env var in CI** (>=32 bytes for
+  HS256). `jwt.secret` has no default in `application.yml`, so the context won't
+  start without it; the value signs test tokens only and is never a real secret.
+- **`mvn -B clean verify`** runs both unit and integration tests — the
+  integration classes end in `IntegrationTest`, matched by Surefire's default
+  `*Test` pattern, so they run in the normal test phase (no Failsafe config).
+- **Frontend job runs `npm ci` + `npm run build`.** `build` is
+  `vue-tsc -b && vite build`, so type errors fail CI. No separate lint step —
+  there's no lint script in `package.json` yet.
+- **Playwright E2E deliberately deferred to a follow-up CI stage.** It needs
+  backend + frontend + Postgres running together (plus a browser); the first
+  pipeline stays fast and green with build + unit + integration coverage.
+- **Playwright uses system Google Chrome (`channel: 'chrome'`)** locally, not
+  the bundled Chrome-for-Testing build, which Windows Smart App Control blocks
+  (unsigned `chrome_elf.dll` → browser killed on launch).
+
 ## 2026-07-25 — Auth & user management phase
 
 - **Refresh-token "family" = all of a user's active tokens**, not a per-device chain.
