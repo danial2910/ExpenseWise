@@ -1,0 +1,20 @@
+# Env files
+backend/.env
+frontend/.env
+
+# Backend (Maven)
+backend/target/
+*.class
+
+# Frontend (npm/Vite)
+frontend/node_modules/
+frontend/dist/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

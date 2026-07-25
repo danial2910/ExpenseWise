@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/expensewise}
+    username: ${DB_USER:dev}
+    password: ${DB_PASSWORD:devpass}
+    hikari:
+      maximum-pool-size: 10
+  jpa:
+    show-sql: true
+
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
