@@ -20,3 +20,23 @@ server:
 logging:
   level:
     com.expensewise: INFO
+
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expiration-seconds: ${JWT_EXPIRATION:1800}
+  refresh-token-expiration-seconds: ${REFRESH_TOKEN_EXPIRATION:604800}
+
+cookie:
+  secure: false
+
+brevo:
+  smtp-host: ${BREVO_SMTP_HOST:}
+  smtp-port: ${BREVO_SMTP_PORT:587}
+  smtp-user: ${BREVO_SMTP_USER:}
+  smtp-password: ${BREVO_SMTP_PASSWORD:}
+
+mail:
+  from: ${MAIL_FROM:noreply@expensewise.local}
+
+app:
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}

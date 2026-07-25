@@ -1,0 +1,26 @@
+export interface UserResponse {
+  id: number
+  email: string
+  fullName: string
+  role: 'USER' | 'ADMIN'
+  active: boolean
+  createdAt: string
+}
+
+export interface LoginResponse {
+  accessToken: string
+  user: UserResponse
+}
+
+export interface RefreshResponse {
+  accessToken: string
+}
+
+export interface ApiErrorResponse {
+  timestamp: string
+  status: number
+  error: string
+  message: string
+  path: string
+  fieldErrors?: Record<string, string>
+}

@@ -7,6 +7,17 @@ spring:
       maximum-pool-size: 10
   jpa:
     show-sql: true
+  mail:
+    host: ${BREVO_SMTP_HOST:}
+    port: ${BREVO_SMTP_PORT:587}
+    username: ${BREVO_SMTP_USER:}
+    password: ${BREVO_SMTP_PASSWORD:}
+    properties:
+      "[mail.smtp.auth]": true
+      "[mail.smtp.starttls.enable]": true
+
+cookie:
+  secure: false
 
 logging:
   level:

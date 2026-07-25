@@ -1,3 +1,25 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/*
+ * Establishes the cascade layer order up front (CSS Layers resolve order by
+ * first mention, in document order). PrimeVue's styles are injected at
+ * runtime wrapped in `@layer primevue` (see main.ts's cssLayer option) —
+ * without this explicit order, Tailwind's un-layered preflight reset would
+ * always beat PrimeVue's layered styles regardless of the intended order,
+ * since un-layered CSS outranks any layered CSS. Wrapping Tailwind's own
+ * output in named layers here fixes that: tailwind-base sits below
+ * primevue (so PrimeVue's component styles aren't reset away), while
+ * tailwind-utilities sits above it (so utility classes can still override
+ * PrimeVue, per the "Tailwind owns layout" rule).
+ */
+@layer tailwind-base, primevue, tailwind-components, tailwind-utilities;
+
+@layer tailwind-base {
+  @tailwind base;
+}
+
+@layer tailwind-components {
+  @tailwind components;
+}
+
+@layer tailwind-utilities {
+  @tailwind utilities;
+}

@@ -267,3 +267,33 @@ Do not add these unless explicitly asked:
 - Expense prediction / forecasting. Cut from scope deliberately.
 - Redis, message queues, microservices, event sourcing.
 - Any dependency not already listed in this file — propose it first.
+
+## Design system
+
+The design system originates in Claude Design and is imported into this
+repo. The imported tokens are the source of truth — do not invent values.
+
+- Claude Design MCP is connected. Use it to fetch designs and components
+  rather than guessing at layout or spacing.
+- Tokens live in [src/assets/main.css @theme block | tailwind.config.js]
+  — update this line to match the actual location after import.
+- PrimeVue preset in src/theme/preset.js via definePreset over Aura.
+  The preset and the Tailwind tokens must always hold the same values.
+  Changing one without the other is a bug.
+- CSS layer order is configured so Tailwind can override PrimeVue.
+  Never use `!` prefixes to force specificity.
+- PrimeVue owns component appearance. Tailwind owns layout only
+  (flex, grid, gap, padding, margin, width).
+
+## Design fidelity rules
+
+- Never hardcode a colour, spacing value, font size, or radius in a
+  component. Tokens only.
+- All currency renders through <MoneyDisplay>. No inline toFixed, no
+  manual "RM " prefixes anywhere.
+- Reuse components in src/components/common. Check there before building
+  anything new.
+- Every screen needs designed empty, loading, and error states.
+- Every interactive element gets a data-testid.
+- If a design needs something the tokens don't cover, stop and tell me.
+  Do not invent a value.
