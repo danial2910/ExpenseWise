@@ -22,8 +22,10 @@ conventional code over clever code.
 | Email | Brevo SMTP via Spring Mail + Thymeleaf templates |
 | Reports | Apache POI (Excel), JasperReports (PDF) |
 | Unit tests | JUnit 5 + Mockito |
-| E2E tests | Playwright (TypeScript) |
-| CI | GitHub Actions |
+| Coverage | JaCoCo (XML report consumed by SonarQube) |
+| E2E tests | Playwright (TypeScript), system Chrome via `channel: 'chrome'` |
+| CI/CD | Jenkins (self-hosted in Docker), SCM polling on `main`. See `Jenkinsfile` |
+| Code quality | SonarQube (self-hosted in Docker), quality gate in the pipeline |
 
 ---
 
@@ -228,8 +230,12 @@ Test pyramid, not an ice cream cone.
   financial health score, recurring date advancement, report aggregation.
   These are where correctness lives.
 - **Integration tests** for repositories and security rules.
-- **E2E (Playwright)** for a small number of critical journeys only. Six to
-  eight, not sixty.
+- **E2E (Playwright):** each feature module includes **exactly one** E2E test
+  covering that module's single critical user journey (e.g. category: create →
+  see it listed → edit → delete). One focused journey per module — never
+  E2E-test every field or validation; that belongs in unit/integration tests.
+  This keeps a per-phase safety net that catches cross-phase regressions while
+  staying disciplined (roughly one per module, not sixty).
 - Run E2E against local Docker Postgres. Never against Supabase.
 - Do not assert on AI response content — it is non-deterministic. Mock the
   Groq call or assert only that a response rendered.

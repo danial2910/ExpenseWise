@@ -106,6 +106,26 @@ public class GlobalExceptionHandler {
         return validationFailed("password", ex.getMessage(), request);
     }
 
+    @ExceptionHandler(DuplicateCategoryException.class)
+    public ResponseEntity<ApiErrorResponse> handleDuplicateCategory(DuplicateCategoryException ex,
+                                                                        HttpServletRequest request) {
+        return validationFailed("name", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(CategoryInUseException.class)
+    public ResponseEntity<ApiErrorResponse> handleCategoryInUse(CategoryInUseException ex,
+                                                                    HttpServletRequest request) {
+        ApiErrorResponse body = new ApiErrorResponse(
+                Instant.now(),
+                HttpStatus.CONFLICT.value(),
+                "CATEGORY_IN_USE",
+                ex.getMessage(),
+                request.getRequestURI(),
+                null
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    }
+
     @ExceptionHandler(AuthorizationDeniedException.class)
     public ResponseEntity<ApiErrorResponse> handleAuthorizationDenied(AuthorizationDeniedException ex,
                                                                           HttpServletRequest request) {

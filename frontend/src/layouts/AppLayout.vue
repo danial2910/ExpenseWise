@@ -1,10 +1,18 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
+withDefaults(defineProps<{ title?: string }>(), { title: 'Dashboard' })
+
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
+
+const navItems = [
+  { testid: 'nav-dashboard', label: 'Dashboard', to: '/dashboard', routeName: 'dashboard' },
+  { testid: 'nav-categories', label: 'Categories', to: '/categories', routeName: 'categories' },
+]
 
 const initials = computed(() => {
   const name = authStore.user?.fullName ?? ''
@@ -35,18 +43,24 @@ async function onLogout() {
         <span class="text-base font-bold text-surface-900">ExpenseWise</span>
       </div>
       <nav class="flex flex-col gap-0.5 px-2">
-        <span
-          data-testid="nav-dashboard"
-          class="flex items-center gap-3 px-2.5 py-2 rounded-lg bg-primary-50 text-primary-600 text-sm font-semibold"
+        <router-link
+          v-for="item in navItems"
+          :key="item.routeName"
+          :data-testid="item.testid"
+          :to="item.to"
+          class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm font-semibold"
+          :class="route.name === item.routeName
+            ? 'bg-primary-50 text-primary-600'
+            : 'text-surface-600 hover:bg-surface-50'"
         >
-          Dashboard
-        </span>
+          {{ item.label }}
+        </router-link>
       </nav>
     </aside>
 
     <div class="flex-1 flex flex-col min-w-0">
       <header class="h-16 shrink-0 flex items-center justify-between px-8 border-b border-surface-200 bg-white">
-        <span class="text-base font-semibold text-surface-900">Dashboard</span>
+        <span class="text-base font-semibold text-surface-900">{{ title }}</span>
         <div class="flex items-center gap-4">
           <div class="flex items-center gap-2">
             <div class="w-8 h-8 rounded-lg bg-primary-100 text-primary-600 text-sm font-semibold flex items-center justify-center">

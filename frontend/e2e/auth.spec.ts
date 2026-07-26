@@ -139,4 +139,29 @@ test.describe('Authentication', () => {
     await page.goto('/dashboard')
     await expect(page).toHaveURL(/\/login/)
   })
+
+  test('a registered user can log back in and reach the dashboard', async ({ page }) => {
+  const email = uniqueEmail('sarah.returning')
+  const password = 'Passw0rd1'
+
+  // Arrange: create the account, then log out so we start from a clean /login.
+  await page.goto('/register')
+  await page.getByTestId('register-fullname-input').fill('Sarah Lim')
+  await page.getByTestId('register-email-input').fill(email)
+  await page.locator('[data-testid=register-password-input] input').fill(password)
+  await page.locator('[data-testid=register-confirm-password-input] input').fill(password)
+  await page.getByTestId('register-submit-button').click()
+  await expect(page).toHaveURL(/\/dashboard$/)
+  await page.getByTestId('logout-button').click()
+  await expect(page).toHaveURL(/\/login$/)
+
+  // Act: log in with the SAME credentials.
+  await page.getByTestId('login-email-input').fill(email)
+  await page.locator('[data-testid=login-password-input] input').fill(password)
+  await page.getByTestId('login-submit-button').click()
+
+  // Assert: we land on the dashboard and it greets us by name.
+  await expect(page).toHaveURL(/\/dashboard$/)
+  await expect(page.getByTestId('dashboard-welcome')).toContainText('Sarah Lim')
+  })
 })

@@ -35,6 +35,50 @@ Non-obvious decisions and their rationale, logged as they're made.
   Confirmed with the project owner as a DB-level safety net consistent with the project's
   "boring, explicit" ethos.
 
+## 2026-07-26 — Jenkins CI/CD (replaced GitHub Actions)
+
+- **Switched CI from GitHub Actions to a self-hosted Jenkins + SonarQube stack**
+  running in Docker (`ci/docker-compose.yml` documents the intended stack). The
+  committed `.github/workflows/ci.yml` is now superseded and kept only as
+  reference — Jenkins is the real pipeline. `Jenkinsfile` at repo root defines it.
+- **Trigger is SCM polling (`H/2 * * * *`), not a webhook.** Local Jenkins isn't
+  publicly reachable, so GitHub can't push events in; Jenkins polls GitHub instead
+  (outbound, always works). Behaves the same for a demo, ~2 min latency.
+- **Pipeline stages:** Checkout -> Backend build+test -> Frontend build -> Sonar
+  analysis -> Quality Gate -> Archive. Backend and frontend both run on the
+  built-in Jenkins node (JDK 21, Maven, Node via Global Tools).
+- **Integration-test DB is a dedicated `ci-postgres` container on the `devops-net`
+  network** that Jenkins shares. The app's dev Postgres sits on a different network
+  (`code_default`) Jenkins can't reach, so a throwaway CI DB was added and the
+  build points `DB_URL` at `ci-postgres:5432`. Keeps dev data untouched.
+- **Sonar runs via `withSonarQubeEnv('SonarQube')`**; the token lives in the global
+  SonarQube server config (credential `sonar-token-expensewise`, a Global Analysis
+  token), never in the Jenkinsfile. Sonar host from inside CI is `sonarqube:9000`
+  (container name), not `localhost` — the build runs inside the Jenkins container.
+- **Quality Gate uses `waitForQualityGate abortPipeline:false`** for now: it
+  reports Sonar's verdict but does not fail the build. A Sonar->Jenkins webhook
+  (`http://jenkins:8080/sonarqube-webhook/`) lets `waitForQualityGate` get its
+  answer. Flip `abortPipeline` to true once coverage clears the gate's threshold.
+- **JaCoCo now wired into `backend/pom.xml`** (`prepare-agent` + `report` bound to
+  `verify`), producing `target/site/jacoco/jacoco.xml` — a default Sonar scan path,
+  so coverage imports automatically with no extra property. Before this, Sonar
+  showed 0% for everything (no report imported) and the gate failed on coverage;
+  VS Code showed real coverage because it runs its own JaCoCo. They weren't
+  disagreeing — Sonar simply had no data.
+- **Environment gotchas hit during setup (all fixed):** (1) the bundled Node from
+  the NodeJS plugin needs `libatomic1`, missing from `jenkins/jenkins:lts` —
+  installed via apt into the container. (2) A 401 from Sonar was a stale/mismatched
+  token value in the Jenkins credential; regenerating the token and re-entering the
+  credential secret fixed it. (3) After a host reboot, integration tests failed with
+  `Failed to load ApplicationContext` because `ci-postgres` was a loose `docker run`
+  with no restart policy and didn't come back. Recreated with
+  `--restart unless-stopped`. All three are container/ops issues, not code.
+- **Pipeline depends on three containers being `Up`: `jenkins`, `sonarqube`,
+  `ci-postgres`** (plus `sonar-db` for SonarQube itself). All carry restart policies,
+  so they self-start with Docker Desktop — no manual `docker start` needed normally.
+  A build failing with `Failed to load ApplicationContext` on the integration tests
+  is the signature of `ci-postgres` being down: check `docker ps` first.
+
 ## 2026-07-26 — CI setup phase
 
 - **GitHub Actions, two parallel jobs (`backend`, `frontend`)** in a single
@@ -115,3 +159,45 @@ Non-obvious decisions and their rationale, logged as they're made.
 - **`/actuator/health` was never real** — Phase 1 built its own `/api/v1/health`
   instead of adding the actuator starter. `SecurityConfig`'s public-path list points at
   the real endpoint.
+
+## 2026-07-26 — Category module phase
+
+- **No `V3__seed_system_categories.sql` added.** V1__baseline.sql already seeds the
+  13 system categories plus the partial unique index — writing a second seed
+  migration would either duplicate that data or need `ON CONFLICT` gymnastics for
+  no benefit. Confirmed with the project owner; V1's seed is the system category set.
+- **Ownership checks collapse "system category" and "someone else's category" into
+  the same 404.** `findOwnedOrThrow` treats any category where `userId` isn't the
+  caller's as not-found, whether `userId` is null (system) or another user's id —
+  matches the "don't leak existence of other users' records" rule and means system
+  categories don't need a separate 403/read-only error path.
+- **Uniqueness check follows the DB constraint exactly**: `(user_id, name, type)`.
+  A custom category is allowed to share a name with a system category (the unique
+  index is per-user_id, and NULL user_id is its own bucket) — not checked against
+  system names, even though the imported design mockup's placeholder JS logic
+  checks against all names. The DB schema is the source of truth here, not the
+  mockup's local-state approximation.
+- **`CategoryRequest` (create) doubles as the PUT body** — full update requires the
+  same three fields as create, so a second near-identical DTO would be pure
+  duplication. `PatchCategoryRequest` is separate because its fields are genuinely
+  optional (null = unchanged), which needs different validation annotations.
+- **Delete-in-use detection catches `DataIntegrityViolationException` around
+  `delete()` + `flush()`**, rather than pre-checking for referencing transactions.
+  The DB's `ON DELETE RESTRICT` on `transactions.category_id` is already the
+  source of truth; catching its violation avoids a redundant existence query and
+  a TOCTOU gap between check and delete.
+- **Category icons reuse PrimeIcons** (already a project dependency) instead of
+  inventing SVG assets. The V1 seed's icon keys (`utensils`, `film`, `laptop`,
+  `trending-up`, `ellipsis`) predate PrimeIcons naming and are aliased to the
+  closest available icon (`frontend/src/lib/categoryIcons.ts`) rather than
+  changing seeded DB values.
+- **Mobile app shell intentionally not built this phase.** The imported Categories
+  design's 390px frame uses a different shell (bottom tab bar, FAB, no sidebar)
+  than the current `AppLayout`, which has no responsive treatment yet and is
+  shared by every screen (Dashboard included). Redesigning it is cross-cutting,
+  out of scope for a single-module session, and confirmed with the project owner
+  to defer to a dedicated pass. Categories ships with the existing desktop-first
+  `AppLayout`; its content grids do reflow at narrower widths.
+- **`AppLayout` gained a `title` prop and route-aware nav highlighting** (was
+  hardcoded to "Dashboard" with one static nav item) — the minimum shared-layout
+  change needed to host a second real screen, not a mobile redesign.
