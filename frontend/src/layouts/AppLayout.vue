@@ -11,6 +11,7 @@ const authStore = useAuthStore()
 
 const navItems = [
   { testid: 'nav-dashboard', label: 'Dashboard', to: '/dashboard', routeName: 'dashboard' },
+  { testid: 'nav-transactions', label: 'Transactions', to: '/transactions', routeName: 'transactions' },
   { testid: 'nav-categories', label: 'Categories', to: '/categories', routeName: 'categories' },
 ]
 

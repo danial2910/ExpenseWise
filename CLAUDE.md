@@ -162,8 +162,10 @@ Package by feature, not by layer, at the top level.
 
 - **Income and expense share one `transactions` table**, distinguished by
   `type`. This keeps balance, recent-transactions, and income-vs-expense
-  queries to a single statement. They are still two separate UI modules and
-  two service classes.
+  queries to a single statement. They are recorded on **one unified
+  Transactions page** (a type toggle chooses INCOME vs EXPENSE) backed by a
+  single `TransactionService` and a single `/api/v1/transactions` resource —
+  not separate expense/income pages or services.
 - `categories.user_id IS NULL AND is_system = true` means a built-in category
   visible to all users. A non-null `user_id` means a user's custom category.
 - `categories.type` is `INCOME` or `EXPENSE`, so income sources need no

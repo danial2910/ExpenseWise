@@ -160,6 +160,58 @@ Non-obvious decisions and their rationale, logged as they're made.
   instead of adding the actuator starter. `SecurityConfig`'s public-path list points at
   the real endpoint.
 
+## 2026-07-27 — Transaction module phase
+
+- **DATE column money-arithmetic is unaffected by TZ.**
+  `transactions.transaction_date` is a plain DATE with no time component, so every
+  explicit `from`/`to` filter compares dates directly with no conversion.
+- **Correction (same day): the summary endpoint no longer defaults to "this
+  calendar month" when `from`/`to` are both omitted.** The first version added a
+  KL-anchored (`Asia/Kuala_Lumpur`) implicit "this month" default to
+  `TransactionService.getSummary`, reasoning that *some* endpoint should exercise
+  the this-month-boundary rule from CLAUDE.md. In practice this silently
+  diverged from `listTransactions`, which has no such default and shows all-time
+  by default — the summary strip would show RM 0.00 for real data outside the
+  current month while the list right below it showed those same rows, which read
+  as a bug in a demo. Fixed by having the summary sum exactly the same filter set
+  the list uses (no date filter = all-time), so the two always agree. The
+  KL-anchored "this month" boundary rule from CLAUDE.md still applies wherever a
+  screen genuinely needs a "this month" default (e.g. a future Dashboard widget)
+  — it just isn't this endpoint, since it has to mirror the list it summarizes
+  instead of picking its own default.
+- **`categoryName`/`categoryIcon` enrichment uses a second boring lookup, not a
+  JPA join/association.** `Transaction` stores a bare `categoryId` Long (matching
+  the FK), not a `@ManyToOne Category`, keeping the entity a flat mirror of its
+  table like `Category` already is. `TransactionMapper.toResponse` takes both the
+  transaction and its `Category` as separate arguments; the service resolves the
+  category itself — a single `findById` for get/create/update, one batched
+  `findAllById` across the page's distinct category ids for the paginated list (to
+  avoid N+1 queries). Category volumes are tiny, so this is simpler to explain in a
+  demo than configuring a fetch join or `@EntityGraph`.
+- **Category coherence errors (type mismatch, or a category outside the caller's
+  visibility) both collapse into one `InvalidTransactionCategoryException`**,
+  mapped to a 400 `VALIDATION_FAILED` on the `categoryId` field — mirrors how
+  `CategoryService` collapses "system category" and "someone else's category" into
+  the same 404 for the same "don't leak details, give one clean answer" reason.
+- **The Add/Edit transaction dialog omits the receipt upload and "make this
+  recurring" controls that appear in the imported Figma design.** Those belong to
+  the receipt and recurring modules, both explicitly out of scope for this
+  session (CLAUDE.md: "Do not touch budgets/dashboard/recurring/receipt
+  modules"). The dialog matches the design's type toggle, amount field, date,
+  category select, and description field exactly; the two extra sections will
+  slot in when those modules are built.
+- **Two Figma designs were found and used**: "ExpenseWise Transactions" (list +
+  summary + filters) and "ExpenseWise Add Transaction" (dialog), both in the
+  existing `ExpenseWise` Claude Design project. Built to the desktop (1440px)
+  frame only, consistent with the Category module's precedent of deferring the
+  separate mobile/tablet shell (different sidebar pattern, no responsive
+  treatment on `AppLayout` yet) to its own session.
+- **Only one Playwright E2E test added for this module** (`transactions.spec.ts`):
+  record an expense and an income, verify both appear with the balance updating
+  correctly, edit one, delete it. Matches CLAUDE.md's "exactly one E2E test per
+  module" rule going forward — `categories.spec.ts`'s four tests predate this
+  being written down explicitly as a hard rule.
+
 ## 2026-07-26 — Category module phase
 
 - **No `V3__seed_system_categories.sql` added.** V1__baseline.sql already seeds the

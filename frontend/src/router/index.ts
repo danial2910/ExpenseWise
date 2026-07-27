@@ -48,6 +48,12 @@ const router = createRouter({
       component: () => import('../views/CategoriesView.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/transactions',
+      name: 'transactions',
+      component: () => import('../views/TransactionsView.vue'),
+      meta: { requiresAuth: true },
+    },
     { path: '/', redirect: '/dashboard' },
   ],
 })

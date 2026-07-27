@@ -126,6 +126,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
 
+    @ExceptionHandler(InvalidTransactionCategoryException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidTransactionCategory(InvalidTransactionCategoryException ex,
+                                                                                 HttpServletRequest request) {
+        return validationFailed("categoryId", ex.getMessage(), request);
+    }
+
     @ExceptionHandler(AuthorizationDeniedException.class)
     public ResponseEntity<ApiErrorResponse> handleAuthorizationDenied(AuthorizationDeniedException ex,
                                                                           HttpServletRequest request) {
