@@ -54,6 +54,12 @@ const router = createRouter({
       component: () => import('../views/TransactionsView.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/budgets',
+      name: 'budgets',
+      component: () => import('../views/BudgetsView.vue'),
+      meta: { requiresAuth: true },
+    },
     { path: '/', redirect: '/dashboard' },
   ],
 })

@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wsl.exe -l -v)",
+      "Bash(npx vite *)",
+      "Bash(netstat -ano)",
+      "Bash(tail -60 /tmp/frontend.log)",
+      "Read(//tmp/**)",
+      "mcp__claude-design__list_projects",
+      "mcp__claude-design__list_files"
+    ]
+  }
+}

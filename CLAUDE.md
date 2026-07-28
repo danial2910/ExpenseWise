@@ -232,7 +232,7 @@ Test pyramid, not an ice cream cone.
   financial health score, recurring date advancement, report aggregation.
   These are where correctness lives.
 - **Integration tests** for repositories and security rules.
-- **E2E (Playwright):** each feature module includes **exactly one** E2E test
+- **E2E (Playwright):** each feature module includes all e2e test cases covering for **all possible cases**
   covering that module's single critical user journey (e.g. category: create →
   see it listed → edit → delete). One focused journey per module — never
   E2E-test every field or validation; that belongs in unit/integration tests.

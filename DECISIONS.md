@@ -2,6 +2,77 @@
 
 Non-obvious decisions and their rationale, logged as they're made.
 
+## 2026-07-28 — Budget module phase
+
+- **Correction: category budgets are now capped by the overall budget,
+  reversing this phase's original "Option A (independent)" design.** The
+  spec initially confirmed overall and per-category budgets as independent
+  limits with no sum enforcement; the project owner later asked for the
+  opposite — category budgets (Food + Transport + …) must never sum to more
+  than the overall monthly budget. Implemented as a two-way cap in
+  `BudgetService.requireWithinOverallCap`:
+  - A category budget cannot be created/edited unless an overall budget
+    already exists for that month (`OverallBudgetRequiredException`), and
+    its amount plus every other category budget's amount must not exceed
+    the overall amount (`BudgetExceedsOverallException`).
+  - The overall budget cannot be created/edited to an amount below the sum
+    of category budgets already set for that month (same exception).
+  - Deleting the overall budget is rejected while any category budget still
+    exists for that month (`OverallBudgetInUseException`, 409 — mirrors
+    `CategoryInUseException`'s convention), since deleting it first would
+    leave category budgets with no overall limit to be capped against.
+  The frontend mirrors this proactively rather than just surfacing the
+  resulting 400/409: a category's "Set budget" link is disabled until an
+  overall budget exists, and the overall budget's "Clear" link is disabled
+  while any category budget exists — both with a `title` tooltip explaining
+  why, so the user isn't left to guess from a failed save.
+- **Delete is exposed as a "Clear" link, not a design element.** The imported
+  "ExpenseWise Budgets" design only shows Edit/Set-budget affordances (an
+  amount-only modal) — no delete anywhere. Confirmed with the project owner
+  to add a small "Clear" text action next to Edit (and next to the overall
+  budget's Edit) calling `DELETE /api/v1/budgets/{id}`, since the module
+  requires delete end-to-end (API, tests, and the one E2E journey) but the
+  design doesn't cover it.
+- **The month view (`GET /api/v1/budgets?month=`) enumerates every EXPENSE
+  category visible to the caller**, not just ones with a budget row — a
+  `CategoryBudgetLine` is returned even when `budgetId`/`amount` are null,
+  with `spent` still computed. This matches the design's "No budget set ·
+  RM X spent" row and lets the screen offer "Set budget" inline, at the
+  cost of the response no longer being a 1:1 mirror of the `budgets` table.
+- **Progress/remaining/exceeded are computed live from `transactions`, never
+  stored on `budgets`** (per CLAUDE.md's core design) — reusing
+  `TransactionSpecifications` (ownedBy/hasType/hasCategory/dateFrom/dateTo)
+  and summing in Java with `BigDecimal`, the same pattern
+  `TransactionService.getSummary` already established, rather than a new
+  aggregate-query path. `progressPercent` divides with explicit
+  `RoundingMode.HALF_UP` at scale 0 (whole-percent, matching the design).
+  A budget with no amount set returns `null` for remaining/progressPercent
+  (never 0) and is never `exceeded` — an unset limit can't be "over".
+- **Uniqueness (one overall + one row per category per user per month) is
+  pre-checked in Java against `findByUserIdAndPeriodMonth`**, not a derived
+  `existsBy...` repository method, to sidestep the null-parameter-equality
+  subtlety of Spring Data derived queries and give a clean 400 instead of a
+  raw constraint violation. The DB's two partial unique indexes (see the
+  Foundation phase entry) remain the actual source of truth.
+- **A `Clock` bean (`ClockConfig`, `Clock.systemUTC()`) was introduced** so
+  BudgetService's Asia/Kuala_Lumpur "this month" default is swappable for a
+  fixed instant in tests (`BudgetServiceTest`'s KL-boundary test fixes a
+  clock at 23:00 UTC on the last day of the month, which is already the
+  next day in KL, and asserts the resolved month reflects that) — this is
+  the project's first genuine "this month" default (Transaction's summary
+  endpoint deliberately has none; see the Transaction phase entry), so it's
+  the first place this rule needed real code instead of just a written rule.
+- **PATCH cannot turn a category budget into the overall budget or vice
+  versa via a null `categoryId`.** `PatchBudgetRequest.categoryId() == null`
+  means "unchanged", the same optional-field convention as
+  `PatchTransactionRequest`/`PatchCategoryRequest` — there's no separate
+  "clear this field" signal. Changing what a budget is scoped to isn't a
+  supported edit; delete and recreate instead.
+- **Only the desktop (1440px) frame of "ExpenseWise Budgets" was built**,
+  consistent with the Category and Transaction phases' precedent of
+  deferring the separate mobile/tablet shell (bottom tab bar, FAB, no
+  sidebar) to its own dedicated pass.
+
 ## 2026-07-25 — Foundation phase
 
 - **Single-module Maven, not multi-module.** One deployable JAR; package-by-feature

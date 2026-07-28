@@ -132,6 +132,50 @@ public class GlobalExceptionHandler {
         return validationFailed("categoryId", ex.getMessage(), request);
     }
 
+    @ExceptionHandler(InvalidBudgetCategoryException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidBudgetCategory(InvalidBudgetCategoryException ex,
+                                                                          HttpServletRequest request) {
+        return validationFailed("categoryId", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(InvalidBudgetPeriodException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidBudgetPeriod(InvalidBudgetPeriodException ex,
+                                                                        HttpServletRequest request) {
+        return validationFailed("periodMonth", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(DuplicateBudgetException.class)
+    public ResponseEntity<ApiErrorResponse> handleDuplicateBudget(DuplicateBudgetException ex,
+                                                                    HttpServletRequest request) {
+        return validationFailed("periodMonth", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(OverallBudgetRequiredException.class)
+    public ResponseEntity<ApiErrorResponse> handleOverallBudgetRequired(OverallBudgetRequiredException ex,
+                                                                          HttpServletRequest request) {
+        return validationFailed("categoryId", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(BudgetExceedsOverallException.class)
+    public ResponseEntity<ApiErrorResponse> handleBudgetExceedsOverall(BudgetExceedsOverallException ex,
+                                                                         HttpServletRequest request) {
+        return validationFailed("amount", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(OverallBudgetInUseException.class)
+    public ResponseEntity<ApiErrorResponse> handleOverallBudgetInUse(OverallBudgetInUseException ex,
+                                                                       HttpServletRequest request) {
+        ApiErrorResponse body = new ApiErrorResponse(
+                Instant.now(),
+                HttpStatus.CONFLICT.value(),
+                "OVERALL_BUDGET_IN_USE",
+                ex.getMessage(),
+                request.getRequestURI(),
+                null
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    }
+
     @ExceptionHandler(AuthorizationDeniedException.class)
     public ResponseEntity<ApiErrorResponse> handleAuthorizationDenied(AuthorizationDeniedException ex,
                                                                           HttpServletRequest request) {
