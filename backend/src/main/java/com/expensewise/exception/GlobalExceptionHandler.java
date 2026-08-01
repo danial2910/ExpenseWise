@@ -176,6 +176,20 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
 
+    @ExceptionHandler(AiChatUnavailableException.class)
+    public ResponseEntity<ApiErrorResponse> handleAiChatUnavailable(AiChatUnavailableException ex,
+                                                                      HttpServletRequest request) {
+        ApiErrorResponse body = new ApiErrorResponse(
+                Instant.now(),
+                HttpStatus.SERVICE_UNAVAILABLE.value(),
+                "AI_UNAVAILABLE",
+                "The AI assistant is temporarily unavailable. Please try again shortly.",
+                request.getRequestURI(),
+                null
+        );
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(body);
+    }
+
     @ExceptionHandler(AuthorizationDeniedException.class)
     public ResponseEntity<ApiErrorResponse> handleAuthorizationDenied(AuthorizationDeniedException ex,
                                                                           HttpServletRequest request) {

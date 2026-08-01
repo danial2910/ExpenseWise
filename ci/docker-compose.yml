@@ -55,7 +55,7 @@ services:
 
   # A throwaway Postgres for the backend's integration tests during a build.
   # Same db/user/password as the app's local docker-compose, so the tests need
-  # no new config — the pipeline just points DB_URL at ci-postgres:5432.
+  # no new config — the pipeline just points DB_URL_EXPENSEWISE at ci-postgres:5432.
   # No named volume: its data is disposable and need not survive restarts.
   ci-postgres:
     image: postgres:16

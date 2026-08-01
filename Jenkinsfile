@@ -18,12 +18,20 @@ pipeline {
         // The backend's tests read these env vars (see application-local.yml and
         // application.yml). We point them at the dedicated ci-postgres container
         // on devops-net, NOT the dev database — reachable by container name.
-        DB_URL      = 'jdbc:postgresql://ci-postgres:5432/expensewise'
-        DB_USER     = 'dev'
-        DB_PASSWORD = 'devpass'
+        // All names carry the _EXPENSEWISE suffix to match the app's env vars,
+        // which were renamed to avoid colliding with other projects' identically
+        // named vars on a shared dev machine — see DECISIONS.md.
+        DB_URL_EXPENSEWISE      = 'jdbc:postgresql://ci-postgres:5432/expensewise'
+        DB_USER_EXPENSEWISE     = 'dev'
+        DB_PASSWORD_EXPENSEWISE = 'devpass'
         // jwt.secret has no default, so the Spring context won't start without
         // it. A fixed dummy signs test tokens only; it is not a real secret.
-        JWT_SECRET  = 'ci-test-secret-not-used-in-production-0123456789abcdef'
+        JWT_SECRET_EXPENSEWISE  = 'ci-test-secret-not-used-in-production-0123456789abcdef'
+        // groq.api-key/model have no defaults either, for the same reason —
+        // AiChatClient is @MockBean'd in every test, so this key is never
+        // actually used to call Groq; it only lets the Spring context start.
+        GROQ_API_KEY_EXPENSEWISE = 'ci-dummy-groq-key-never-actually-called'
+        GROQ_MODEL_EXPENSEWISE   = 'llama-3.3-70b-versatile'
     }
 
     options {

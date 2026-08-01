@@ -60,6 +60,12 @@ const router = createRouter({
       component: () => import('../views/BudgetsView.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/ai-assistant',
+      name: 'ai-assistant',
+      component: () => import('../views/AiAssistantView.vue'),
+      meta: { requiresAuth: true },
+    },
     { path: '/', redirect: '/dashboard' },
   ],
 })

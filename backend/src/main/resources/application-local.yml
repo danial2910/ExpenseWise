@@ -1,17 +1,11 @@
 spring:
-  datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5433/expensewise}
-    username: ${DB_USER:dev}
-    password: ${DB_PASSWORD:devpass}
-    hikari:
-      maximum-pool-size: 10
   jpa:
     show-sql: true
   mail:
-    host: ${BREVO_SMTP_HOST:}
-    port: ${BREVO_SMTP_PORT:587}
-    username: ${BREVO_SMTP_USER:}
-    password: ${BREVO_SMTP_PASSWORD:}
+    host: ${BREVO_SMTP_HOST_EXPENSEWISE:}
+    port: ${BREVO_SMTP_PORT_EXPENSEWISE:587}
+    username: ${BREVO_SMTP_USER_EXPENSEWISE:}
+    password: ${BREVO_SMTP_PASSWORD_EXPENSEWISE:}
     properties:
       "[mail.smtp.auth]": true
       "[mail.smtp.starttls.enable]": true

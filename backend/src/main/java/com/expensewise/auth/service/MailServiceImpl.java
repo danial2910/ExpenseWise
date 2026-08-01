@@ -28,8 +28,8 @@ public class MailServiceImpl implements MailService {
 
     public MailServiceImpl(JavaMailSender javaMailSender,
                             TemplateEngine templateEngine,
-                            @Value("${brevo.smtp-host:}") String smtpHost,
-                            @Value("${mail.from}") String mailFrom) {
+                            @Value("${BREVO_SMTP_HOST_EXPENSEWISE:}") String smtpHost,
+                            @Value("${MAIL_FROM_EXPENSEWISE:noreply@expensewise.local}") String mailFrom) {
         this.javaMailSender = javaMailSender;
         this.templateEngine = templateEngine;
         this.smtpHost = smtpHost;

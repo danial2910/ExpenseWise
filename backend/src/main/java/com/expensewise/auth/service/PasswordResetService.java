@@ -41,7 +41,7 @@ public class PasswordResetService {
                                  PasswordEncoder passwordEncoder,
                                  RefreshTokenService refreshTokenService,
                                  ActivityLogger activityLogger,
-                                 @Value("${app.frontend-url}") String frontendUrl) {
+                                 @Value("${FRONTEND_URL_EXPENSEWISE:http://localhost:5173}") String frontendUrl) {
         this.userRepository = userRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.mailService = mailService;
