@@ -29,7 +29,11 @@ public class SecurityConfig {
             "/api/v1/health",
             "/v3/api-docs/**",
             "/swagger-ui/**",
-            "/swagger-ui.html"
+            "/swagger-ui.html",
+            // Only ever mapped under the "local" profile (DevResetTokenController) —
+            // permitting the path here is harmless elsewhere since no controller
+            // is registered for it outside local, so it 404s regardless.
+            "/api/v1/dev/**"
     };
 
     @Bean

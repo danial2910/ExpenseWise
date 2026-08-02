@@ -1,14 +1,6 @@
 spring:
   jpa:
     show-sql: false
-  mail:
-    host: ${BREVO_SMTP_HOST_EXPENSEWISE:}
-    port: ${BREVO_SMTP_PORT_EXPENSEWISE:587}
-    username: ${BREVO_SMTP_USER_EXPENSEWISE:}
-    password: ${BREVO_SMTP_PASSWORD_EXPENSEWISE:}
-    properties:
-      "[mail.smtp.auth]": true
-      "[mail.smtp.starttls.enable]": true
 
 cookie:
   secure: true

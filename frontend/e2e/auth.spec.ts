@@ -96,6 +96,58 @@ test.describe('Authentication', () => {
     await expect(page.getByTestId('check-email-message')).toContainText('We sent a password reset link')
   })
 
+  test('a user can reset their password with the emailed link and log in with the new one', async ({ page }) => {
+    const email = uniqueEmail('sarah.resetflow')
+    const originalPassword = 'Passw0rd1'
+    const newPassword = 'BrandNewPassw0rd1'
+
+    await page.goto('/register')
+    await page.getByTestId('register-fullname-input').fill('Sarah Lim')
+    await page.getByTestId('register-email-input').fill(email)
+    await page.locator('[data-testid=register-password-input] input').fill(originalPassword)
+    await page.locator('[data-testid=register-confirm-password-input] input').fill(originalPassword)
+    await page.getByTestId('register-submit-button').click()
+    await expect(page).toHaveURL(/\/dashboard$/)
+    await page.getByTestId('logout-button').click()
+    await expect(page).toHaveURL(/\/login$/)
+
+    await page.goto('/forgot-password')
+    await page.getByTestId('forgot-email-input').fill(email)
+    await page.getByTestId('forgot-submit-button').click()
+    await expect(page).toHaveURL(/\/check-email/)
+
+    // Only the token's hash is ever persisted, so the raw value is only
+    // recoverable via the local-only dev endpoint (see DevResetTokenController) —
+    // the real Brevo call never fires in local dev.
+    const apiContext = await request.newContext({ baseURL: API_BASE_URL })
+    const tokenResponse = await apiContext.get('dev/password-reset-token', { params: { email } })
+    expect(tokenResponse.ok()).toBeTruthy()
+    const { token } = await tokenResponse.json()
+
+    await page.goto(`/reset-password?token=${token}`)
+    await page.locator('[data-testid=reset-password-input] input').fill(newPassword)
+    await page.locator('[data-testid=reset-confirm-password-input] input').fill(newPassword)
+    await page.getByTestId('reset-submit-button').click()
+    await expect(page).toHaveURL(/\/login$/)
+
+    await page.getByTestId('login-email-input').fill(email)
+    await page.locator('[data-testid=login-password-input] input').fill(newPassword)
+    await page.getByTestId('login-submit-button').click()
+
+    await expect(page).toHaveURL(/\/dashboard$/)
+    await expect(page.getByTestId('dashboard-welcome')).toContainText('Sarah Lim')
+  })
+
+  test('an invalid reset token shows an inline error instead of resetting the password', async ({ page }) => {
+    await page.goto('/reset-password?token=not-a-real-token')
+    await page.locator('[data-testid=reset-password-input] input').fill('WhateverPassw0rd1')
+    await page.locator('[data-testid=reset-confirm-password-input] input').fill('WhateverPassw0rd1')
+    await page.getByTestId('reset-submit-button').click()
+
+    await expect(page.getByTestId('reset-error-banner')).toContainText('invalid or has expired')
+    await expect(page).toHaveURL(/\/reset-password/)
+  })
+
   test('a disabled user is blocked immediately, even mid-session', async ({ page }) => {
     const userEmail = uniqueEmail('sarah.disabled')
     const adminEmail = uniqueEmail('admin.disabler')

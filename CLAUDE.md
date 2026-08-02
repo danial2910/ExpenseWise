@@ -19,7 +19,7 @@ conventional code over clever code.
 | Auth | Spring Security + JWT (jjwt). **Not** Supabase Auth. |
 | File storage | Supabase Storage, private bucket, signed URLs |
 | AI | Groq via Spring AI (OpenAI-compatible endpoint) |
-| Email | Brevo SMTP via Spring Mail + Thymeleaf templates |
+| Email | Brevo transactional email HTTP API (Spring `RestClient`) + Thymeleaf templates. **Not** SMTP. |
 | Reports | Apache POI (Excel), JasperReports (PDF) |
 | Unit tests | JUnit 5 + Mockito |
 | Coverage | JaCoCo (XML report consumed by SonarQube) |
@@ -217,7 +217,7 @@ DB_URL_EXPENSEWISE, DB_USER_EXPENSEWISE, DB_PASSWORD_EXPENSEWISE
 JWT_SECRET_EXPENSEWISE, JWT_EXPIRATION_EXPENSEWISE, REFRESH_TOKEN_EXPIRATION_EXPENSEWISE
 SUPABASE_URL_EXPENSEWISE, SUPABASE_SERVICE_KEY_EXPENSEWISE, SUPABASE_BUCKET_EXPENSEWISE
 GROQ_API_KEY_EXPENSEWISE, GROQ_MODEL_EXPENSEWISE
-BREVO_SMTP_HOST_EXPENSEWISE, BREVO_SMTP_PORT_EXPENSEWISE, BREVO_SMTP_USER_EXPENSEWISE, BREVO_SMTP_PASSWORD_EXPENSEWISE
+BREVO_API_KEY_EXPENSEWISE
 MAIL_FROM_EXPENSEWISE, FRONTEND_URL_EXPENSEWISE
 ```
 

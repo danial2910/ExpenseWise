@@ -2,6 +2,66 @@
 
 Non-obvious decisions and their rationale, logged as they're made.
 
+## 2026-08-02 — Forgot-password test coverage: added a `local`-profile-only token endpoint
+
+- **Added `PasswordResetServiceTest`** (Mockito, no Spring context) covering
+  `requestReset`/`completeReset` in isolation: no-op on unknown email, email
+  normalization, prior-token invalidation + new-token save/email/log,
+  rejecting a missing/used/expired token, and the happy path (password
+  updated, token marked used, refresh tokens revoked). Complements the
+  existing `PasswordResetIntegrationTest`, which exercises the same rules
+  through real HTTP + Postgres but didn't isolate the expired-token branch.
+- **New Playwright journey in `auth.spec.ts`**: request a reset, complete it
+  with the emailed token, log in with the new password; plus a second test
+  asserting an invalid token surfaces `reset-error-banner` instead of
+  resetting anything.
+- **Problem: the e2e test has no way to read the raw reset token.** Only its
+  SHA-256 hash is ever persisted (`PasswordResetToken.tokenHash`); the raw
+  value only ever exists in the reset link handed to `MailService`, and in
+  local dev (no `BREVO_API_KEY_EXPENSEWISE`) that link is just logged to the
+  backend's own stdout — which Playwright can't read, since it doesn't spawn
+  the backend process (`playwright.config.ts`'s `webServer` only starts the
+  Vite dev server; the backend is expected to already be running).
+- **Fix: `DevPasswordResetTokenCache` + `DevResetTokenController`**, both
+  under `com.expensewise.devsupport` and both `@Profile("local")` (same
+  convention as `DataSourceConfig`'s split beans) — an in-memory
+  `email -> lastResetLink` cache that `MailServiceImpl.sendPasswordResetEmail`
+  populates via an `Optional<DevPasswordResetTokenCache>` constructor
+  dependency (empty outside `local`, so this is a no-op everywhere else), and
+  a `GET /api/v1/dev/password-reset-token?email=` endpoint that reads it back.
+  Registered in `SecurityConfig.PUBLIC_PATHS` as `/api/v1/dev/**` — harmless
+  outside `local` since no controller is ever mapped there, so the path just
+  404s. This endpoint does not exist in a prod build; it exists purely so an
+  automated test can do what a human tester would do by reading the console.
+
+## 2026-08-02 — Brevo email switched from SMTP to HTTP API
+
+- **`MailServiceImpl` now calls Brevo's transactional email HTTP API
+  (`POST https://api.brevo.com/v3/smtp/email`) via Spring's `RestClient`,
+  not `JavaMailSender` over SMTP.** Many low-cost hosting platforms block
+  outbound SMTP ports (25/465/587) on free/cheap tiers to fight spam, needing
+  a paid plan to unblock — a real risk for this project's eventual prod
+  deploy. Outbound HTTPS (443) is essentially always allowed, so the HTTP
+  API avoids that failure mode entirely. Confirmed with the project owner
+  rather than discovering it live in production.
+- **Dropped `spring-boot-starter-mail`** — nothing else in the app used
+  `JavaMailSender`. `RestClient` ships with `spring-boot-starter-web`
+  (already a dependency), so no new dependency was added; used a plain
+  `RestClient` call with a `Map`-built JSON body rather than the official
+  Brevo Java SDK, keeping with "boring, explicit code" — one small class,
+  no generated OpenAPI client to explain in a demo.
+- **`BREVO_SMTP_HOST/PORT/USER/PASSWORD_EXPENSEWISE` collapsed into a single
+  `BREVO_API_KEY_EXPENSEWISE`.** The blank-check that gates "log the reset
+  link instead of sending" (local dev with no real credentials) now checks
+  this one var instead of `smtpHost`. `spring.mail.*` blocks removed from
+  `application-local.yml`/`application-prod.yml` since nothing binds them
+  anymore — also removes the framework-owned `spring.mail.*` env-var
+  collision risk flagged as a deferred next step in the entry below.
+- **CLAUDE.md's Email stack row and Environment var list updated to match.**
+  Thymeleaf stays — it still renders `password-reset-email.html`'s HTML,
+  which is now sent as `htmlContent` in the API request body instead of via
+  `MimeMessageHelper`.
+
 ## 2026-07-28 — AI Assistant module phase
 
 - **Called Groq's REST API directly via Spring's RestClient — no Spring AI
