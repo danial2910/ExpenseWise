@@ -4,7 +4,7 @@ import PrimeVue from 'primevue/config'
 import App from './App.vue'
 import router from './router'
 import preset from './theme/preset'
-import { installAuthInterceptors, useAuthStore } from './stores/auth'
+import { installAuthInterceptors } from './stores/auth'
 import './style.css'
 import 'primeicons/primeicons.css'
 
@@ -28,8 +28,8 @@ app.use(PrimeVue, {
 installAuthInterceptors()
 app.use(router)
 
-// Mount is delayed until bootstrap resolves so the router's first
-// navigation guard already sees accurate auth state.
-useAuthStore()
-  .bootstrap()
-  .finally(() => app.mount('#app'))
+// The router's own beforeEach guard awaits authStore.bootstrap() on the
+// first navigation (see router/index.ts) — mounting here doesn't need to
+// wait for it too, and doing so would risk two concurrent bootstrap()
+// calls both trying to consume/rotate the same refresh cookie.
+app.mount('#app')

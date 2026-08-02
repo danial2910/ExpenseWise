@@ -15,6 +15,7 @@ const navItems = [
   { testid: 'nav-categories', label: 'Categories', to: '/categories', routeName: 'categories' },
   { testid: 'nav-budgets', label: 'Budgets', to: '/budgets', routeName: 'budgets' },
   { testid: 'nav-ai-assistant', label: 'AI Assistant', to: '/ai-assistant', routeName: 'ai-assistant' },
+  { testid: 'nav-profile', label: 'Profile', to: '/profile', routeName: 'profile' },
 ]
 
 const initials = computed(() => {

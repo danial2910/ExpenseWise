@@ -1,3 +1,5 @@
+export type Gender = 'FEMALE' | 'MALE' | 'NON_BINARY' | 'SELF_DESCRIBED' | 'NOT_SPECIFIED'
+
 export interface UserResponse {
   id: number
   email: string
@@ -5,6 +7,11 @@ export interface UserResponse {
   role: 'USER' | 'ADMIN'
   active: boolean
   createdAt: string
+  phone: string | null
+  dateOfBirth: string | null
+  gender: Gender | null
+  address: string | null
+  avatarUrl: string | null
 }
 
 export interface LoginResponse {

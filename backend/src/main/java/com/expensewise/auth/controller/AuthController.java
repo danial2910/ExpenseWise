@@ -6,9 +6,13 @@ import com.expensewise.auth.dto.LoginResponse;
 import com.expensewise.auth.dto.RefreshResponse;
 import com.expensewise.auth.dto.RegisterRequest;
 import com.expensewise.auth.dto.ResetPasswordRequest;
+import com.expensewise.auth.security.AuthPrincipal;
 import com.expensewise.auth.security.RefreshCookieFactory;
 import com.expensewise.auth.service.AuthService;
 import com.expensewise.auth.service.PasswordResetService;
+import com.expensewise.auth.service.RefreshTokenService;
+import com.expensewise.common.ActivityAction;
+import com.expensewise.common.ActivityLogger;
 import com.expensewise.exception.InvalidTokenException;
 import com.expensewise.user.mapper.UserMapper;
 import jakarta.servlet.http.Cookie;
@@ -16,6 +20,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,15 +34,21 @@ public class AuthController {
 
     private final AuthService authService;
     private final PasswordResetService passwordResetService;
+    private final RefreshTokenService refreshTokenService;
+    private final ActivityLogger activityLogger;
     private final UserMapper userMapper;
     private final RefreshCookieFactory refreshCookieFactory;
 
     public AuthController(AuthService authService,
                            PasswordResetService passwordResetService,
+                           RefreshTokenService refreshTokenService,
+                           ActivityLogger activityLogger,
                            UserMapper userMapper,
                            RefreshCookieFactory refreshCookieFactory) {
         this.authService = authService;
         this.passwordResetService = passwordResetService;
+        this.refreshTokenService = refreshTokenService;
+        this.activityLogger = activityLogger;
         this.userMapper = userMapper;
         this.refreshCookieFactory = refreshCookieFactory;
     }
@@ -80,6 +92,24 @@ public class AuthController {
         }
         Cookie clearCookie = refreshCookieFactory.clear();
         response.addCookie(clearCookie);
+        return ResponseEntity.noContent().build();
+    }
+
+    // Lives here (not /api/v1/users/me) because it needs the refreshToken
+    // cookie to identify which session is "current" and must be spared —
+    // that cookie is deliberately Path-scoped to /api/v1/auth only (see
+    // RefreshCookieFactory), so it's never sent to a /users/me endpoint.
+    // /api/v1/auth/** is otherwise a public path (SecurityConfig), hence
+    // the explicit @PreAuthorize here. See DECISIONS.md.
+    @PostMapping("/logout-others")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> logoutOthers(@AuthenticationPrincipal AuthPrincipal principal,
+                                              @CookieValue(required = false) String refreshToken) {
+        if (refreshToken == null) {
+            throw new InvalidTokenException("Refresh token is missing");
+        }
+        refreshTokenService.revokeAllForUserExcept(principal.userId(), refreshToken);
+        activityLogger.log(principal.userId(), ActivityAction.LOGOUT_OTHERS);
         return ResponseEntity.noContent().build();
     }
 

@@ -85,6 +85,18 @@ public class RefreshTokenService {
     }
 
     /**
+     * Revokes every other active token for the user, leaving the session
+     * identified by {@code currentRawValue} untouched — "log out of all
+     * other sessions." The current session is identified by re-hashing the
+     * raw refresh cookie value already presented on this request.
+     */
+    @Transactional
+    public void revokeAllForUserExcept(Long userId, String currentRawValue) {
+        String currentTokenHash = TokenHasher.sha256Hex(currentRawValue);
+        refreshTokenRepository.revokeAllActiveForUserExcept(userId, currentTokenHash, Instant.now());
+    }
+
+    /**
      * Revokes a single token (used on logout). Returns the owning user id,
      * if the token was found, so the caller can write an activity log entry.
      */

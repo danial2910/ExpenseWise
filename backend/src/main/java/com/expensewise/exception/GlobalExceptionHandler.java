@@ -11,6 +11,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -184,6 +185,32 @@ public class GlobalExceptionHandler {
                 HttpStatus.SERVICE_UNAVAILABLE.value(),
                 "AI_UNAVAILABLE",
                 "The AI assistant is temporarily unavailable. Please try again shortly.",
+                request.getRequestURI(),
+                null
+        );
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(body);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiErrorResponse> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException ex,
+                                                                            HttpServletRequest request) {
+        return validationFailed("avatar", "Avatar must be 2 MB or smaller", request);
+    }
+
+    @ExceptionHandler(InvalidAvatarException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidAvatar(InvalidAvatarException ex,
+                                                                    HttpServletRequest request) {
+        return validationFailed("avatar", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(StorageUnavailableException.class)
+    public ResponseEntity<ApiErrorResponse> handleStorageUnavailable(StorageUnavailableException ex,
+                                                                        HttpServletRequest request) {
+        ApiErrorResponse body = new ApiErrorResponse(
+                Instant.now(),
+                HttpStatus.SERVICE_UNAVAILABLE.value(),
+                "STORAGE_UNAVAILABLE",
+                ex.getMessage(),
                 request.getRequestURI(),
                 null
         );

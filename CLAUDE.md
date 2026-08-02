@@ -95,6 +95,9 @@ com.expensewise
 ├── config          Security, CORS, OpenAPI, scheduling
 ├── common          Shared utils, base classes
 ├── exception       Custom exceptions + @RestControllerAdvice
+├── storage         StorageService seam + SupabaseStorageService impl,
+                    shared across any module storing a file (Profile's
+                    avatar, Receipt later) — mirrors the ai.client seam
 └── <module>        auth, user, category, transaction, budget,
                     recurring, receipt, report, notification, ai, admin
     ├── controller
@@ -139,7 +142,10 @@ Package by feature, not by layer, at the top level.
 11 tables. Full DDL lives in `V1__baseline.sql`.
 
 **Core financial**
-- `users` — id, email UK, password_hash, full_name, role, is_active, timestamps
+- `users` — id, email UK, password_hash, full_name, role, is_active, phone,
+  date_of_birth, gender, address, avatar_path, timestamps (phone/date_of_birth/
+  gender/address/avatar_path all nullable — self-service profile fields, added
+  in the Profile phase)
 - `categories` — id, user_id FK NULL, name, type, icon, is_system
 - `transactions` — id, user_id FK, category_id FK, recurring_rule_id FK NULL,
   type, amount, transaction_date, description, timestamps

@@ -13,6 +13,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "users")
@@ -39,6 +40,18 @@ public class User {
 
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
+
+    private String phone;
+
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
+
+    private String gender;
+
+    private String address;
+
+    @Column(name = "avatar_path")
+    private String avatarPath;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

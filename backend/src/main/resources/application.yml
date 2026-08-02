@@ -10,6 +10,13 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: false
+  servlet:
+    multipart:
+      # Above UserService's own 2 MB avatar cap, so a rejected file gets our
+      # clean "avatar" validation error instead of Spring's default 1 MB
+      # MaxUploadSizeExceededException surfacing as a raw 500.
+      max-file-size: 3MB
+      max-request-size: 3MB
 
 server:
   port: 8080

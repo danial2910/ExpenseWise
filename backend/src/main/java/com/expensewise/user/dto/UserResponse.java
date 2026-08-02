@@ -1,6 +1,7 @@
 package com.expensewise.user.dto;
 
 import java.time.Instant;
+import java.time.LocalDate;
 
 public record UserResponse(
         Long id,
@@ -8,6 +9,11 @@ public record UserResponse(
         String fullName,
         String role,
         boolean active,
-        Instant createdAt
+        Instant createdAt,
+        String phone,
+        LocalDate dateOfBirth,
+        String gender,
+        String address,
+        String avatarUrl
 ) {
 }

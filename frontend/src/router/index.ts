@@ -66,12 +66,28 @@ const router = createRouter({
       component: () => import('../views/AiAssistantView.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: () => import('../views/ProfileView.vue'),
+      meta: { requiresAuth: true },
+    },
     { path: '/', redirect: '/dashboard' },
   ],
 })
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const authStore = useAuthStore()
+
+  // Vue Router resolves its initial navigation (and so runs this guard)
+  // as soon as the router is installed, independent of when the app
+  // mounts — it does not wait for main.ts's own bootstrap() call. On a
+  // hard reload, awaiting it here (a no-op once already bootstrapped —
+  // see AuthState.bootstrapped) is what stops the guard from redirecting
+  // a still-valid session to /login before the refresh cookie is checked.
+  if (!authStore.bootstrapped) {
+    await authStore.bootstrap()
+  }
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     return { name: 'login', query: { redirect: to.fullPath } }

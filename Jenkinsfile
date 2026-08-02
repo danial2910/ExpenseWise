@@ -32,6 +32,12 @@ pipeline {
         // actually used to call Groq; it only lets the Spring context start.
         GROQ_API_KEY_EXPENSEWISE = 'ci-dummy-groq-key-never-actually-called'
         GROQ_MODEL_EXPENSEWISE   = 'llama-3.3-70b-versatile'
+        // supabase.url/service-key/bucket have no defaults either — StorageService
+        // is @MockBean'd in every test, so these are never actually used to call
+        // Supabase; they only let the Spring context start.
+        SUPABASE_URL_EXPENSEWISE         = 'https://ci-dummy-project.supabase.co'
+        SUPABASE_SERVICE_KEY_EXPENSEWISE = 'ci-dummy-supabase-service-key-never-actually-called'
+        SUPABASE_BUCKET_EXPENSEWISE      = 'ci-dummy-bucket'
     }
 
     options {

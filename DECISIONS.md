@@ -2,6 +2,116 @@
 
 Non-obvious decisions and their rationale, logged as they're made.
 
+## 2026-08-02 — Profile module phase (personal info, avatar via Supabase Storage, security tab)
+
+- **`StorageService`/`SupabaseStorageService` mirror the `AiChatClient`/`GroqChatClient`
+  seam exactly**: a plain interface + one `RestClient`-based implementation calling
+  Supabase Storage's raw REST API directly (`/storage/v1/object/...`,
+  `/storage/v1/object/sign/...`) — no Supabase SDK dependency, same "boring, explicit
+  code" precedent as Brevo/Groq. `SupabaseProperties` binds `SUPABASE_URL_EXPENSEWISE`/
+  `SUPABASE_SERVICE_KEY_EXPENSEWISE`/`SUPABASE_BUCKET_EXPENSEWISE` via literal `@Value`
+  placeholders (not `@ConfigurationProperties`), same collision-avoidance reasoning as
+  `GroqProperties`/`JwtProperties`. Constructor only builds the `RestClient` — no
+  network call at startup, so the Spring context boots fine with dummy values (CI) —
+  confirmed the same way `GroqChatClient` was confirmed. **None of these three env
+  vars have a default**, matching `GROQ_API_KEY_EXPENSEWISE`'s precedent — this means
+  `mvn spring-boot:run` will not start locally until they're set (even to dummy
+  values) via `setx`, the same way `BREVO_API_KEY_EXPENSEWISE`/`MAIL_FROM_EXPENSEWISE`
+  already are on this machine.
+- **`/api/v1/auth/logout-others` lives in `AuthController`, not `UserController`**,
+  even though "log out of all other sessions" is a Profile/Security-tab feature.
+  Forced by an existing, deliberate constraint: the refresh cookie is `Path=/api/v1/auth`
+  only (see the Auth phase entry below), so a `/api/v1/users/me/...` endpoint would
+  never receive it and couldn't identify which session to spare. `/api/v1/auth/**` is
+  otherwise a fully public path (`SecurityConfig.PUBLIC_PATHS`), so the endpoint is
+  gated with `@PreAuthorize("isAuthenticated()")` instead of path-level auth — method
+  security still applies on top of a path-level `permitAll`. Confirmed with the
+  project owner rather than widening the cookie's `Path` (which would reopen a
+  security tradeoff closed for a reason) or silently building it in the wrong module.
+- **`RefreshTokenRepository.revokeAllActiveForUserExcept`** identifies "the current
+  session" by re-hashing the raw `refreshToken` cookie already presented on the
+  request — no new schema/column needed. Revoking *all* tokens (reusing the existing
+  `revokeAllForUser`) was rejected as the simple option: the design's copy ("Sign out
+  everywhere **except this device**") and its confirmation text both promise the
+  current device stays logged in, which `revokeAllForUser` would violate.
+- **MapStruct pitfall, worth flagging for future mapper work**: a `default` method
+  declared inside a `@Mapper` interface with a matching single-arg signature (here,
+  `String -> String`) is silently auto-applied by MapStruct to *every* same-typed
+  field mapping in that interface — not just the one `@Mapping(expression = ...)` it
+  was written for. This produced every `String` field in `UserResponse` (`email`,
+  `fullName`, `phone`, `gender`, `address`, ...) coming back as the literal value
+  `"Failed"`, since `mapLoginStatus`'s fallback branch is `"Failed"`. Fixed by
+  annotating the method `@Named(...)` and referencing it via `qualifiedByName`
+  instead of `expression` — `@Named` methods are only applied where explicitly
+  requested. No test caught this until a live curl/browser check (Mockito-based
+  `UserMapperTest`-style unit tests mock the mapper itself, so they can't catch a
+  bug in MapStruct's generated code) — this class of bug specifically needs an
+  integration test that hits the real endpoint, which `ProfileIntegrationTest` does.
+- **Found and fixed an unrelated, pre-existing bug while building the e2e test**:
+  reloading any authenticated page (not Profile-specific) redirected to `/login`
+  even with a fully valid refresh cookie. `main.ts` awaited `authStore.bootstrap()`
+  before `app.mount()`, on the assumption that delays the router's first navigation
+  guard too — but Vue Router 4 starts resolving its initial navigation (and running
+  `beforeEach`) as soon as `app.use(router)` runs, independent of `app.mount()`
+  timing, so the guard saw `isAuthenticated === false` and redirected well before
+  `bootstrap()`'s network round-trip finished. No prior e2e test did a hard
+  `page.reload()` on an authenticated route, so this was never exercised. Fixed by
+  moving the `await authStore.bootstrap()` into the router's own `beforeEach` guard
+  (a no-op after the first call, since `bootstrap()` already early-returns once
+  `bootstrapped` is true) and mounting immediately in `main.ts` — also avoids a
+  potential double-`bootstrap()` race (two concurrent `/auth/refresh` calls
+  fighting over the same single-use rotating cookie) that the old two-call-site
+  shape risked. Confirmed with the project owner before fixing, since it's outside
+  this session's nominal Profile-module scope but blocks the Profile e2e test's
+  reload-based persistence check and affects every authenticated page.
+- **Avatar constraints: 2 MB / JPG-PNG-WEBP (task spec) override the imported
+  design's copy ("JPG or PNG, up to 5MB")**. The two conflict; the explicit,
+  more-recent task instructions were treated as authoritative over a mockup's
+  placeholder string, and the UI's helper text was corrected to say "JPG, PNG, or
+  WEBP — up to 2 MB" so it doesn't promise a limit the backend won't honor — same
+  precedent as the AI Assistant phase's insights-mislabeling fix below.
+- **`UpdateProfileRequest`'s `@Pattern` regexes for `phone`/`gender` explicitly also
+  accept the empty string** (`^$|...`), not just `null`. The frontend sends `""` for
+  an untouched optional text input or the unselected `<option value="">`, not
+  `null`/omitted — `UserService.updateProfile` then converts blank to `null` before
+  persisting, so the DB never stores an empty string for an "unset" optional field.
+- **`avatarUrl` is computed, never stored** — `UserResponse.avatarUrl` is generated
+  fresh on every read (`UserService.toResponseWithAvatar`, 15-minute signed-URL TTL)
+  from the persisted `avatar_path`, per the task's explicit "regenerate each fetch
+  since signed URLs expire" instruction. `UserMapper.toResponse(User)` (used by
+  `AuthController` at register/login, where there's never an avatar yet) leaves
+  `avatarUrl` `null` via `@Mapping(ignore = true)`; a second overload,
+  `toResponse(User, String avatarUrl)`, is what `UserService` uses.
+- **Login history reuses `activity_logs`** (`LOGIN_SUCCESS`/`LOGIN_FAILED` actions),
+  no new table — `idx_activity_logs_user_created` already supports the scoped,
+  paginated query efficiently. Added `PROFILE_UPDATED`/`AVATAR_UPDATED`/
+  `AVATAR_REMOVED`/`LOGOUT_OTHERS` to `ActivityAction`, and — filling a gap the
+  existing `updateProfile` didn't have — `UserService.updateProfile` now logs
+  `PROFILE_UPDATED` (parity with `changePassword`'s existing `PASSWORD_CHANGED` log).
+- **Only the desktop (1440px) frame of "ExpenseWise Profile" was built**, same
+  precedent as every prior module.
+- **Found and fixed a real bug in `SupabaseStorageService` by testing against a
+  real Supabase project** (the project owner had already set up
+  `SUPABASE_URL_EXPENSEWISE`/`SUPABASE_SERVICE_KEY_EXPENSEWISE`/
+  `SUPABASE_BUCKET_EXPENSEWISE` in `.env`) — `@MockBean`-based tests can't catch
+  this class of bug since they never make a real HTTP call. `RestClient`'s
+  `.uri("/object/sign/{bucket}/{path}", bucket, path)` percent-encodes the `/`
+  characters inside a single template-variable value into `%2F`. Supabase's
+  Storage API tolerates this for upload/list (decodes it back into a real
+  folder hierarchy — confirmed via the bucket's own list-objects API), but its
+  sign endpoint embeds the raw, still-encoded path into the signed token's
+  `url` claim; the later download request's URL-decoded path then no longer
+  matches that claim, failing with `InvalidSignature` (400) even though
+  everything upstream reported success. Fixed by building the URI via plain
+  string concatenation (`"/object/" + bucket + "/" + path"`) instead of a
+  template variable — safe here since `path` is always our own generated
+  value (`avatars/{userId}/{uuid}.ext`), never user input. Verified end to end
+  against the real bucket: upload, download via the returned signed URL
+  (byte-identical content), and delete (including the automatic
+  delete-of-previous-object-on-replace) all confirmed working; test objects
+  were fully self-cleaned by the app's own replace/remove logic, nothing
+  manual to clean up in the bucket afterward.
+
 ## 2026-08-02 — Forgot-password test coverage: added a `local`-profile-only token endpoint
 
 - **Added `PasswordResetServiceTest`** (Mockito, no Spring context) covering
