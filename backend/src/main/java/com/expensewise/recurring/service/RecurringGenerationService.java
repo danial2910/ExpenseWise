@@ -1,6 +1,5 @@
 package com.expensewise.recurring.service;
 
-import com.expensewise.notification.service.NotificationService;
 import com.expensewise.recurring.entity.RecurringRule;
 import com.expensewise.recurring.repository.RecurringRuleRepository;
 import com.expensewise.recurring.schedule.NextDueDateCalculator;
@@ -28,22 +27,18 @@ import java.util.stream.Collectors;
 public class RecurringGenerationService {
 
     private static final ZoneId KL_ZONE = ZoneId.of("Asia/Kuala_Lumpur");
-    private static final String NOTIFICATION_TYPE = "RECURRING_GENERATED";
 
     private final RecurringRuleRepository recurringRuleRepository;
     private final TransactionRepository transactionRepository;
-    private final NotificationService notificationService;
     private final Map<String, NextDueDateCalculator> calculatorsByFrequency;
     private final Clock clock;
 
     public RecurringGenerationService(RecurringRuleRepository recurringRuleRepository,
                                        TransactionRepository transactionRepository,
-                                       NotificationService notificationService,
                                        List<NextDueDateCalculator> calculators,
                                        Clock clock) {
         this.recurringRuleRepository = recurringRuleRepository;
         this.transactionRepository = transactionRepository;
-        this.notificationService = notificationService;
         this.calculatorsByFrequency = calculators.stream()
                 .collect(Collectors.toMap(NextDueDateCalculator::frequency, Function.identity()));
         this.clock = clock;
@@ -76,8 +71,8 @@ public class RecurringGenerationService {
 
     /**
      * Catch-up loop: while the rule is due (nextDueDate <= today) and not
-     * past its end date, create a transaction for that occurrence, notify,
-     * then advance nextDueDate. Advancing AFTER creating guarantees each
+     * past its end date, create a transaction for that occurrence, then
+     * advance nextDueDate. Advancing AFTER creating guarantees each
      * occurrence is generated exactly once, even if this method is called
      * again before the next real due date (idempotent — never double-posts).
      * If the advanced date lands after the end date, the rule is
@@ -99,8 +94,6 @@ public class RecurringGenerationService {
             transaction.setDescription(rule.getDescription());
             transactionRepository.save(transaction);
 
-            notifyRecorded(rule);
-
             rule.setNextDueDate(calculator.nextDueDate(rule.getNextDueDate(), rule.getStartDate()));
             generated++;
         }
@@ -112,13 +105,6 @@ public class RecurringGenerationService {
             recurringRuleRepository.save(rule);
         }
         return generated;
-    }
-
-    private void notifyRecorded(RecurringRule rule) {
-        String label = rule.getType().equals("INCOME") ? "income" : "expense";
-        String message = String.format("Recorded your RM %s %s (%s)", rule.getAmount(),
-                rule.getDescription() != null ? rule.getDescription() : label, label);
-        notificationService.create(rule.getUserId(), NOTIFICATION_TYPE, "Recurring transaction recorded", message);
     }
 
     private LocalDate today() {

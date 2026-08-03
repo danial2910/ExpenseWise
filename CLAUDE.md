@@ -99,7 +99,7 @@ com.expensewise
                     shared across any module storing a file (Profile's
                     avatar, Receipt later) — mirrors the ai.client seam
 └── <module>        auth, user, category, transaction, budget,
-                    recurring, receipt, report, notification, ai, admin
+                    recurring, receipt, report, ai, admin
     ├── controller
     ├── service
     ├── repository
@@ -158,7 +158,6 @@ Package by feature, not by layer, at the top level.
 
 **Supporting**
 - `password_reset_tokens` — id, user_id FK, token_hash UK, expires_at, used_at
-- `notifications` — id, user_id FK, type, title, message, is_read, created_at
 - `activity_logs` — id, user_id FK NULL, action, entity_type, entity_id,
   ip_address, created_at
 - `ai_conversations` — id, user_id FK, title, created_at

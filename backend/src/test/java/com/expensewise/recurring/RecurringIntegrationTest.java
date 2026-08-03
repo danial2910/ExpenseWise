@@ -8,14 +8,12 @@ import com.expensewise.budget.dto.BudgetResponse;
 import com.expensewise.category.dto.CategoryRequest;
 import com.expensewise.category.dto.CategoryResponse;
 import com.expensewise.common.ApiErrorResponse;
-import com.expensewise.notification.repository.NotificationRepository;
 import com.expensewise.recurring.dto.GenerateDueResponse;
 import com.expensewise.recurring.dto.PatchRecurringRuleRequest;
 import com.expensewise.recurring.dto.RecurringRuleRequest;
 import com.expensewise.recurring.dto.RecurringRuleResponse;
 import com.expensewise.transaction.dto.TransactionResponse;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
@@ -32,17 +30,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Covers the recurring module's ownership rule, category-coherence rule,
  * and the generate-due-now cycle end to end: transaction creation with
- * recurringRuleId set, a notification row written, next_due_date advancing,
- * budgets automatically reflecting the generated expense, and the generated
- * row appearing in the transactions list — same conventions
- * TransactionIntegrationTest/BudgetIntegrationTest establish.
+ * recurringRuleId set, next_due_date advancing, budgets automatically
+ * reflecting the generated expense, and the generated row appearing in the
+ * transactions list — same conventions TransactionIntegrationTest/
+ * BudgetIntegrationTest establish.
  */
 class RecurringIntegrationTest extends AbstractIntegrationTest {
 
     private static final ZoneId KL_ZONE = ZoneId.of("Asia/Kuala_Lumpur");
-
-    @Autowired
-    private NotificationRepository notificationRepository;
 
     private record PageResponse<T>(List<T> content) {
     }
@@ -160,7 +155,7 @@ class RecurringIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void generateDueNowCreatesATransactionWritesANotificationAdvancesTheScheduleAndUpdatesTheBudget() {
+    void generateDueNowCreatesATransactionAdvancesTheScheduleAndUpdatesTheBudget() {
         Registered user = registerAndGetToken("Generator");
         Long foodCategoryId = systemCategoryId(user.token(), "Food", "EXPENSE");
         LocalDate startDate = today();
@@ -180,15 +175,12 @@ class RecurringIntegrationTest extends AbstractIntegrationTest {
                 new HttpEntity<>(new BudgetRequest(new BigDecimal("100.00"), foodCategoryId, periodMonth), bearerHeaders(user.token())),
                 BudgetResponse.class);
 
-        long notificationsBefore = notificationRepository.count();
-
         ResponseEntity<GenerateDueResponse> generateResponse = restTemplate.exchange(
                 baseUrl("/api/v1/recurring/generate-due"), HttpMethod.POST,
                 new HttpEntity<>(bearerHeaders(user.token())), GenerateDueResponse.class);
 
         assertThat(generateResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(generateResponse.getBody().transactionsGenerated()).isEqualTo(1);
-        assertThat(notificationRepository.count()).isEqualTo(notificationsBefore + 1);
 
         // next_due_date advanced by one week.
         ResponseEntity<RecurringRuleResponse> afterGenerate = restTemplate.exchange(

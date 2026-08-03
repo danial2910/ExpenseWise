@@ -1,6 +1,5 @@
 package com.expensewise.recurring.service;
 
-import com.expensewise.notification.service.NotificationService;
 import com.expensewise.recurring.entity.RecurringRule;
 import com.expensewise.recurring.repository.RecurringRuleRepository;
 import com.expensewise.recurring.schedule.MonthlyNextDueDateCalculator;
@@ -24,7 +23,6 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -45,15 +43,11 @@ class RecurringGenerationServiceTest {
     @Mock
     private TransactionRepository transactionRepository;
 
-    @Mock
-    private NotificationService notificationService;
-
     private RecurringGenerationService generationService;
 
     @BeforeEach
     void setUp() {
         generationService = new RecurringGenerationService(recurringRuleRepository, transactionRepository,
-                notificationService,
                 List.of(new WeeklyNextDueDateCalculator(), new MonthlyNextDueDateCalculator(),
                         new YearlyNextDueDateCalculator()),
                 FIXED_CLOCK);
@@ -98,7 +92,6 @@ class RecurringGenerationServiceTest {
 
         assertThat(generated).isEqualTo(3);
         verify(transactionRepository, times(3)).save(any(Transaction.class));
-        verify(notificationService, times(3)).create(eq(USER_ID), any(), any(), any());
         assertThat(rule.getNextDueDate()).isEqualTo(LocalDate.of(2026, 8, 22));
     }
 

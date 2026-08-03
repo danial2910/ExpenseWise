@@ -2,6 +2,38 @@
 
 Non-obvious decisions and their rationale, logged as they're made.
 
+## 2026-08-04 — Notifications removed, replaced by a News feature
+
+- **The Notifications feature (`NotificationService`/`Notification` entity/
+  `NotificationRepository`, and the `notifications` table) has been removed
+  entirely.** It's being replaced by a separate News feature (not built in
+  this session — this pass was removal only). `V5__drop_notifications.sql`
+  drops the table; `V1__baseline.sql` was left untouched per the project's
+  "never edit an applied migration" rule, so the table's original
+  `CREATE TABLE`/seed history stays visible in migration history even
+  though the table no longer exists after V5 runs.
+- **`RecurringGenerationService` no longer writes a "recorded" notification
+  after generating a transaction.** It was the only caller of
+  `NotificationService.create(...)` anywhere in the app, so removing it was
+  a straight deletion (constructor no longer takes a `NotificationService`
+  arg, no branching logic needed). The catch-up loop is otherwise
+  unchanged: create the transaction, advance `nextDueDate`, deactivate past
+  the end date — no notification step.
+- **No other module ever referenced notifications** — the feature was only
+  ever wired into the Recurring module's generation path in the first
+  place (its own task explicitly scoped it as "a minimal shared
+  NotificationService.create(...)" helper, not a full read/unread system),
+  so removal touched exactly one production class
+  (`RecurringGenerationService`) plus its two dependent tests
+  (`RecurringGenerationServiceTest`, `RecurringIntegrationTest`) — no
+  frontend code existed to remove, since no notification UI was ever built.
+- CLAUDE.md's package list and data-model table both dropped their
+  `notification`/`notifications` entries. The stale "11 tables" line in
+  CLAUDE.md's Data model section (already inaccurate before this change —
+  it never accounted for `refresh_tokens`/`user_feature_entitlements` added
+  in V2/V4) was left as-is; fixing that drift is unrelated to this removal
+  and wasn't asked for.
+
 ## 2026-08-03 — Receipt module phase (attach a receipt to a transaction)
 
 - **Reused `StorageService`/`SupabaseStorageService` unmodified** — no
