@@ -14,6 +14,10 @@ public record TransactionResponse(
         LocalDate transactionDate,
         String description,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        // A freshly generated signed URL when a receipt exists, regenerated
+        // on every read (signed URLs expire) — never null when a receipt is
+        // attached and never the same value twice. See ReceiptService.
+        String receiptUrl
 ) {
 }

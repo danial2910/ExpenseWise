@@ -49,7 +49,7 @@ class AiContextServiceTest {
 
     private TransactionResponse expense(String categoryName, String amount) {
         return new TransactionResponse(1L, "EXPENSE", new BigDecimal(amount), 10L, categoryName, "utensils",
-                LocalDate.of(2026, 7, 15), "desc", Instant.now(), Instant.now());
+                LocalDate.of(2026, 7, 15), "desc", Instant.now(), Instant.now(), null);
     }
 
     private OverallBudgetLine overallLine(BigDecimal amount, BigDecimal spent, BigDecimal progressPercent, boolean exceeded) {

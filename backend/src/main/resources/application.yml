@@ -12,11 +12,12 @@ spring:
     baseline-on-migrate: false
   servlet:
     multipart:
-      # Above UserService's own 2 MB avatar cap, so a rejected file gets our
-      # clean "avatar" validation error instead of Spring's default 1 MB
+      # Above ReceiptService's own 5 MB cap (the largest of any multipart
+      # upload — avatars are capped at 2 MB), so a rejected file gets our
+      # clean validation error instead of Spring's default 1 MB
       # MaxUploadSizeExceededException surfacing as a raw 500.
-      max-file-size: 3MB
-      max-request-size: 3MB
+      max-file-size: 6MB
+      max-request-size: 6MB
 
 server:
   port: 8080

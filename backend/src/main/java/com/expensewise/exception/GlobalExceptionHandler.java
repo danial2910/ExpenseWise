@@ -133,6 +133,18 @@ public class GlobalExceptionHandler {
         return validationFailed("categoryId", ex.getMessage(), request);
     }
 
+    @ExceptionHandler(InvalidRecurringCategoryException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidRecurringCategory(InvalidRecurringCategoryException ex,
+                                                                              HttpServletRequest request) {
+        return validationFailed("categoryId", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(InvalidRecurringPeriodException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidRecurringPeriod(InvalidRecurringPeriodException ex,
+                                                                            HttpServletRequest request) {
+        return validationFailed("endDate", ex.getMessage(), request);
+    }
+
     @ExceptionHandler(InvalidBudgetCategoryException.class)
     public ResponseEntity<ApiErrorResponse> handleInvalidBudgetCategory(InvalidBudgetCategoryException ex,
                                                                           HttpServletRequest request) {
@@ -194,6 +206,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ApiErrorResponse> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException ex,
                                                                             HttpServletRequest request) {
+        // Spring's container-level cap (application.yml's multipart
+        // max-file-size) is shared across every multipart endpoint, so the
+        // field/message here has to branch on which one was hit — receipts
+        // allow up to 5 MB, avatars up to 2 MB.
+        if (request.getRequestURI().endsWith("/receipt")) {
+            return validationFailed("file", "Receipt must be 5 MB or smaller", request);
+        }
         return validationFailed("avatar", "Avatar must be 2 MB or smaller", request);
     }
 
@@ -201,6 +220,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleInvalidAvatar(InvalidAvatarException ex,
                                                                     HttpServletRequest request) {
         return validationFailed("avatar", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(InvalidReceiptException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidReceipt(InvalidReceiptException ex,
+                                                                     HttpServletRequest request) {
+        return validationFailed("file", ex.getMessage(), request);
     }
 
     @ExceptionHandler(StorageUnavailableException.class)

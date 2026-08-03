@@ -13,5 +13,6 @@ public interface TransactionMapper {
     @Mapping(target = "type", source = "transaction.type")
     @Mapping(target = "categoryName", source = "category.name")
     @Mapping(target = "categoryIcon", source = "category.icon")
-    TransactionResponse toResponse(Transaction transaction, Category category);
+    @Mapping(target = "receiptUrl", source = "receiptUrl")
+    TransactionResponse toResponse(Transaction transaction, Category category, String receiptUrl);
 }

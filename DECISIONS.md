@@ -2,6 +2,174 @@
 
 Non-obvious decisions and their rationale, logged as they're made.
 
+## 2026-08-03 — Receipt module phase (attach a receipt to a transaction)
+
+- **Reused `StorageService`/`SupabaseStorageService` unmodified** — no
+  second storage integration. `ReceiptService` mirrors
+  `UserService`'s avatar upload pattern almost line for line (validate,
+  upload under a per-owner path, replace-deletes-previous, signed URL
+  regenerated on every read), the same seam already proven for the Profile
+  avatar.
+- **Receipts are not their own top-level resource.** `ReceiptController` is
+  nested at `/api/v1/transactions/{id}/receipt` and both endpoints return
+  the full `TransactionResponse` (not a separate `ReceiptResponse`) — a
+  receipt has no independent identity the API needs to expose, and the
+  frontend never needs a second DTO to reconcile against the transaction
+  it just fetched. Gated under `Feature.TRANSACTIONS`, same reasoning as
+  the Recurring module (no dedicated feature flag exists or is needed).
+- **`TransactionResponse.receiptUrl` is deliberately the only receipt field
+  exposed** — no `receiptFileName`/`receiptSizeBytes`, even though
+  `ReceiptService` has both and the imported "Add Transaction" design's
+  filled state shows a filename and file size. The task spec explicitly
+  scoped the response to `receiptUrl` only. The frontend's "receipt
+  attached" card shows a generic label + View/Remove instead of the
+  design's filename/size, since that metadata isn't returned — a deliberate
+  simplification, not a design-fidelity miss.
+- **A receipt can only be attached to a transaction that already has an id**
+  — the imported design's "Add Transaction" modal shows the upload
+  dropzone active even before saving, implying a locally-queued file
+  uploaded after creation, but the API (correctly) requires a real
+  `transactionId`. Resolved by only rendering the upload control in Edit
+  mode; Add mode shows "Save the transaction first to attach a receipt."
+  instead. Simplest correct option for a real, obvious ambiguity — not
+  worth blocking on, since the fallback (save, then immediately reopen Edit)
+  is one click.
+- **`TransactionService` now depends on `ReceiptService`**, not the other
+  way around — every response-building path (`listTransactions`,
+  `getTransaction`, `updateTransaction`, `patchTransaction`) resolves
+  `receiptUrl` through it, and `deleteTransaction` calls
+  `receiptService.deleteReceiptForTransaction(id)` before deleting the row.
+  This is a **new addition beyond the task's explicit CRUD list**: the
+  `receipts` FK is `ON DELETE CASCADE`, so the DB row disappears
+  automatically, but the object sitting in Supabase Storage does not —
+  without this call, deleting a transaction would silently orphan its
+  receipt in the bucket forever. `createTransaction` always passes `null`
+  (a brand new transaction can't already have one).
+- **`listTransactions` generates signed URLs only for rows that actually
+  have a receipt**, via one bulk `findByTransactionIdIn` query followed by
+  a signed-URL call per hit — never per page-size, since most rows on a
+  typical page have no receipt. Same "don't do N calls when most would be
+  wasted" reasoning as the Recurring module's due-soon widget.
+- **`MaxUploadSizeExceededException`'s handler now branches on the request
+  URI** (`.../receipt` vs. everything else) instead of always saying
+  "Avatar must be 2 MB or smaller" — that hardcoded message was correct
+  when avatars were the only multipart upload in the app, but became wrong
+  the moment a second one (5 MB receipts) shared the same container-level
+  cap. `application.yml`'s global `multipart.max-file-size`/
+  `max-request-size` bumped from 3 MB to 6 MB (above ReceiptService's own
+  5 MB cap) so an oversized receipt reaches the clean validation path
+  instead of Spring's raw exception.
+- **The E2E test runs against the real Supabase bucket** (`SUPABASE_URL_
+  EXPENSEWISE`/`SUPABASE_SERVICE_KEY_EXPENSEWISE`/`SUPABASE_BUCKET_
+  EXPENSEWISE` already set on this dev machine from the Profile phase), not
+  a mock — same precedent as that phase's avatar E2E test. Unit/integration
+  tests still `@MockBean` `StorageService` unconditionally so CI stays
+  deterministic and needs no real credentials. The test's own
+  upload-then-remove flow leaves the bucket clean afterward.
+
+## 2026-08-03 — Recurring editor changed from a slide-over Drawer to a centered Dialog
+
+- **Reversed this phase's earlier "PrimeVue `Drawer` matches the imported
+  design exactly" decision.** The imported "ExpenseWise Recurring" design
+  showed a right-side slide-over panel, so that's what got built first —
+  but the project owner asked for it to match the centered `Dialog` pattern
+  every other module's editor already uses (Transactions/Budgets/
+  Categories) instead, explicitly rejecting the slide-over. Design fidelity
+  to one screen's mockup lost to cross-module consistency with an explicit
+  instruction; confirmed by the request rather than assumed.
+- **Field order was reflowed to match the Transaction dialog's layout**
+  (type toggle → amount → a Start date/Category two-column row →
+  description), with the two recurring-only fields (Frequency, End date)
+  appended below rather than interleaved — keeps the shared fields
+  pixel-consistent with the Transaction editor while still fitting the
+  extra scheduling fields this module needs.
+- **`data-testid="recurring-editor-dialog"`** replaces the old
+  `recurring-editor-drawer` (renamed, not aliased) — `recurring.spec.ts`
+  updated to match.
+
+## 2026-08-03 — Fixed the recurring row's "..." menu rendering invisible
+
+- **Bug found by the project owner via screenshot, not by the E2E test**:
+  clicking a row's kebab (⋮) button showed nothing. Root cause: the row menu
+  was a plain in-flow `absolute`-positioned `<div>`, and its ancestor (the
+  table wrapper, `data-testid="recurring-table"`) has `overflow-hidden` —
+  needed to keep the header's rounded top corners. The dropdown rendered
+  and was positioned correctly, just entirely clipped outside the visible
+  box, so it looked like nothing happened. The earlier E2E test never
+  exercised the menu at all (it only used the demo "Generate due now"
+  button), so this shipped unnoticed.
+- **Fixed by switching to PrimeVue's `Popover`** (a single shared instance,
+  `toggle(event)`'d per row with a `menuTarget` ref tracking which rule it's
+  showing) instead of the hand-rolled `<div>`. `Popover` teleports its
+  content to an overlay layer outside the normal DOM tree, so it's
+  categorically immune to an ancestor's `overflow-hidden` — the more
+  correct fix here than removing `overflow-hidden` (which would have
+  reopened the rounded-corner bug) or restructuring the table's CSS.
+- **`recurring.spec.ts`'s one E2E journey was extended (not given a second
+  test)** to open the menu and exercise Pause → Resume → Delete-with-confirm
+  at the end of the same flow, so this exact clipping bug — invisible in
+  code review, only caught by actually looking at the rendered page — has a
+  regression guard going forward.
+
+## 2026-08-03 — Recurring module phase (auto-post templates, Model A)
+
+- **Gated under `Feature.TRANSACTIONS`, not a new `RECURRING` value** — the
+  task's own instructions resolved this ambiguity explicitly ("gate under
+  the TRANSACTIONS feature... if you think it needs its own feature
+  flag/admin toggle, STOP and ask"), so no enum change or admin-entitlement
+  UI change was needed.
+- **`NextDueDateCalculator` (Strategy pattern, one `@Component` per
+  frequency) always anchors month/day off the rule's original `startDate`,
+  never off the previous due date.** This is what makes a Jan 31 MONTHLY
+  rule correctly return to day 31 in March after being clamped to Feb 28,
+  instead of drifting to day 28 forever — tracking the anchor from the
+  already-clamped previous date would lose the original day permanently.
+  Same reasoning for YEARLY's Feb 29 clamping.
+- **`RecurringGenerationService`'s catch-up loop advances `nextDueDate`
+  *after* creating each occurrence's transaction**, and the whole batch
+  (`generateAllDue()` / `generateDueForUser(userId)`) runs in one
+  `@Transactional` method rather than one transaction per rule. Simpler than
+  self-injecting a proxy to get per-rule transaction boundaries (the usual
+  fix for the Spring self-invocation problem), and idempotent on retry: if
+  a run fails partway, nothing in that run committed, and the next run
+  finds the same due rules with `nextDueDate` unchanged — never a partial,
+  half-advanced schedule.
+- **The only new endpoint outside the task's explicit CRUD list is `POST
+  /api/v1/recurring/generate-due`**, which the task itself required as the
+  demo trigger. The "Generate due now" button is a UI addition not present
+  in the imported "ExpenseWise Recurring" design — same precedent as the
+  Budget phase's "Clear" link, added because the module's required behavior
+  (demonstrating the generate-and-advance cycle live) has no design
+  affordance for it.
+- **`GET /api/v1/recurring` is paginated (CLAUDE.md's "list endpoints are
+  always paginated" hard rule), but the frontend requests one page of 100
+  and renders no pagination controls** — the imported design's table has no
+  pagination UI (a small, personal set of recurring rules), same "one page
+  covers it" precedent as `api/categories.ts`.
+- **Editing a rule (`PUT`) never touches `isActive`** — pause/resume is a
+  `PATCH`-only affordance (`PatchRecurringRuleRequest.isActive`), matching
+  the design's separate "Edit" vs. "Pause/Resume" menu actions. A `PUT`
+  also leaves `nextDueDate` as the schedule currently tracks it, pulling it
+  forward only if the new `startDate` now falls after it — "edit affects
+  only future generation" per the task spec, without silently reactivating
+  or rewinding an already-progressing schedule.
+- **The minimal `NotificationService`/`Notification` entity live under a
+  new `com.expensewise.notification` package** (not folded into
+  `recurring`), since the task explicitly scoped the full notification
+  system (read/unread, bill reminders, the notification UI) to a separate
+  future phase reusing the same table — this phase only adds the
+  `create(userId, type, title, message)` helper and the entity/repository
+  it needs.
+- **PrimeVue's `Drawer` (position `right`) is used for the add/edit panel
+  instead of the `Dialog` every prior module's editor uses** — the imported
+  design shows a right-side slide-over, not a centered modal, and "PrimeVue
+  owns component appearance... build to match exactly" outweighs staying
+  visually consistent with Budgets/Transactions' centered-dialog pattern.
+  The delete confirmation stays a centered `Dialog`, matching the design's
+  own centered confirm overlay.
+- **Only the desktop (1440px) frame was built**, same precedent as every
+  prior module.
+
 ## 2026-08-03 — Admin Dashboard phase (Phase B: system-wide usage analytics)
 
 - **`AdminDashboardResponse` bundles the summary, both monthly time series, feature

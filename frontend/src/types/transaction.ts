@@ -16,6 +16,9 @@ export interface TransactionResponse {
   description: string | null
   createdAt: string
   updatedAt: string
+  // A freshly signed URL when a receipt is attached, regenerated on every
+  // fetch (signed URLs expire) — never cached client-side.
+  receiptUrl: string | null
 }
 
 export interface TransactionRequest {

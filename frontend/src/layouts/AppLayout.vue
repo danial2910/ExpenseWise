@@ -33,6 +33,7 @@ const ADMIN_NAV_ITEMS = [
 const USER_NAV_ITEMS: { testid: string; label: string; to: string; routeName: string; feature: Feature | null }[] = [
   { testid: 'nav-dashboard', label: 'Dashboard', to: '/dashboard', routeName: 'dashboard', feature: null },
   { testid: 'nav-transactions', label: 'Transactions', to: '/transactions', routeName: 'transactions', feature: 'TRANSACTIONS' },
+  { testid: 'nav-recurring', label: 'Recurring', to: '/recurring', routeName: 'recurring', feature: 'TRANSACTIONS' },
   { testid: 'nav-categories', label: 'Categories', to: '/categories', routeName: 'categories', feature: 'CATEGORIES' },
   { testid: 'nav-budgets', label: 'Budgets', to: '/budgets', routeName: 'budgets', feature: 'BUDGETS' },
   { testid: 'nav-ai-assistant', label: 'AI Assistant', to: '/ai-assistant', routeName: 'ai-assistant', feature: 'AI_ASSISTANT' },

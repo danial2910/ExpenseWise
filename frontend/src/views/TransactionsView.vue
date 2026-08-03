@@ -14,7 +14,9 @@ import {
   deleteTransaction,
   fetchSummary,
   fetchTransactions,
+  removeReceipt,
   updateTransaction,
+  uploadReceipt,
 } from '../api/transactions'
 import { fetchCategories } from '../api/categories'
 import { categoryIconClass } from '../lib/categoryIcons'
@@ -194,6 +196,8 @@ function openAdd() {
   editDescription.value = ''
   submitted.value = false
   saveError.value = ''
+  editReceiptUrl.value = null
+  receiptError.value = ''
   editorOpen.value = true
 }
 
@@ -206,11 +210,67 @@ function openEdit(transaction: TransactionResponse) {
   editDescription.value = transaction.description ?? ''
   submitted.value = false
   saveError.value = ''
+  editReceiptUrl.value = transaction.receiptUrl
+  receiptError.value = ''
   editorOpen.value = true
 }
 
 function closeEditor() {
   editorOpen.value = false
+}
+
+// --- receipt (only attachable once the transaction has been saved and has an id) ---
+const editReceiptUrl = ref<string | null>(null)
+const receiptUploading = ref(false)
+const receiptError = ref('')
+const receiptFileInputRef = ref<HTMLInputElement | null>(null)
+
+function triggerReceiptPicker() {
+  receiptFileInputRef.value?.click()
+}
+
+function applyUpdatedTransaction(updated: TransactionResponse) {
+  const index = transactions.value.findIndex((t) => t.id === updated.id)
+  if (index !== -1) {
+    transactions.value[index] = updated
+  }
+  editReceiptUrl.value = updated.receiptUrl
+}
+
+async function onReceiptSelected(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file || editingId.value === null) return
+
+  receiptUploading.value = true
+  receiptError.value = ''
+  try {
+    const updated = await uploadReceipt(editingId.value, file)
+    applyUpdatedTransaction(updated)
+  } catch (error) {
+    if (isAxiosError<ApiErrorResponse>(error) && error.response?.data.message) {
+      receiptError.value = error.response.data.message
+    } else {
+      receiptError.value = 'Could not upload the receipt. Please try again.'
+    }
+  } finally {
+    receiptUploading.value = false
+  }
+}
+
+async function onRemoveReceipt() {
+  if (editingId.value === null) return
+  receiptUploading.value = true
+  receiptError.value = ''
+  try {
+    const updated = await removeReceipt(editingId.value)
+    applyUpdatedTransaction(updated)
+  } catch {
+    receiptError.value = 'Could not remove the receipt. Please try again.'
+  } finally {
+    receiptUploading.value = false
+  }
 }
 
 // Switching type invalidates a category chosen under the other type.
@@ -431,7 +491,21 @@ async function onDelete(transaction: TransactionResponse) {
             class="grid grid-cols-[110px_1fr_140px_100px_140px_72px] px-5 py-3.5 border-b border-surface-100 items-center"
           >
             <span class="text-sm text-surface-500">{{ formatDate(transaction.transactionDate) }}</span>
-            <span class="text-sm font-medium text-surface-900 truncate pr-3">{{ transaction.description || '—' }}</span>
+            <span class="text-sm font-medium text-surface-900 truncate pr-3 flex items-center gap-1.5">
+              {{ transaction.description || '—' }}
+              <a
+                v-if="transaction.receiptUrl"
+                :data-testid="`transaction-receipt-link-${transaction.id}`"
+                :href="transaction.receiptUrl"
+                target="_blank"
+                rel="noopener"
+                class="text-surface-400 hover:text-primary-600 shrink-0"
+                title="View receipt"
+                @click.stop
+              >
+                <i class="pi pi-paperclip text-xs" />
+              </a>
+            </span>
             <span>
               <span class="inline-flex items-center gap-1.5 text-xs font-medium text-surface-600 bg-surface-100 px-2.5 py-1 rounded-lg">
                 <i :class="['pi', categoryIconClass(transaction.categoryIcon)]" />
@@ -560,6 +634,67 @@ async function onDelete(transaction: TransactionResponse) {
             class="w-full"
             placeholder="e.g. Whole Foods Market"
           />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-surface-600 mb-1.5">Receipt</label>
+
+          <FormError v-if="receiptError" :message="receiptError" testid="receipt-error-banner" />
+
+          <p v-if="editingId === null" data-testid="receipt-unavailable-hint" class="text-xs text-surface-400">
+            Save the transaction first to attach a receipt.
+          </p>
+
+          <template v-else-if="!editReceiptUrl">
+            <button
+              type="button"
+              data-testid="receipt-upload-button"
+              class="w-full flex flex-col items-center gap-2 px-6 py-6 border-[1.5px] border-dashed border-surface-300 rounded-lg bg-surface-50 hover:bg-surface-100 hover:border-surface-400 disabled:opacity-60 disabled:cursor-not-allowed"
+              :disabled="receiptUploading"
+              @click="triggerReceiptPicker"
+            >
+              <i class="pi pi-upload text-surface-400" />
+              <span class="text-sm font-medium text-surface-600">
+                {{ receiptUploading ? 'Uploading…' : 'Click to upload a receipt' }}
+              </span>
+              <span class="text-xs text-surface-400">JPG, PNG, WEBP, or PDF — up to 5 MB</span>
+            </button>
+            <input
+              ref="receiptFileInputRef"
+              data-testid="receipt-upload-input"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,application/pdf"
+              class="hidden"
+              @change="onReceiptSelected"
+            />
+          </template>
+
+          <div v-else class="flex items-center gap-3 p-3 border border-surface-200 rounded-lg bg-surface-50">
+            <div class="w-11 h-11 rounded-md bg-surface-200 flex items-center justify-center text-surface-500 shrink-0">
+              <i class="pi pi-file text-lg" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-surface-900">Receipt attached</p>
+              <a
+                :href="editReceiptUrl"
+                target="_blank"
+                rel="noopener"
+                data-testid="receipt-view-link"
+                class="text-xs text-primary-600 font-medium"
+              >
+                View
+              </a>
+            </div>
+            <button
+              type="button"
+              data-testid="receipt-remove-button"
+              class="w-7 h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-surface-200 shrink-0 disabled:opacity-60"
+              :disabled="receiptUploading"
+              @click="onRemoveReceipt"
+            >
+              <i class="pi pi-times text-xs" />
+            </button>
+          </div>
         </div>
       </div>
 

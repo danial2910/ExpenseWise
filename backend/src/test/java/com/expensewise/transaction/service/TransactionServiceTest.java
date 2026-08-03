@@ -4,6 +4,7 @@ import com.expensewise.category.entity.Category;
 import com.expensewise.category.repository.CategoryRepository;
 import com.expensewise.exception.InvalidTransactionCategoryException;
 import com.expensewise.exception.ResourceNotFoundException;
+import com.expensewise.receipt.service.ReceiptService;
 import com.expensewise.transaction.dto.PatchTransactionRequest;
 import com.expensewise.transaction.dto.TransactionRequest;
 import com.expensewise.transaction.dto.TransactionResponse;
@@ -22,6 +23,7 @@ import org.springframework.data.jpa.domain.Specification;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,14 +49,19 @@ class TransactionServiceTest {
     @Mock
     private TransactionMapper transactionMapper;
 
+    @Mock
+    private ReceiptService receiptService;
+
     private TransactionService transactionService;
 
     @BeforeEach
     void setUp() {
-        transactionService = new TransactionService(transactionRepository, categoryRepository, transactionMapper);
-        lenient().when(transactionMapper.toResponse(any(Transaction.class), any())).thenAnswer(invocation -> {
+        transactionService = new TransactionService(transactionRepository, categoryRepository, transactionMapper,
+                receiptService);
+        lenient().when(transactionMapper.toResponse(any(Transaction.class), any(), any())).thenAnswer(invocation -> {
             Transaction transaction = invocation.getArgument(0);
             Category category = invocation.getArgument(1);
+            String receiptUrl = invocation.getArgument(2);
             return new TransactionResponse(
                     transaction.getId(),
                     transaction.getType(),
@@ -65,8 +72,11 @@ class TransactionServiceTest {
                     transaction.getTransactionDate(),
                     transaction.getDescription(),
                     transaction.getCreatedAt(),
-                    transaction.getUpdatedAt());
+                    transaction.getUpdatedAt(),
+                    receiptUrl);
         });
+        lenient().when(receiptService.findReceiptUrl(any())).thenReturn(null);
+        lenient().when(receiptService.findReceiptUrls(any())).thenReturn(Map.of());
     }
 
     private Category expenseCategory() {

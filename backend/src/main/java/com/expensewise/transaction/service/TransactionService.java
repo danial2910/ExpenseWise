@@ -4,6 +4,7 @@ import com.expensewise.category.entity.Category;
 import com.expensewise.category.repository.CategoryRepository;
 import com.expensewise.exception.InvalidTransactionCategoryException;
 import com.expensewise.exception.ResourceNotFoundException;
+import com.expensewise.receipt.service.ReceiptService;
 import com.expensewise.transaction.dto.PatchTransactionRequest;
 import com.expensewise.transaction.dto.TransactionRequest;
 import com.expensewise.transaction.dto.TransactionResponse;
@@ -31,13 +32,16 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final CategoryRepository categoryRepository;
     private final TransactionMapper transactionMapper;
+    private final ReceiptService receiptService;
 
     public TransactionService(TransactionRepository transactionRepository,
                                CategoryRepository categoryRepository,
-                               TransactionMapper transactionMapper) {
+                               TransactionMapper transactionMapper,
+                               ReceiptService receiptService) {
         this.transactionRepository = transactionRepository;
         this.categoryRepository = categoryRepository;
         this.transactionMapper = transactionMapper;
+        this.receiptService = receiptService;
     }
 
     @Transactional(readOnly = true)
@@ -47,14 +51,17 @@ public class TransactionService {
         Specification<Transaction> spec = buildFilterSpec(userId, type, categoryId, from, to, search);
         Page<Transaction> page = transactionRepository.findAll(spec, pageable);
         Map<Long, Category> categoriesById = loadCategories(page.getContent());
-        return page.map(tx -> transactionMapper.toResponse(tx, categoriesById.get(tx.getCategoryId())));
+        Map<Long, String> receiptUrlsById = receiptService.findReceiptUrls(
+                page.getContent().stream().map(Transaction::getId).toList());
+        return page.map(tx -> transactionMapper.toResponse(tx, categoriesById.get(tx.getCategoryId()),
+                receiptUrlsById.get(tx.getId())));
     }
 
     @Transactional(readOnly = true)
     public TransactionResponse getTransaction(Long userId, Long id) {
         Transaction transaction = findOwnedOrThrow(userId, id);
         Category category = categoryRepository.findById(transaction.getCategoryId()).orElse(null);
-        return transactionMapper.toResponse(transaction, category);
+        return transactionMapper.toResponse(transaction, category, receiptService.findReceiptUrl(id));
     }
 
     @Transactional
@@ -70,7 +77,8 @@ public class TransactionService {
         transaction.setDescription(request.description());
 
         Transaction saved = transactionRepository.save(transaction);
-        return transactionMapper.toResponse(saved, category);
+        // A brand new transaction can never already have a receipt.
+        return transactionMapper.toResponse(saved, category, null);
     }
 
     @Transactional
@@ -84,7 +92,11 @@ public class TransactionService {
         transaction.setTransactionDate(request.transactionDate());
         transaction.setDescription(request.description());
 
-        return transactionMapper.toResponse(transaction, category);
+        // Editing a transaction's fields never touches its receipt (a
+        // separate endpoint), but the response must still reflect one if
+        // it already exists — otherwise saving the edit form would look
+        // like it silently dropped the attachment.
+        return transactionMapper.toResponse(transaction, category, receiptService.findReceiptUrl(id));
     }
 
     @Transactional
@@ -107,12 +119,16 @@ public class TransactionService {
             transaction.setDescription(request.description());
         }
 
-        return transactionMapper.toResponse(transaction, category);
+        return transactionMapper.toResponse(transaction, category, receiptService.findReceiptUrl(id));
     }
 
     @Transactional
     public void deleteTransaction(Long userId, Long id) {
         Transaction transaction = findOwnedOrThrow(userId, id);
+        // The receipts row cascades away with the FK automatically, but the
+        // object in Supabase Storage does not — delete it explicitly first
+        // or it's orphaned with nothing left pointing at it.
+        receiptService.deleteReceiptForTransaction(id);
         transactionRepository.delete(transaction);
     }
 

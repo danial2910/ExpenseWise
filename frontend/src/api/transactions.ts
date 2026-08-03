@@ -37,3 +37,15 @@ export async function patchTransaction(id: number, request: PatchTransactionRequ
 export async function deleteTransaction(id: number): Promise<void> {
   await http.delete(`/transactions/${id}`)
 }
+
+export async function uploadReceipt(transactionId: number, file: File): Promise<TransactionResponse> {
+  const formData = new FormData()
+  formData.append('file', file)
+  const { data } = await http.post<TransactionResponse>(`/transactions/${transactionId}/receipt`, formData)
+  return data
+}
+
+export async function removeReceipt(transactionId: number): Promise<TransactionResponse> {
+  const { data } = await http.delete<TransactionResponse>(`/transactions/${transactionId}/receipt`)
+  return data
+}
