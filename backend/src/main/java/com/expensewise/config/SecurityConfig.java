@@ -22,6 +22,17 @@ public class SecurityConfig {
 
     private static final int BCRYPT_STRENGTH = 12;
 
+    // ADMIN accounts may only reach Admin Dashboard/User Management, AI
+    // Assistant, and Profile — never the personal-finance modules. Blocking
+    // it here (path-level, defense in depth alongside @RequiresFeature) means
+    // an ADMIN gets a 403 even before a controller method runs.
+    private static final String[] USER_ONLY_PATHS = {
+            "/api/v1/transactions/**",
+            "/api/v1/budgets/**",
+            "/api/v1/categories/**",
+            "/api/v1/reports/**"
+    };
+
     private static final String[] PUBLIC_PATHS = {
             "/api/v1/auth/**",
             // Phase 1 built its own health endpoint rather than adding the
@@ -55,6 +66,7 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_PATHS).permitAll()
+                        .requestMatchers(USER_ONLY_PATHS).hasRole("USER")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

@@ -12,6 +12,9 @@ public final class ActivityAction {
     public static final String PASSWORD_CHANGED = "PASSWORD_CHANGED";
     public static final String ADMIN_USER_ENABLED = "ADMIN_USER_ENABLED";
     public static final String ADMIN_USER_DISABLED = "ADMIN_USER_DISABLED";
+    public static final String ADMIN_USER_CREATED = "ADMIN_USER_CREATED";
+    public static final String ADMIN_USER_DELETED = "ADMIN_USER_DELETED";
+    public static final String ADMIN_USER_ACCESS_UPDATED = "ADMIN_USER_ACCESS_UPDATED";
     public static final String PROFILE_UPDATED = "PROFILE_UPDATED";
     public static final String AVATAR_UPDATED = "AVATAR_UPDATED";
     public static final String AVATAR_REMOVED = "AVATAR_REMOVED";

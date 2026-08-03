@@ -23,6 +23,11 @@ public class CapturingMailService implements MailService {
         lastLinkByEmail.put(toEmail, resetLink);
     }
 
+    @Override
+    public void sendSetPasswordEmail(String toEmail, String setPasswordLink) {
+        lastLinkByEmail.put(toEmail, setPasswordLink);
+    }
+
     public String lastLinkFor(String email) {
         return lastLinkByEmail.get(email);
     }

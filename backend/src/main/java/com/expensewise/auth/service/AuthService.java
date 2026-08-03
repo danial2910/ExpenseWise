@@ -4,6 +4,7 @@ import com.expensewise.auth.dto.LoginRequest;
 import com.expensewise.auth.dto.RegisterRequest;
 import com.expensewise.common.ActivityAction;
 import com.expensewise.common.ActivityLogger;
+import com.expensewise.entitlement.service.EntitlementService;
 import com.expensewise.exception.AccountDisabledException;
 import com.expensewise.exception.EmailAlreadyExistsException;
 import com.expensewise.exception.InvalidCredentialsException;
@@ -26,6 +27,7 @@ public class AuthService {
     private final RefreshTokenService refreshTokenService;
     private final RateLimiterService rateLimiterService;
     private final ActivityLogger activityLogger;
+    private final EntitlementService entitlementService;
 
     public AuthService(UserRepository userRepository,
                         PasswordEncoder passwordEncoder,
@@ -33,7 +35,8 @@ public class AuthService {
                         JwtService jwtService,
                         RefreshTokenService refreshTokenService,
                         RateLimiterService rateLimiterService,
-                        ActivityLogger activityLogger) {
+                        ActivityLogger activityLogger,
+                        EntitlementService entitlementService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.passwordPolicyValidator = passwordPolicyValidator;
@@ -41,6 +44,7 @@ public class AuthService {
         this.refreshTokenService = refreshTokenService;
         this.rateLimiterService = rateLimiterService;
         this.activityLogger = activityLogger;
+        this.entitlementService = entitlementService;
     }
 
     public record AuthResult(User user, String accessToken, RefreshTokenService.IssuedToken refreshToken) {
@@ -63,6 +67,7 @@ public class AuthService {
         user.setFullName(request.fullName().trim());
         user.setPasswordHash(passwordEncoder.encode(request.password()));
         userRepository.save(user);
+        entitlementService.seedDefaults(user.getId());
 
         String accessToken = jwtService.generateAccessToken(user.getId(), user.getRole());
         RefreshTokenService.IssuedToken refreshToken = refreshTokenService.issue(user.getId());

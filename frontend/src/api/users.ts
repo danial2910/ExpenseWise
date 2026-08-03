@@ -2,6 +2,7 @@ import http from './http'
 import type { UserResponse } from '../types/auth'
 import type { ChangePasswordRequest, LoginHistoryEntry, UpdateProfileRequest } from '../types/user'
 import type { PageResponse } from '../types/transaction'
+import type { Feature } from '../types/admin'
 
 export async function fetchCurrentUser(): Promise<UserResponse> {
   const { data } = await http.get<UserResponse>('/users/me')
@@ -38,4 +39,12 @@ export async function fetchLoginHistory(page = 0, size = 5): Promise<PageRespons
 
 export async function logoutOtherSessions(): Promise<void> {
   await http.post('/auth/logout-others')
+}
+
+// Display-only: hides nav items for features an admin has turned off for
+// this user. Never a security control — every gated endpoint is enforced
+// server-side by FeatureEntitlementInterceptor regardless of this response.
+export async function fetchMyEntitlements(): Promise<Record<Feature, boolean>> {
+  const { data } = await http.get<Record<Feature, boolean>>('/users/me/entitlements')
+  return data
 }

@@ -76,4 +76,37 @@ public class MailServiceImpl implements MailService {
             log.error("Failed to send password reset email to {}", toEmail, e);
         }
     }
+
+    @Override
+    public void sendSetPasswordEmail(String toEmail, String setPasswordLink) {
+        devTokenCache.ifPresent(cache -> cache.capture(toEmail, setPasswordLink));
+
+        if (apiKey.isBlank()) {
+            log.info("Brevo API key not configured; set-password link for {}: {}", toEmail, setPasswordLink);
+            return;
+        }
+
+        Context context = new Context();
+        context.setVariable("setPasswordLink", setPasswordLink);
+        String html = templateEngine.process("set-password-email", context);
+
+        Map<String, Object> requestBody = Map.of(
+                "sender", Map.of("email", mailFrom),
+                "to", List.of(Map.of("email", toEmail)),
+                "subject", "Set your ExpenseWise password",
+                "htmlContent", html
+        );
+
+        try {
+            restClient.post()
+                    .uri(BREVO_SEND_EMAIL_URL)
+                    .header("api-key", apiKey)
+                    .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                    .body(requestBody)
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (Exception e) {
+            log.error("Failed to send set-password email to {}", toEmail, e);
+        }
+    }
 }

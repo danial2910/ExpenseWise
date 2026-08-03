@@ -1,6 +1,8 @@
 package com.expensewise.transaction.controller;
 
 import com.expensewise.auth.security.AuthPrincipal;
+import com.expensewise.entitlement.Feature;
+import com.expensewise.entitlement.RequiresFeature;
 import com.expensewise.transaction.dto.PatchTransactionRequest;
 import com.expensewise.transaction.dto.TransactionRequest;
 import com.expensewise.transaction.dto.TransactionResponse;
@@ -31,6 +33,7 @@ import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/v1/transactions")
+@RequiresFeature(Feature.TRANSACTIONS)
 public class TransactionController {
 
     private static final int MAX_PAGE_SIZE = 100;

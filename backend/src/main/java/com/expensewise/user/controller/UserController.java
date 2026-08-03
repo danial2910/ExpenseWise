@@ -1,6 +1,8 @@
 package com.expensewise.user.controller;
 
 import com.expensewise.auth.security.AuthPrincipal;
+import com.expensewise.entitlement.Feature;
+import com.expensewise.entitlement.service.EntitlementService;
 import com.expensewise.user.dto.ChangePasswordRequest;
 import com.expensewise.user.dto.LoginHistoryResponse;
 import com.expensewise.user.dto.UpdateProfileRequest;
@@ -24,6 +26,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/v1/users/me")
 public class UserController {
@@ -31,9 +35,11 @@ public class UserController {
     private static final int MAX_PAGE_SIZE = 100;
 
     private final UserService userService;
+    private final EntitlementService entitlementService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, EntitlementService entitlementService) {
         this.userService = userService;
+        this.entitlementService = entitlementService;
     }
 
     @GetMapping
@@ -62,6 +68,15 @@ public class UserController {
     @DeleteMapping("/avatar")
     public UserResponse removeAvatar(@AuthenticationPrincipal AuthPrincipal principal) {
         return userService.removeAvatar(principal.userId());
+    }
+
+    // Lets the frontend hide nav items for features an admin has turned off
+    // for this user — never trust the client, this is display-only; every
+    // endpoint behind a disabled feature is still enforced server-side by
+    // FeatureEntitlementInterceptor regardless of what this returns.
+    @GetMapping("/entitlements")
+    public Map<Feature, Boolean> getEntitlements(@AuthenticationPrincipal AuthPrincipal principal) {
+        return entitlementService.getEntitlements(principal.userId());
     }
 
     @GetMapping("/login-history")

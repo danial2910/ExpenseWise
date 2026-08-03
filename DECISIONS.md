@@ -2,6 +2,143 @@
 
 Non-obvious decisions and their rationale, logged as they're made.
 
+## 2026-08-03 — Admin Dashboard phase (Phase B: system-wide usage analytics)
+
+- **`AdminDashboardResponse` bundles the summary, both monthly time series, feature
+  usage, and recent signups into one `GET /api/v1/admin/dashboard` call** rather than
+  several focused endpoints — the screen renders all of it in a single view with no
+  independent loading states per section, so one round trip matches what's actually
+  rendered.
+- **Backend summary computes more fields than the design visually renders as cards**
+  (admin/regular user split, total transactions, total budgets) — the design's mock
+  only shows 3 summary cards (Total users / Active-Disabled / New this month), but the
+  task explicitly enumerated all these aggregates as required computations. Resolved
+  by computing the full set server-side (cheap, already-needed counts) while the
+  frontend renders only the 3 cards the design shows — no invented UI, just an API
+  response slightly ahead of what one view currently consumes.
+- **Month bucketing for both time series (`bucketByMonth`) is done in Java over a
+  flat list of `createdAt` timestamps**, not a SQL `GROUP BY date_trunc(...)` — same
+  "boring code over a DB-specific timezone function" precedent as
+  `BudgetService.sumExpenses`. Each `Instant` is converted to its Asia/Kuala_Lumpur
+  calendar date before bucketing, matching CLAUDE.md's Time rule. `newUsersThisMonth`
+  reuses the last (current-month) bucket from `signupsOverTime` rather than a second
+  "is this month" pass.
+- **Found and fixed a real correctness bug via manual browser verification, not by any
+  automated test**: feature-usage percentages initially showed ~17% for every feature
+  against this dev machine's long-lived, cumulative Postgres — implausible, since
+  every account should default to all-features-enabled. Root cause:
+  `AdminDashboardService.buildFeatureUsage` counted rows with `enabled = true`
+  directly, but `FeatureEntitlementInterceptor`/`EntitlementService.isEnabled` treat a
+  **missing** row as enabled by default. Accounts registered before the Phase A
+  entitlements table existed have zero rows for any feature — invisible in that
+  numerator, but still counted in the `regularUsers` denominator, silently
+  undercounting. Fixed by computing `enabledCount` as `regularUsers - disabledCount`
+  (`UserFeatureEntitlementRepository.countDisabledByFeature`, counting explicit
+  `enabled = false` rows) — this is also the semantically correct formula, matching
+  what the interceptor actually enforces, not just a workaround for stale local data.
+  No unit or integration test caught this because every test-created account in this
+  phase's own tests always has full row sets (seeded via registration or admin
+  create) — the bug only manifests for accounts predating the entitlements table,
+  which only exist in accumulated dev/demo data, never in a fresh CI database. Added
+  `featureUsageTreatsAUserWithNoEntitlementRowAtAllAsStillEnabled` to
+  `AdminDashboardServiceTest` to cover this case going forward.
+- **`chart.js` added as a new frontend dependency**, required as a peer dependency by
+  PrimeVue's `Chart` component — explicitly requested by this phase's task
+  instructions ("Use PrimeVue's Chart component (Chart.js) for charts").
+- **Chart colors are resolved at runtime from computed Tailwind utility classes**
+  (`text-primary-600`, `text-surface-700` applied to zero-size hidden elements, then
+  read via `getComputedStyle(...).color`), not hardcoded hex values passed to
+  Chart.js — Chart.js draws to a `<canvas>` and needs literal color strings, but
+  "design tokens only" still holds: the token (the Tailwind class) is the single
+  source of truth, and the hex value is only ever a derived, runtime-read artifact of
+  it.
+- **Empty state is `totalUsers <= 1`** (i.e., only the viewing admin's own account
+  exists) — the design's "no usage data yet" copy implies nobody else has signed up;
+  since the viewing admin is always at least one user, `0` is never actually reached
+  in practice.
+- **Found a real Playwright testing gotcha while writing the one required E2E test**:
+  `context.newPage()` opens a new tab but shares the SAME cookie jar as every other
+  page in that `BrowserContext`. Seeding a second user account on such a page caused
+  its httpOnly refresh cookie to leak onto the main admin-flow page, silently
+  authenticating it as the seed user and redirecting away from `/register` before the
+  form ever rendered (a `locator.fill()` timeout with no obvious cause). Multi-session
+  E2E scenarios need a genuinely separate `browser.newContext()` per independent
+  login, not just a new tab — documented in `admin-dashboard.spec.ts` since this
+  pattern will recur for any future multi-user E2E test.
+
+## 2026-08-02 — Admin user management, feature entitlements, RBAC phase
+
+- **Feature-entitlement enforcement is a plain `HandlerInterceptor`
+  (`FeatureEntitlementInterceptor`), not Spring AOP.** The task asked for "a custom
+  method/endpoint annotation plus an interceptor/aspect" — `spring-boot-starter-aop`
+  isn't in `pom.xml` or the Stack table, and a `HandlerInterceptor` (already available
+  via `spring-boot-starter-web`) does the exact same job (read `@RequiresFeature` off
+  the `HandlerMethod`, 403 if the entitlement is off) without adding a dependency.
+  `@RequiresFeature(Feature.X)` is applied class-level on `TransactionController`,
+  `CategoryController`, `BudgetController`, and `AiController`. Exceptions thrown from
+  `HandlerInterceptor.preHandle` still flow through the same `@RestControllerAdvice`
+  as controller-thrown exceptions — no special wiring needed.
+- **ADMIN principals always bypass `@RequiresFeature`.** Entitlements only ever govern
+  USER accounts; an ADMIN's allowed module set (Admin Dashboard, User Management, AI
+  Assistant, Profile) is enforced separately via `SecurityConfig` path matchers
+  (`hasRole("USER")` on `/transactions/**`, `/budgets/**`, `/categories/**`,
+  `/reports/**`), so AI Assistant stays reachable for both roles without a special
+  case in the interceptor.
+- **`user_feature_entitlements` always holds all five rows per USER account** (never
+  sparse) — seeded on self-registration (`AuthService.register`) and on admin-create,
+  and always fully replaced (never patched) on admin edit
+  (`EntitlementService.replaceAll`). "Is this feature enabled" is always a direct
+  column read, matching the "boring, explicit code" precedent; `isEnabled()` only
+  falls back to `true` defensively, for a row that in practice should never be
+  missing. ADMIN accounts never get rows — entitlements don't apply to them.
+- **Existing FKs to `users` already cascade correctly** (`ON DELETE CASCADE` on
+  transactions/budgets/categories/receipts/recurring_rules/ai_conversations/
+  refresh_tokens/password_reset_tokens; `ON DELETE SET NULL` on `activity_logs`) — the
+  new hard-delete endpoint (`DELETE /api/v1/admin/users/{id}`) needed zero migration
+  changes beyond the entitlements table's own FK. Confirmed with the project owner
+  that a full cascade (audit rows kept with `user_id` nulled, everything else wiped)
+  is the intended behavior, per the design's delete-confirmation copy.
+- **Admin-created users get no password at all — an unusable random bcrypt hash
+  (`passwordEncoder.encode(TokenHasher.generateRawToken())`) plus a "set your
+  password" email.** The Create User panel in the design has no password field.
+  Reuses the existing `password_reset_tokens` table/hashing mechanism rather than a
+  parallel one — `PasswordResetService.issueSetPasswordToken(User)` is the same
+  single-use/hashed/expiring pattern as forgot-password, just a longer TTL (24h vs
+  30min, since it's account setup rather than a time-sensitive takeover-recovery
+  flow) and a distinct `set-password-email.html` template/`MailService` method.
+  Confirmed with the project owner rather than generating a temp password to show
+  the admin, since the design shows no UI for that.
+- **`GET /api/v1/admin/users/{id}` now returns `AdminUserDetailResponse`
+  (`{user: UserResponse, enabledFeatures: Map<Feature,Boolean>}`)**, not plain
+  `UserResponse` — the existing "admin endpoints reuse UserResponse" decision below
+  still holds for the list endpoint (no entitlements needed per row), but the detail
+  view now needs entitlements too, which nothing else needing `UserResponse` does.
+- **Edit-user is one atomic endpoint** (`PUT /api/v1/admin/users/{id}/access`, body
+  `{role, active, enabledFeatures}`), not three separate calls — matches the design's
+  single "Save changes" button acting on role, status, and every feature toggle at
+  once. The pre-existing `PATCH /{id}` (fullName/email) and `PATCH /{id}/status`
+  endpoints are left untouched; the edit panel in the design never edits
+  fullName/email, so there was no reason to fold this into them.
+- **Bug found running the app manually, not caught by any test**:
+  `GET /api/v1/admin/users` with no filters threw `function lower(bytea) does not
+  exist` from Postgres. Cause: `UserRepository.searchAdmin`'s JPQL binds `:search`
+  both in an `is null` check and inside `concat('%', :search, '%')`; when the Java
+  value is null, Postgres can't infer the parameter's type from that polymorphic
+  `concat` context and defaults to `bytea` — even though the `or` branch using it is
+  never actually reached at runtime, Postgres still has to type-resolve every branch
+  when preparing the statement. Fixed by wrapping every `:search` occurrence used
+  inside `concat` with `cast(:search as string)`. No existing test caught this
+  because every test hitting this endpoint as a non-admin gets 403'd by
+  `@PreAuthorize` before the repository query ever runs, and no test called it as an
+  admin with the default (no filters) case — added
+  `listingUsersWithNoFiltersDoesNotBlowUpOnTheNullSearchParameter` in
+  `AdminUserManagementIntegrationTest` to close that gap.
+- **Self-guard extended to hard-delete** ("an admin cannot disable their own
+  account" already existed) but deliberately **not** extended to self role-downgrade
+  — only asked for disable/delete, and the JWT's `role` claim doesn't get re-checked
+  against the DB until the next login anyway, so blocking a self role-change would be
+  a partial, misleading protection. Kept scope to what was asked.
+
 ## 2026-08-02 — Profile module phase (personal info, avatar via Supabase Storage, security tab)
 
 - **`StorageService`/`SupabaseStorageService` mirror the `AiChatClient`/`GroqChatClient`

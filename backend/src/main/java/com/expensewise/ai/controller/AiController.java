@@ -9,6 +9,8 @@ import com.expensewise.ai.dto.PostMessageRequest;
 import com.expensewise.ai.service.AiContextService;
 import com.expensewise.ai.service.AiService;
 import com.expensewise.auth.security.AuthPrincipal;
+import com.expensewise.entitlement.Feature;
+import com.expensewise.entitlement.RequiresFeature;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/ai")
+@RequiresFeature(Feature.AI_ASSISTANT)
 public class AiController {
 
     private static final int MAX_PAGE_SIZE = 100;

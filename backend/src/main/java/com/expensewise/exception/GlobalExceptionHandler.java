@@ -247,6 +247,20 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
     }
 
+    @ExceptionHandler(FeatureNotEnabledException.class)
+    public ResponseEntity<ApiErrorResponse> handleFeatureNotEnabled(FeatureNotEnabledException ex,
+                                                                        HttpServletRequest request) {
+        ApiErrorResponse body = new ApiErrorResponse(
+                Instant.now(),
+                HttpStatus.FORBIDDEN.value(),
+                "FEATURE_DISABLED",
+                ex.getMessage(),
+                request.getRequestURI(),
+                null
+        );
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
+    }
+
     private ResponseEntity<ApiErrorResponse> unauthorized(String error, String message, HttpServletRequest request) {
         ApiErrorResponse body = new ApiErrorResponse(
                 Instant.now(),

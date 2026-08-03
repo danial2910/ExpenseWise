@@ -1,6 +1,8 @@
 package com.expensewise.category.controller;
 
 import com.expensewise.auth.security.AuthPrincipal;
+import com.expensewise.entitlement.Feature;
+import com.expensewise.entitlement.RequiresFeature;
 import com.expensewise.category.dto.CategoryRequest;
 import com.expensewise.category.dto.CategoryResponse;
 import com.expensewise.category.dto.PatchCategoryRequest;
@@ -26,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/categories")
+@RequiresFeature(Feature.CATEGORIES)
 public class CategoryController {
 
     private static final int MAX_PAGE_SIZE = 100;

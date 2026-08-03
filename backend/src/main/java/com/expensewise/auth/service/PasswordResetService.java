@@ -26,6 +26,7 @@ import java.util.Optional;
 public class PasswordResetService {
 
     private static final Duration TOKEN_TTL = Duration.ofMinutes(30);
+    private static final Duration SET_PASSWORD_TOKEN_TTL = Duration.ofHours(24);
 
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
@@ -73,6 +74,29 @@ public class PasswordResetService {
         mailService.sendPasswordResetEmail(user.getEmail(), resetLink);
 
         activityLogger.log(user.getId(), ActivityAction.PASSWORD_RESET_REQUESTED);
+    }
+
+    /**
+     * Used when an admin creates a user with no password (the design's Create
+     * User panel has no password field). Unlike {@link #requestReset}, the
+     * user is already known to exist — no need to hide that fact — and the
+     * token lives longer (24h vs 30min) since this isn't a time-sensitive
+     * account-takeover-recovery flow.
+     */
+    @Transactional
+    public void issueSetPasswordToken(User user) {
+        Instant now = Instant.now();
+        passwordResetTokenRepository.invalidateActiveForUser(user.getId(), now);
+
+        String rawValue = TokenHasher.generateRawToken();
+        PasswordResetToken token = new PasswordResetToken();
+        token.setUserId(user.getId());
+        token.setTokenHash(TokenHasher.sha256Hex(rawValue));
+        token.setExpiresAt(now.plus(SET_PASSWORD_TOKEN_TTL));
+        passwordResetTokenRepository.save(token);
+
+        String setPasswordLink = frontendUrl + "/reset-password?token=" + rawValue;
+        mailService.sendSetPasswordEmail(user.getEmail(), setPasswordLink);
     }
 
     @Transactional

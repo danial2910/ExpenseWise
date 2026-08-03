@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { fetchMyEntitlements } from '../api/users'
+import type { Feature } from '../types/admin'
 
 withDefaults(defineProps<{ title?: string }>(), { title: 'Dashboard' })
 
@@ -9,14 +11,40 @@ const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 
-const navItems = [
-  { testid: 'nav-dashboard', label: 'Dashboard', to: '/dashboard', routeName: 'dashboard' },
-  { testid: 'nav-transactions', label: 'Transactions', to: '/transactions', routeName: 'transactions' },
-  { testid: 'nav-categories', label: 'Categories', to: '/categories', routeName: 'categories' },
-  { testid: 'nav-budgets', label: 'Budgets', to: '/budgets', routeName: 'budgets' },
+const entitlements = ref<Record<Feature, boolean> | null>(null)
+
+onMounted(async () => {
+  if (!authStore.isAdmin) {
+    try {
+      entitlements.value = await fetchMyEntitlements()
+    } catch {
+      entitlements.value = null
+    }
+  }
+})
+
+const ADMIN_NAV_ITEMS = [
+  { testid: 'nav-admin-dashboard', label: 'Admin Dashboard', to: '/admin/dashboard', routeName: 'admin-dashboard' },
+  { testid: 'nav-admin-users', label: 'User Management', to: '/admin/users', routeName: 'admin-users' },
   { testid: 'nav-ai-assistant', label: 'AI Assistant', to: '/ai-assistant', routeName: 'ai-assistant' },
   { testid: 'nav-profile', label: 'Profile', to: '/profile', routeName: 'profile' },
 ]
+
+const USER_NAV_ITEMS: { testid: string; label: string; to: string; routeName: string; feature: Feature | null }[] = [
+  { testid: 'nav-dashboard', label: 'Dashboard', to: '/dashboard', routeName: 'dashboard', feature: null },
+  { testid: 'nav-transactions', label: 'Transactions', to: '/transactions', routeName: 'transactions', feature: 'TRANSACTIONS' },
+  { testid: 'nav-categories', label: 'Categories', to: '/categories', routeName: 'categories', feature: 'CATEGORIES' },
+  { testid: 'nav-budgets', label: 'Budgets', to: '/budgets', routeName: 'budgets', feature: 'BUDGETS' },
+  { testid: 'nav-ai-assistant', label: 'AI Assistant', to: '/ai-assistant', routeName: 'ai-assistant', feature: 'AI_ASSISTANT' },
+  { testid: 'nav-profile', label: 'Profile', to: '/profile', routeName: 'profile', feature: null },
+]
+
+const navItems = computed(() => {
+  if (authStore.isAdmin) {
+    return ADMIN_NAV_ITEMS
+  }
+  return USER_NAV_ITEMS.filter((item) => !item.feature || entitlements.value?.[item.feature] !== false)
+})
 
 const initials = computed(() => {
   const name = authStore.user?.fullName ?? ''

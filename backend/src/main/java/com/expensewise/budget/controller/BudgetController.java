@@ -1,6 +1,8 @@
 package com.expensewise.budget.controller;
 
 import com.expensewise.auth.security.AuthPrincipal;
+import com.expensewise.entitlement.Feature;
+import com.expensewise.entitlement.RequiresFeature;
 import com.expensewise.budget.dto.BudgetMonthResponse;
 import com.expensewise.budget.dto.BudgetRequest;
 import com.expensewise.budget.dto.BudgetResponse;
@@ -26,6 +28,7 @@ import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/v1/budgets")
+@RequiresFeature(Feature.BUDGETS)
 public class BudgetController {
 
     private final BudgetService budgetService;
