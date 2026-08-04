@@ -2,6 +2,59 @@
 
 Non-obvious decisions and their rationale, logged as they're made.
 
+## 2026-08-04 — News module phase (curated financial news, cached, entitlement-gated)
+
+- **`GET /api/v1/news` is deliberately NOT paginated**, despite CLAUDE.md's "list
+  endpoints are always paginated" hard rule. Flagged as a real conflict and confirmed
+  with the project owner rather than guessed past: the endpoint returns one small,
+  shared, cached batch from a single upstream NewsData.io call, not a per-user
+  DB-backed resource — there is no real list to page through, and wrapping a fixed
+  ~10-article batch in `Page<>` would add complexity with no payoff.
+- **The imported "ExpenseWise News" design's topic filter bar (All/Markets/Budgeting/
+  Taxes/Banking, with each article tagged) was dropped.** The task's own Article DTO
+  (title, snippet, source, url, imageUrl, publishedAt) has no topic field, and
+  NewsData.io's response doesn't cleanly map to these exact custom categories —
+  same precedent as the AI Assistant phase's insights-mislabeling fix: don't build a
+  design element that promises data the backend doesn't actually produce. Confirmed
+  with the project owner. Only the desktop (1440px) frame was built, same precedent
+  as every prior module.
+- **Caching is Spring's cache abstraction (`@Cacheable`) backed by Caffeine**, added
+  as a new dependency per the task's own proposal — a single shared cache entry (no
+  key), so one upstream NewsData.io call serves every user within the TTL window
+  (`newsdata.cache-ttl-seconds`, defaults to 1200s/20min, inside the 15–30 min range
+  asked for). `CacheConfig`'s `CaffeineCacheManager` reads the TTL from
+  `application.yml` rather than hardcoding it, specifically so `NewsServiceCacheTest`
+  can override it to 1 second and assert expiry without a long sleep.
+- **`NewsDataClient` takes Spring Boot's auto-configured `RestClient.Builder`** rather
+  than calling `RestClient.builder()` directly the way `GroqChatClient` does — the
+  only difference between the two client seams, made specifically so
+  `NewsDataClientTest` can bind `MockRestServiceServer` to the same builder and assert
+  on the mapped `ArticleResponse` fields (and on graceful error handling) without a
+  real network call or a real API key. `GroqChatClient` has no equivalent test since
+  its response is a single opaque string with nothing structural to map; NewsData's
+  JSON→DTO mapping was worth testing directly per the task's own instructions.
+- **`NEWS` was added to the existing `Feature` enum**, not a new gating mechanism —
+  reuses `RequiresFeature`/`FeatureEntitlementInterceptor`/`EntitlementService`
+  unchanged. `V6__news_entitlement.sql` replaces V4's `CHECK` constraint (never edits
+  an applied migration) to allow `'NEWS'`, and backfills `enabled = true` for every
+  existing USER account so nobody already registered is locked out — `EntitlementService
+  .seedDefaults`/`AdminUserService.createUser` both already iterate `Feature.values()`,
+  so new-user default enablement needed no code change at all, only the enum addition.
+  `/api/v1/news/**` was added to `SecurityConfig.USER_ONLY_PATHS` (not reachable by
+  ADMIN, same as Transactions/Budgets/Categories/Reports) since News isn't part of an
+  ADMIN's allowed module set (Admin Dashboard, User Management, AI Assistant, Profile).
+- **The one required E2E test is allowed to hit the real NewsData.io endpoint**
+  (a real `NEWSDATA_API_KEY_EXPENSEWISE` is already set on this dev machine) rather
+  than mocking at any layer — same precedent as the AI Assistant module's E2E test
+  hitting the real Groq endpoint. Confirmed the response shape matches
+  `NewsDataClient`'s mapping with a direct `curl` call before relying on it (`title`,
+  `description`, `link`, `pubDate`, `image_url`, `source_id`/`source_name` all present
+  as expected). The test never asserts on specific article content — only that cards
+  render — matching CLAUDE.md's "do not assert on AI/non-deterministic response
+  content" spirit, extended here to real-world news. Unit/integration tests still
+  `@MockBean` `NewsClient` unconditionally so CI stays deterministic and needs no real
+  key.
+
 ## 2026-08-04 — Notifications removed, replaced by a News feature
 
 - **The Notifications feature (`NotificationService`/`Notification` entity/

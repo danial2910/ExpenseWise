@@ -38,6 +38,10 @@ pipeline {
         SUPABASE_URL_EXPENSEWISE         = 'https://ci-dummy-project.supabase.co'
         SUPABASE_SERVICE_KEY_EXPENSEWISE = 'ci-dummy-supabase-service-key-never-actually-called'
         SUPABASE_BUCKET_EXPENSEWISE      = 'ci-dummy-bucket'
+        // newsdata.api-key has no default either — NewsClient is @MockBean'd
+        // in every test, so this key is never actually used to call
+        // NewsData.io; it only lets the Spring context start.
+        NEWSDATA_API_KEY_EXPENSEWISE = 'ci-dummy-newsdata-key-never-actually-called'
     }
 
     options {

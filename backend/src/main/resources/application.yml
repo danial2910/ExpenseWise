@@ -34,3 +34,9 @@ cookie:
 
 groq:
   base-url: https://api.groq.com/openai/v1
+
+newsdata:
+  base-url: https://newsdata.io/api/1
+  # Shared across every user (one upstream call serves everyone within the
+  # window) — 20 minutes, inside the 15-30 min range the task asked for.
+  cache-ttl-seconds: 1200

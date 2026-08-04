@@ -20,6 +20,7 @@ conventional code over clever code.
 | File storage | Supabase Storage, private bucket, signed URLs |
 | AI | Groq via Spring AI (OpenAI-compatible endpoint) |
 | Email | Brevo transactional email HTTP API (Spring `RestClient`) + Thymeleaf templates. **Not** SMTP. |
+| News | NewsData.io (`RestClient`), shared cache via Spring's cache abstraction + Caffeine (15–30 min TTL) |
 | Reports | Apache POI (Excel), JasperReports (PDF) |
 | Unit tests | JUnit 5 + Mockito |
 | Coverage | JaCoCo (XML report consumed by SonarQube) |
@@ -99,7 +100,7 @@ com.expensewise
                     shared across any module storing a file (Profile's
                     avatar, Receipt later) — mirrors the ai.client seam
 └── <module>        auth, user, category, transaction, budget,
-                    recurring, receipt, report, ai, admin
+                    recurring, receipt, report, ai, news, admin
     ├── controller
     ├── service
     ├── repository
@@ -222,6 +223,7 @@ DB_URL_EXPENSEWISE, DB_USER_EXPENSEWISE, DB_PASSWORD_EXPENSEWISE
 JWT_SECRET_EXPENSEWISE, JWT_EXPIRATION_EXPENSEWISE, REFRESH_TOKEN_EXPIRATION_EXPENSEWISE
 SUPABASE_URL_EXPENSEWISE, SUPABASE_SERVICE_KEY_EXPENSEWISE, SUPABASE_BUCKET_EXPENSEWISE
 GROQ_API_KEY_EXPENSEWISE, GROQ_MODEL_EXPENSEWISE
+NEWSDATA_API_KEY_EXPENSEWISE
 BREVO_API_KEY_EXPENSEWISE
 MAIL_FROM_EXPENSEWISE, FRONTEND_URL_EXPENSEWISE
 ```

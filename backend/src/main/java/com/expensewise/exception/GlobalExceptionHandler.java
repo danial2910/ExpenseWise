@@ -203,6 +203,20 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(body);
     }
 
+    @ExceptionHandler(NewsUnavailableException.class)
+    public ResponseEntity<ApiErrorResponse> handleNewsUnavailable(NewsUnavailableException ex,
+                                                                     HttpServletRequest request) {
+        ApiErrorResponse body = new ApiErrorResponse(
+                Instant.now(),
+                HttpStatus.SERVICE_UNAVAILABLE.value(),
+                "NEWS_UNAVAILABLE",
+                "The news feed is temporarily unavailable. Please try again shortly.",
+                request.getRequestURI(),
+                null
+        );
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(body);
+    }
+
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ApiErrorResponse> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException ex,
                                                                             HttpServletRequest request) {

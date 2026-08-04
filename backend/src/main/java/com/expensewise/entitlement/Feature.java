@@ -10,5 +10,6 @@ public enum Feature {
     CATEGORIES,
     BUDGETS,
     REPORTS,
-    AI_ASSISTANT
+    AI_ASSISTANT,
+    NEWS
 }

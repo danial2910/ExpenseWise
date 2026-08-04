@@ -30,7 +30,8 @@ public class SecurityConfig {
             "/api/v1/transactions/**",
             "/api/v1/budgets/**",
             "/api/v1/categories/**",
-            "/api/v1/reports/**"
+            "/api/v1/reports/**",
+            "/api/v1/news/**"
     };
 
     private static final String[] PUBLIC_PATHS = {
