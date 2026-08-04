@@ -13,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
@@ -35,6 +36,7 @@ public class PasswordResetService {
     private final RefreshTokenService refreshTokenService;
     private final ActivityLogger activityLogger;
     private final String frontendUrl;
+    private final Clock clock;
 
     public PasswordResetService(UserRepository userRepository,
                                  PasswordResetTokenRepository passwordResetTokenRepository,
@@ -42,7 +44,8 @@ public class PasswordResetService {
                                  PasswordEncoder passwordEncoder,
                                  RefreshTokenService refreshTokenService,
                                  ActivityLogger activityLogger,
-                                 @Value("${FRONTEND_URL_EXPENSEWISE:http://localhost:5173}") String frontendUrl) {
+                                 @Value("${FRONTEND_URL_EXPENSEWISE:http://localhost:5173}") String frontendUrl,
+                                 Clock clock) {
         this.userRepository = userRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.mailService = mailService;
@@ -50,6 +53,7 @@ public class PasswordResetService {
         this.refreshTokenService = refreshTokenService;
         this.activityLogger = activityLogger;
         this.frontendUrl = frontendUrl;
+        this.clock = clock;
     }
 
     @Transactional
@@ -60,7 +64,7 @@ public class PasswordResetService {
         }
         User user = userOpt.get();
 
-        Instant now = Instant.now();
+        Instant now = Instant.now(clock);
         passwordResetTokenRepository.invalidateActiveForUser(user.getId(), now);
 
         String rawValue = TokenHasher.generateRawToken();
@@ -85,7 +89,7 @@ public class PasswordResetService {
      */
     @Transactional
     public void issueSetPasswordToken(User user) {
-        Instant now = Instant.now();
+        Instant now = Instant.now(clock);
         passwordResetTokenRepository.invalidateActiveForUser(user.getId(), now);
 
         String rawValue = TokenHasher.generateRawToken();
@@ -107,7 +111,7 @@ public class PasswordResetService {
         if (token.getUsedAt() != null) {
             throw new InvalidTokenException("Reset token has already been used");
         }
-        if (token.getExpiresAt().isBefore(Instant.now())) {
+        if (token.getExpiresAt().isBefore(Instant.now(clock))) {
             throw new InvalidTokenException("Reset token has expired");
         }
 
@@ -115,7 +119,7 @@ public class PasswordResetService {
                 .orElseThrow(() -> new InvalidTokenException("Reset token is invalid"));
 
         user.setPasswordHash(passwordEncoder.encode(newPassword));
-        token.setUsedAt(Instant.now());
+        token.setUsedAt(Instant.now(clock));
 
         refreshTokenService.revokeAllForUser(user.getId());
         activityLogger.log(user.getId(), ActivityAction.PASSWORD_CHANGED);

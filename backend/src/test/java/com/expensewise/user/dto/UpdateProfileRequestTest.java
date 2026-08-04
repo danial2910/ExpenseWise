@@ -8,8 +8,11 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Month;
+import java.time.ZoneOffset;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -21,12 +24,20 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class UpdateProfileRequestTest {
 
+    private static final Instant FIXED_NOW = Instant.parse("2026-03-15T10:00:00Z");
+    private static final LocalDate FIXED_TODAY = LocalDate.ofInstant(FIXED_NOW, ZoneOffset.UTC);
+
     private static ValidatorFactory validatorFactory;
     private static Validator validator;
 
     @BeforeAll
     static void setUpValidator() {
-        validatorFactory = Validation.buildDefaultValidatorFactory();
+        // A fixed ClockProvider makes @PastOrPresent deterministic instead of
+        // depending on the real system clock at whatever moment tests run.
+        validatorFactory = Validation.byDefaultProvider()
+                .configure()
+                .clockProvider(() -> Clock.fixed(FIXED_NOW, ZoneOffset.UTC))
+                .buildValidatorFactory();
         validator = validatorFactory.getValidator();
     }
 
@@ -62,7 +73,7 @@ class UpdateProfileRequestTest {
     @Test
     void aDateOfBirthInTheFutureIsRejected() {
         UpdateProfileRequest request = new UpdateProfileRequest(
-                "Sarah Lim", null, LocalDate.now().plusDays(1), null, null);
+                "Sarah Lim", null, FIXED_TODAY.plusDays(1), null, null);
 
         Set<ConstraintViolation<UpdateProfileRequest>> violations = validator.validate(request);
 
@@ -71,7 +82,7 @@ class UpdateProfileRequestTest {
 
     @Test
     void todayIsAValidDateOfBirth() {
-        UpdateProfileRequest request = new UpdateProfileRequest("Sarah Lim", null, LocalDate.now(), null, null);
+        UpdateProfileRequest request = new UpdateProfileRequest("Sarah Lim", null, FIXED_TODAY, null, null);
 
         assertThat(validator.validate(request)).isEmpty();
     }

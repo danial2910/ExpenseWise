@@ -14,6 +14,7 @@ import com.expensewise.recurring.dto.RecurringRuleRequest;
 import com.expensewise.recurring.dto.RecurringRuleResponse;
 import com.expensewise.transaction.dto.TransactionResponse;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
@@ -21,6 +22,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
@@ -38,6 +40,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class RecurringIntegrationTest extends AbstractIntegrationTest {
 
     private static final ZoneId KL_ZONE = ZoneId.of("Asia/Kuala_Lumpur");
+
+    @Autowired
+    private Clock clock;
 
     private record PageResponse<T>(List<T> content) {
     }
@@ -76,8 +81,8 @@ class RecurringIntegrationTest extends AbstractIntegrationTest {
                 RecurringRuleResponse.class);
     }
 
-    private static LocalDate today() {
-        return LocalDate.now(KL_ZONE);
+    private LocalDate today() {
+        return LocalDate.now(clock.withZone(KL_ZONE));
     }
 
     @Test

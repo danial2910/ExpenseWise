@@ -15,8 +15,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.time.ZoneOffset;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,6 +36,8 @@ class PasswordResetServiceTest {
     private static final Long USER_ID = 1L;
     private static final String EMAIL = "reset@example.com";
     private static final String FRONTEND_URL = "http://localhost:5173";
+    private static final Instant FIXED_NOW = Instant.parse("2026-03-15T10:00:00Z");
+    private static final Clock FIXED_CLOCK = Clock.fixed(FIXED_NOW, ZoneOffset.UTC);
 
     @Mock
     private UserRepository userRepository;
@@ -58,7 +62,7 @@ class PasswordResetServiceTest {
     @BeforeEach
     void setUp() {
         passwordResetService = new PasswordResetService(userRepository, passwordResetTokenRepository,
-                mailService, passwordEncoder, refreshTokenService, activityLogger, FRONTEND_URL);
+                mailService, passwordEncoder, refreshTokenService, activityLogger, FRONTEND_URL, FIXED_CLOCK);
     }
 
     private User user() {
@@ -113,8 +117,7 @@ class PasswordResetServiceTest {
         PasswordResetToken saved = tokenCaptor.getValue();
         assertThat(saved.getUserId()).isEqualTo(USER_ID);
         assertThat(saved.getTokenHash()).isNotBlank();
-        assertThat(saved.getExpiresAt()).isAfter(Instant.now().plus(29, ChronoUnit.MINUTES));
-        assertThat(saved.getExpiresAt()).isBefore(Instant.now().plus(31, ChronoUnit.MINUTES));
+        assertThat(saved.getExpiresAt()).isEqualTo(FIXED_NOW.plus(Duration.ofMinutes(30)));
 
         ArgumentCaptor<String> linkCaptor = ArgumentCaptor.forClass(String.class);
         verify(mailService).sendPasswordResetEmail(eq(EMAIL), linkCaptor.capture());

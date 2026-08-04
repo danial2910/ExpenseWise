@@ -187,8 +187,7 @@ class AdminDashboardServiceTest {
 
         List<com.expensewise.admin.dto.FeatureUsageResponse> usage = service.getDashboard(6, 5).featureUsage();
 
-        assertThat(usage).isNotEmpty();
-        assertThat(usage).allSatisfy(f -> {
+        assertThat(usage).isNotEmpty().allSatisfy(f -> {
             assertThat(f.enabledCount()).isEqualTo(1);
             assertThat(f.percentage()).isEqualTo(100);
         });
@@ -200,8 +199,7 @@ class AdminDashboardServiceTest {
 
         List<com.expensewise.admin.dto.FeatureUsageResponse> usage = service.getDashboard(6, 5).featureUsage();
 
-        assertThat(usage).isNotEmpty();
-        assertThat(usage).allSatisfy(f -> assertThat(f.percentage()).isZero());
+        assertThat(usage).isNotEmpty().allSatisfy(f -> assertThat(f.percentage()).isZero());
     }
 
     @Test

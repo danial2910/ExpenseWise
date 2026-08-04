@@ -16,6 +16,7 @@ import com.expensewise.common.ApiErrorResponse;
 import com.expensewise.transaction.dto.TransactionRequest;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
@@ -24,6 +25,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -43,6 +45,9 @@ class AiIntegrationTest extends AbstractIntegrationTest {
 
     @MockBean
     private AiChatClient aiChatClient;
+
+    @Autowired
+    private Clock clock;
 
     private record PageResponse<T>(List<T> content) {
     }
@@ -172,7 +177,7 @@ class AiIntegrationTest extends AbstractIntegrationTest {
 
         Long foodCategoryIdA = systemCategoryId(userA.token(), "Food", "EXPENSE");
         Long foodCategoryIdB = systemCategoryId(userB.token(), "Food", "EXPENSE");
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(clock);
 
         restTemplate.exchange(baseUrl("/api/v1/transactions"), HttpMethod.POST,
                 new HttpEntity<>(new TransactionRequest("EXPENSE", new BigDecimal("42.42"), foodCategoryIdA, today, "User A's lunch"),
@@ -196,7 +201,7 @@ class AiIntegrationTest extends AbstractIntegrationTest {
     void insightsReflectTheCallersOwnBudgetStatus() {
         Registered user = registerAndGetToken("Insighter");
         Long foodCategoryId = systemCategoryId(user.token(), "Food", "EXPENSE");
-        LocalDate month = LocalDate.now().withDayOfMonth(1);
+        LocalDate month = LocalDate.now(clock).withDayOfMonth(1);
 
         restTemplate.exchange(baseUrl("/api/v1/budgets"), HttpMethod.POST,
                 new HttpEntity<>(new BudgetRequest(new BigDecimal("100.00"), null, month), bearerHeaders(user.token())),
@@ -205,7 +210,7 @@ class AiIntegrationTest extends AbstractIntegrationTest {
                 new HttpEntity<>(new BudgetRequest(new BigDecimal("20.00"), foodCategoryId, month), bearerHeaders(user.token())),
                 Void.class);
         restTemplate.exchange(baseUrl("/api/v1/transactions"), HttpMethod.POST,
-                new HttpEntity<>(new TransactionRequest("EXPENSE", new BigDecimal("30.00"), foodCategoryId, LocalDate.now(), "Over"),
+                new HttpEntity<>(new TransactionRequest("EXPENSE", new BigDecimal("30.00"), foodCategoryId, LocalDate.now(clock), "Over"),
                         bearerHeaders(user.token())),
                 Void.class);
 

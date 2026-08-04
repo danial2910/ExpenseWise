@@ -25,6 +25,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -49,6 +50,9 @@ class AdminDashboardIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private Clock clock;
 
     private record Registered(String token, Long userId, String email) {
     }
@@ -140,9 +144,9 @@ class AdminDashboardIntegrationTest extends AbstractIntegrationTest {
         Long categoryId = fetchSystemExpenseCategoryId(user.token());
         restTemplate.exchange(baseUrl("/api/v1/transactions"), HttpMethod.POST,
                 new HttpEntity<>(new TransactionRequest("EXPENSE", new BigDecimal("25.00"), categoryId,
-                        LocalDate.now(), "Dashboard test expense"), bearerHeaders(user.token())), Void.class);
+                        LocalDate.now(clock), "Dashboard test expense"), bearerHeaders(user.token())), Void.class);
 
-        LocalDate month = LocalDate.now().withDayOfMonth(1);
+        LocalDate month = LocalDate.now(clock).withDayOfMonth(1);
         restTemplate.exchange(baseUrl("/api/v1/budgets"), HttpMethod.POST,
                 new HttpEntity<>(new BudgetRequest(new BigDecimal("300.00"), null, month), bearerHeaders(user.token())),
                 BudgetResponse.class);
