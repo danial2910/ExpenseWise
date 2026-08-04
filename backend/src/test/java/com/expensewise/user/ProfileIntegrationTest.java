@@ -8,6 +8,7 @@ import com.expensewise.user.dto.LoginHistoryResponse;
 import com.expensewise.user.dto.UpdateProfileRequest;
 import com.expensewise.user.dto.UserResponse;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
@@ -19,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.Month;
@@ -41,6 +43,9 @@ class ProfileIntegrationTest extends AbstractIntegrationTest {
 
     @MockBean
     private StorageService storageService;
+
+    @Autowired
+    private Clock clock;
 
     private record PageResponse<T>(List<T> content) {
     }
@@ -99,7 +104,7 @@ class ProfileIntegrationTest extends AbstractIntegrationTest {
         Registered user = registerAndGetToken("FutureDob");
 
         UpdateProfileRequest request = new UpdateProfileRequest(
-                "Future Dob", null, LocalDate.now().plusDays(1), null, null);
+                "Future Dob", null, LocalDate.now(clock).plusDays(1), null, null);
         ResponseEntity<ApiErrorResponse> response = restTemplate.exchange(baseUrl("/api/v1/users/me"), HttpMethod.PATCH,
                 new HttpEntity<>(request, bearerHeaders(user.token())), ApiErrorResponse.class);
 
