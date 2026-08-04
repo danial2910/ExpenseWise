@@ -4,7 +4,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
+import java.util.function.BooleanSupplier;
 
 /**
  * In-memory cache of each user's {@code is_active} flag, so the JWT filter
@@ -26,8 +26,8 @@ public class UserStatusCache {
 
     private final Map<Long, Boolean> activeByUserId = new ConcurrentHashMap<>();
 
-    public boolean isActive(Long userId, Supplier<Boolean> loader) {
-        return activeByUserId.computeIfAbsent(userId, id -> loader.get());
+    public boolean isActive(Long userId, BooleanSupplier loader) {
+        return activeByUserId.computeIfAbsent(userId, id -> loader.getAsBoolean());
     }
 
     public void invalidate(Long userId) {

@@ -188,8 +188,8 @@ class AiIntegrationTest extends AbstractIntegrationTest {
         List<AiChatMessage> prompt = promptCaptor.getValue();
         String systemContext = prompt.get(0).content();
 
-        assertThat(systemContext).contains("42.42");
-        assertThat(systemContext).doesNotContain("999.99");
+        assertThat(systemContext).contains("42.42")
+                .doesNotContain("999.99");
     }
 
     @Test

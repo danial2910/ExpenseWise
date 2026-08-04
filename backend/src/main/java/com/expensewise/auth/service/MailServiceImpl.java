@@ -26,6 +26,7 @@ public class MailServiceImpl implements MailService {
 
     private static final Logger log = LoggerFactory.getLogger(MailServiceImpl.class);
     private static final String BREVO_SEND_EMAIL_URL = "https://api.brevo.com/v3/smtp/email";
+    private static final String EMAIL_FIELD = "email";
 
     private final RestClient restClient;
     private final TemplateEngine templateEngine;
@@ -58,8 +59,8 @@ public class MailServiceImpl implements MailService {
         String html = templateEngine.process("password-reset-email", context);
 
         Map<String, Object> requestBody = Map.of(
-                "sender", Map.of("email", mailFrom),
-                "to", List.of(Map.of("email", toEmail)),
+                "sender", Map.of(EMAIL_FIELD, mailFrom),
+                "to", List.of(Map.of(EMAIL_FIELD, toEmail)),
                 "subject", "Reset your ExpenseWise password",
                 "htmlContent", html
         );
@@ -91,8 +92,8 @@ public class MailServiceImpl implements MailService {
         String html = templateEngine.process("set-password-email", context);
 
         Map<String, Object> requestBody = Map.of(
-                "sender", Map.of("email", mailFrom),
-                "to", List.of(Map.of("email", toEmail)),
+                "sender", Map.of(EMAIL_FIELD, mailFrom),
+                "to", List.of(Map.of(EMAIL_FIELD, toEmail)),
                 "subject", "Set your ExpenseWise password",
                 "htmlContent", html
         );

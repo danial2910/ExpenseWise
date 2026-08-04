@@ -18,6 +18,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.Month;
 import java.time.ZoneId;
 import java.util.List;
 
@@ -62,7 +63,7 @@ class RecurringGenerationServiceTest {
         rule.setAmount(new BigDecimal("25.00"));
         rule.setDescription("Groceries");
         rule.setFrequency("WEEKLY");
-        rule.setStartDate(LocalDate.of(2026, 7, 1));
+        rule.setStartDate(LocalDate.of(2026, Month.JULY, 1));
         rule.setNextDueDate(nextDueDate);
         rule.setActive(true);
         return rule;
@@ -70,36 +71,36 @@ class RecurringGenerationServiceTest {
 
     @Test
     void generatesOneTransactionWhenExactlyOnePeriodIsDue() {
-        RecurringRule rule = weeklyRule(LocalDate.of(2026, 8, 15));
+        RecurringRule rule = weeklyRule(LocalDate.of(2026, Month.AUGUST, 15));
         when(recurringRuleRepository.findByUserIdAndActiveTrueAndNextDueDateLessThanEqual(USER_ID,
-                LocalDate.of(2026, 8, 15))).thenReturn(List.of(rule));
+                LocalDate.of(2026, Month.AUGUST, 15))).thenReturn(List.of(rule));
 
         int generated = generationService.generateDueForUser(USER_ID);
 
         assertThat(generated).isEqualTo(1);
         verify(transactionRepository, times(1)).save(any(Transaction.class));
-        assertThat(rule.getNextDueDate()).isEqualTo(LocalDate.of(2026, 8, 22));
+        assertThat(rule.getNextDueDate()).isEqualTo(LocalDate.of(2026, Month.AUGUST, 22));
     }
 
     @Test
     void catchesUpMultipleOverduePeriodsInOneRun() {
         // Three weekly periods overdue: Aug 1, Aug 8, Aug 15 (today).
-        RecurringRule rule = weeklyRule(LocalDate.of(2026, 8, 1));
+        RecurringRule rule = weeklyRule(LocalDate.of(2026, Month.AUGUST, 1));
         when(recurringRuleRepository.findByUserIdAndActiveTrueAndNextDueDateLessThanEqual(USER_ID,
-                LocalDate.of(2026, 8, 15))).thenReturn(List.of(rule));
+                LocalDate.of(2026, Month.AUGUST, 15))).thenReturn(List.of(rule));
 
         int generated = generationService.generateDueForUser(USER_ID);
 
         assertThat(generated).isEqualTo(3);
         verify(transactionRepository, times(3)).save(any(Transaction.class));
-        assertThat(rule.getNextDueDate()).isEqualTo(LocalDate.of(2026, 8, 22));
+        assertThat(rule.getNextDueDate()).isEqualTo(LocalDate.of(2026, Month.AUGUST, 22));
     }
 
     @Test
     void generatedTransactionsCarryTheRuleIdAndCorrectDueDates() {
-        RecurringRule rule = weeklyRule(LocalDate.of(2026, 8, 1));
+        RecurringRule rule = weeklyRule(LocalDate.of(2026, Month.AUGUST, 1));
         when(recurringRuleRepository.findByUserIdAndActiveTrueAndNextDueDateLessThanEqual(USER_ID,
-                LocalDate.of(2026, 8, 15))).thenReturn(List.of(rule));
+                LocalDate.of(2026, Month.AUGUST, 15))).thenReturn(List.of(rule));
 
         generationService.generateDueForUser(USER_ID);
 
@@ -107,7 +108,7 @@ class RecurringGenerationServiceTest {
         verify(transactionRepository, times(3)).save(captor.capture());
         List<Transaction> saved = captor.getAllValues();
         assertThat(saved).extracting(Transaction::getTransactionDate)
-                .containsExactly(LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 8), LocalDate.of(2026, 8, 15));
+                .containsExactly(LocalDate.of(2026, Month.AUGUST, 1), LocalDate.of(2026, Month.AUGUST, 8), LocalDate.of(2026, Month.AUGUST, 15));
         assertThat(saved).allSatisfy(tx -> {
             assertThat(tx.getRecurringRuleId()).isEqualTo(1L);
             assertThat(tx.getUserId()).isEqualTo(USER_ID);
@@ -124,21 +125,21 @@ class RecurringGenerationServiceTest {
         // repository query itself (nextDueDate <= today) would no longer
         // match it. Verified here by confirming the loop only ran once for
         // the single due period, leaving the rule's schedule in the future.
-        RecurringRule rule = weeklyRule(LocalDate.of(2026, 8, 15));
+        RecurringRule rule = weeklyRule(LocalDate.of(2026, Month.AUGUST, 15));
         when(recurringRuleRepository.findByUserIdAndActiveTrueAndNextDueDateLessThanEqual(USER_ID,
-                LocalDate.of(2026, 8, 15))).thenReturn(List.of(rule));
+                LocalDate.of(2026, Month.AUGUST, 15))).thenReturn(List.of(rule));
 
         generationService.generateDueForUser(USER_ID);
 
-        assertThat(rule.getNextDueDate()).isAfter(LocalDate.of(2026, 8, 15));
+        assertThat(rule.getNextDueDate()).isAfter(LocalDate.of(2026, Month.AUGUST, 15));
     }
 
     @Test
     void deactivatesTheRuleWhenItsScheduleAdvancesPastTheEndDate() {
-        RecurringRule rule = weeklyRule(LocalDate.of(2026, 8, 8));
-        rule.setEndDate(LocalDate.of(2026, 8, 8)); // only one occurrence left
+        RecurringRule rule = weeklyRule(LocalDate.of(2026, Month.AUGUST, 8));
+        rule.setEndDate(LocalDate.of(2026, Month.AUGUST, 8)); // only one occurrence left
         when(recurringRuleRepository.findByUserIdAndActiveTrueAndNextDueDateLessThanEqual(USER_ID,
-                LocalDate.of(2026, 8, 15))).thenReturn(List.of(rule));
+                LocalDate.of(2026, Month.AUGUST, 15))).thenReturn(List.of(rule));
 
         int generated = generationService.generateDueForUser(USER_ID);
 
@@ -150,7 +151,7 @@ class RecurringGenerationServiceTest {
     @Test
     void aRuleWithNothingDueGeneratesNothing() {
         when(recurringRuleRepository.findByUserIdAndActiveTrueAndNextDueDateLessThanEqual(USER_ID,
-                LocalDate.of(2026, 8, 15))).thenReturn(List.of());
+                LocalDate.of(2026, Month.AUGUST, 15))).thenReturn(List.of());
 
         int generated = generationService.generateDueForUser(USER_ID);
 
@@ -161,8 +162,8 @@ class RecurringGenerationServiceTest {
 
     @Test
     void generateAllDueProcessesRulesAcrossAllUsers() {
-        RecurringRule rule = weeklyRule(LocalDate.of(2026, 8, 15));
-        when(recurringRuleRepository.findByActiveTrueAndNextDueDateLessThanEqual(LocalDate.of(2026, 8, 15)))
+        RecurringRule rule = weeklyRule(LocalDate.of(2026, Month.AUGUST, 15));
+        when(recurringRuleRepository.findByActiveTrueAndNextDueDateLessThanEqual(LocalDate.of(2026, Month.AUGUST, 15)))
                 .thenReturn(List.of(rule));
 
         int generated = generationService.generateAllDue();

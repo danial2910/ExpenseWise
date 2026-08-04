@@ -97,6 +97,7 @@ class NewsIntegrationTest extends AbstractIntegrationTest {
 
     private ArticleResponse sampleArticle() {
         return new ArticleResponse("Test headline", "A snippet", "Test Source",
-                "https://example.com/article", "https://example.com/image.jpg", Instant.now());
+                "https://example.com/article", "https://example.com/image.jpg",
+                Instant.parse("2026-08-01T00:00:00Z"));
     }
 }

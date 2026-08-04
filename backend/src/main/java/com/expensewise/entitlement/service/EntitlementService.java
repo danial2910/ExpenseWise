@@ -29,11 +29,15 @@ public class EntitlementService {
     /** New users default to all features enabled unless the admin specifies otherwise. */
     @Transactional
     public void seedDefaults(Long userId) {
-        seedDefaults(userId, Set.of(Feature.values()));
+        doSeedDefaults(userId, Set.of(Feature.values()));
     }
 
     @Transactional
     public void seedDefaults(Long userId, Set<Feature> enabledFeatures) {
+        doSeedDefaults(userId, enabledFeatures);
+    }
+
+    private void doSeedDefaults(Long userId, Set<Feature> enabledFeatures) {
         for (Feature feature : Feature.values()) {
             entitlementRepository.save(new UserFeatureEntitlement(userId, feature, enabledFeatures.contains(feature)));
         }

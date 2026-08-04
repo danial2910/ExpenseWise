@@ -111,7 +111,7 @@ class AdminDashboardIntegrationTest extends AbstractIntegrationTest {
         long budgetsEnabledBefore = enabledCountFor(before, Feature.BUDGETS);
         long transactionsEnabledBefore = enabledCountFor(before, Feature.TRANSACTIONS);
 
-        Registered withBudgets = registerAndGetToken("dashfeatureon");
+        registerAndGetToken("dashfeatureon");
         Registered withoutBudgets = registerAndGetToken("dashfeatureoff");
         UserFeatureEntitlement budgetsEntitlement = entitlementRepository
                 .findByUserIdAndFeature(withoutBudgets.userId(), Feature.BUDGETS)

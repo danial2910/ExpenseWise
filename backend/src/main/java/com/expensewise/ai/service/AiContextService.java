@@ -106,13 +106,9 @@ public class AiContextService {
     @Transactional(readOnly = true)
     public List<InsightResponse> buildInsights(Long userId) {
         Snapshot snapshot = buildSnapshot(userId);
-        OverallBudgetLine overall = snapshot.budgetMonth().overall();
         TransactionSummaryResponse summary = snapshot.summary();
 
-        boolean noData = summary.totalIncome().signum() == 0 && summary.totalExpense().signum() == 0
-                && overall.amount() == null
-                && snapshot.budgetMonth().categories().stream().allMatch(c -> c.amount() == null);
-        if (noData) {
+        if (isEmptySnapshot(snapshot, summary)) {
             return List.of();
         }
 
@@ -120,36 +116,8 @@ public class AiContextService {
         List<InsightResponse> warning = new ArrayList<>();
         List<InsightResponse> positive = new ArrayList<>();
 
-        if (overall.amount() != null) {
-            if (overall.exceeded()) {
-                critical.add(new InsightResponse("Overall budget exceeded",
-                        "You've spent RM " + overall.spent() + " against your RM " + overall.amount()
-                                + " overall budget this month.",
-                        "CRITICAL"));
-            } else if (overall.progressPercent() != null && overall.progressPercent().compareTo(APPROACHING_THRESHOLD) >= 0) {
-                warning.add(new InsightResponse("Approaching your overall budget",
-                        "You've spent RM " + overall.spent() + " of your RM " + overall.amount()
-                                + " overall budget (" + overall.progressPercent() + "%).",
-                        "WARNING"));
-            }
-        }
-
-        for (CategoryBudgetLine category : snapshot.budgetMonth().categories()) {
-            if (category.amount() == null) {
-                continue;
-            }
-            if (category.exceeded()) {
-                critical.add(new InsightResponse(category.categoryName() + " is over budget",
-                        "You spent RM " + category.spent() + " against a RM " + category.amount()
-                                + " limit this month.",
-                        "CRITICAL"));
-            } else if (category.progressPercent() != null && category.progressPercent().compareTo(APPROACHING_THRESHOLD) >= 0) {
-                warning.add(new InsightResponse(category.categoryName() + " is approaching its limit",
-                        "You spent RM " + category.spent() + " of a RM " + category.amount()
-                                + " limit (" + category.progressPercent() + "%).",
-                        "WARNING"));
-            }
-        }
+        addOverallBudgetInsight(snapshot.budgetMonth().overall(), critical, warning);
+        addCategoryBudgetInsights(snapshot.budgetMonth().categories(), critical, warning);
 
         if (summary.balance().signum() > 0) {
             positive.add(new InsightResponse("Net savings this month",
@@ -171,6 +139,50 @@ public class AiContextService {
         }
 
         return ordered.size() > INSIGHTS_LIMIT ? ordered.subList(0, INSIGHTS_LIMIT) : ordered;
+    }
+
+    private boolean isEmptySnapshot(Snapshot snapshot, TransactionSummaryResponse summary) {
+        return summary.totalIncome().signum() == 0 && summary.totalExpense().signum() == 0
+                && snapshot.budgetMonth().overall().amount() == null
+                && snapshot.budgetMonth().categories().stream().allMatch(c -> c.amount() == null);
+    }
+
+    private void addOverallBudgetInsight(OverallBudgetLine overall, List<InsightResponse> critical,
+                                          List<InsightResponse> warning) {
+        if (overall.amount() == null) {
+            return;
+        }
+        if (overall.exceeded()) {
+            critical.add(new InsightResponse("Overall budget exceeded",
+                    "You've spent RM " + overall.spent() + " against your RM " + overall.amount()
+                            + " overall budget this month.",
+                    "CRITICAL"));
+        } else if (overall.progressPercent() != null && overall.progressPercent().compareTo(APPROACHING_THRESHOLD) >= 0) {
+            warning.add(new InsightResponse("Approaching your overall budget",
+                    "You've spent RM " + overall.spent() + " of your RM " + overall.amount()
+                            + " overall budget (" + overall.progressPercent() + "%).",
+                    "WARNING"));
+        }
+    }
+
+    private void addCategoryBudgetInsights(List<CategoryBudgetLine> categories, List<InsightResponse> critical,
+                                            List<InsightResponse> warning) {
+        for (CategoryBudgetLine category : categories) {
+            if (category.amount() == null) {
+                continue;
+            }
+            if (category.exceeded()) {
+                critical.add(new InsightResponse(category.categoryName() + " is over budget",
+                        "You spent RM " + category.spent() + " against a RM " + category.amount()
+                                + " limit this month.",
+                        "CRITICAL"));
+            } else if (category.progressPercent() != null && category.progressPercent().compareTo(APPROACHING_THRESHOLD) >= 0) {
+                warning.add(new InsightResponse(category.categoryName() + " is approaching its limit",
+                        "You spent RM " + category.spent() + " of a RM " + category.amount()
+                                + " limit (" + category.progressPercent() + "%).",
+                        "WARNING"));
+            }
+        }
     }
 
     private Snapshot buildSnapshot(Long userId) {

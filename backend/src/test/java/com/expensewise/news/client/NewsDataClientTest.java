@@ -4,7 +4,6 @@ import com.expensewise.config.NewsDataProperties;
 import com.expensewise.exception.NewsUnavailableException;
 import com.expensewise.news.dto.ArticleResponse;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;

@@ -135,7 +135,8 @@ class PasswordResetServiceTest {
 
     @Test
     void completeResetRejectsAnAlreadyUsedToken() {
-        PasswordResetToken token = tokenFor("hash", Instant.now().plusSeconds(60), Instant.now().minusSeconds(60));
+        PasswordResetToken token = tokenFor("hash", Instant.parse("2026-03-15T11:00:00Z"),
+                Instant.parse("2026-03-15T10:59:00Z"));
         when(passwordResetTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(token));
 
         assertThatThrownBy(() -> passwordResetService.completeReset("raw-value", "NewPassw0rd1"))
@@ -147,7 +148,7 @@ class PasswordResetServiceTest {
 
     @Test
     void completeResetRejectsAnExpiredToken() {
-        PasswordResetToken token = tokenFor("hash", Instant.now().minusSeconds(1), null);
+        PasswordResetToken token = tokenFor("hash", Instant.parse("2020-01-01T00:00:00Z"), null);
         when(passwordResetTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(token));
 
         assertThatThrownBy(() -> passwordResetService.completeReset("raw-value", "NewPassw0rd1"))
@@ -159,7 +160,7 @@ class PasswordResetServiceTest {
 
     @Test
     void completeResetUpdatesThePasswordMarksTheTokenUsedAndRevokesRefreshTokens() {
-        PasswordResetToken token = tokenFor("hash", Instant.now().plusSeconds(60), null);
+        PasswordResetToken token = tokenFor("hash", Instant.parse("2030-01-01T00:00:00Z"), null);
         when(passwordResetTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(token));
         User user = user();
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
@@ -175,7 +176,7 @@ class PasswordResetServiceTest {
 
     @Test
     void completeResetRejectsATokenWhoseUserNoLongerExists() {
-        PasswordResetToken token = tokenFor("hash", Instant.now().plusSeconds(60), null);
+        PasswordResetToken token = tokenFor("hash", Instant.parse("2030-01-01T00:00:00Z"), null);
         when(passwordResetTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(token));
         when(userRepository.findById(USER_ID)).thenReturn(Optional.empty());
 

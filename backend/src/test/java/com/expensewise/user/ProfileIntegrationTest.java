@@ -21,6 +21,7 @@ import org.springframework.util.MultiValueMap;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -77,7 +78,7 @@ class ProfileIntegrationTest extends AbstractIntegrationTest {
         Registered user = registerAndGetToken("Editor");
 
         UpdateProfileRequest request = new UpdateProfileRequest(
-                "Editor Updated", "+60 12-345 6789", LocalDate.of(1995, 6, 1), "FEMALE", "1 Jalan Test, KL");
+                "Editor Updated", "+60 12-345 6789", LocalDate.of(1995, Month.JUNE, 1), "FEMALE", "1 Jalan Test, KL");
         ResponseEntity<UserResponse> response = restTemplate.exchange(baseUrl("/api/v1/users/me"), HttpMethod.PATCH,
                 new HttpEntity<>(request, bearerHeaders(user.token())), UserResponse.class);
 
@@ -85,7 +86,7 @@ class ProfileIntegrationTest extends AbstractIntegrationTest {
         UserResponse body = response.getBody();
         assertThat(body.fullName()).isEqualTo("Editor Updated");
         assertThat(body.phone()).isEqualTo("+60 12-345 6789");
-        assertThat(body.dateOfBirth()).isEqualTo(LocalDate.of(1995, 6, 1));
+        assertThat(body.dateOfBirth()).isEqualTo(LocalDate.of(1995, Month.JUNE, 1));
         assertThat(body.gender()).isEqualTo("FEMALE");
         assertThat(body.address()).isEqualTo("1 Jalan Test, KL");
         // Registration normalizes email to lowercase; the label ("Editor") capitalizes

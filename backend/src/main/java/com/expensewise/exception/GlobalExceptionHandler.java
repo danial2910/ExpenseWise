@@ -17,10 +17,16 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
+// A single @RestControllerAdvice mapping every custom exception to the API's
+// one error shape is the intended design (see CLAUDE.md "Consistent error
+// shape") — splitting it to satisfy the dependency-count check would scatter
+// that mapping across multiple classes instead.
+@SuppressWarnings("java:S6539")
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    private static final String CATEGORY_ID_FIELD = "categoryId";
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiErrorResponse> handleValidation(MethodArgumentNotValidException ex,
@@ -130,13 +136,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidTransactionCategoryException.class)
     public ResponseEntity<ApiErrorResponse> handleInvalidTransactionCategory(InvalidTransactionCategoryException ex,
                                                                                  HttpServletRequest request) {
-        return validationFailed("categoryId", ex.getMessage(), request);
+        return validationFailed(CATEGORY_ID_FIELD, ex.getMessage(), request);
     }
 
     @ExceptionHandler(InvalidRecurringCategoryException.class)
     public ResponseEntity<ApiErrorResponse> handleInvalidRecurringCategory(InvalidRecurringCategoryException ex,
                                                                               HttpServletRequest request) {
-        return validationFailed("categoryId", ex.getMessage(), request);
+        return validationFailed(CATEGORY_ID_FIELD, ex.getMessage(), request);
     }
 
     @ExceptionHandler(InvalidRecurringPeriodException.class)
@@ -148,7 +154,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidBudgetCategoryException.class)
     public ResponseEntity<ApiErrorResponse> handleInvalidBudgetCategory(InvalidBudgetCategoryException ex,
                                                                           HttpServletRequest request) {
-        return validationFailed("categoryId", ex.getMessage(), request);
+        return validationFailed(CATEGORY_ID_FIELD, ex.getMessage(), request);
     }
 
     @ExceptionHandler(InvalidBudgetPeriodException.class)
@@ -166,7 +172,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(OverallBudgetRequiredException.class)
     public ResponseEntity<ApiErrorResponse> handleOverallBudgetRequired(OverallBudgetRequiredException ex,
                                                                           HttpServletRequest request) {
-        return validationFailed("categoryId", ex.getMessage(), request);
+        return validationFailed(CATEGORY_ID_FIELD, ex.getMessage(), request);
     }
 
     @ExceptionHandler(BudgetExceedsOverallException.class)

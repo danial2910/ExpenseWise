@@ -28,6 +28,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.List;
 import java.util.Optional;
 
@@ -93,12 +94,12 @@ class UserServiceTest {
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
 
         UserResponse response = userService.updateProfile(USER_ID,
-                new UpdateProfileRequest("Sarah Lim Updated", "+60 12-345 6789", LocalDate.of(1995, 6, 1),
+                new UpdateProfileRequest("Sarah Lim Updated", "+60 12-345 6789", LocalDate.of(1995, Month.JUNE, 1),
                         "FEMALE", "1 Jalan Test, KL"));
 
         assertThat(user.getFullName()).isEqualTo("Sarah Lim Updated");
         assertThat(user.getPhone()).isEqualTo("+60 12-345 6789");
-        assertThat(user.getDateOfBirth()).isEqualTo(LocalDate.of(1995, 6, 1));
+        assertThat(user.getDateOfBirth()).isEqualTo(LocalDate.of(1995, Month.JUNE, 1));
         assertThat(user.getGender()).isEqualTo("FEMALE");
         assertThat(user.getAddress()).isEqualTo("1 Jalan Test, KL");
         assertThat(response.fullName()).isEqualTo("Sarah Lim Updated");

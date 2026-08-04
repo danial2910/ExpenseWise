@@ -4,7 +4,6 @@ import com.expensewise.budget.dto.BudgetMonthResponse;
 import com.expensewise.budget.dto.BudgetRequest;
 import com.expensewise.budget.dto.BudgetResponse;
 import com.expensewise.budget.dto.CategoryBudgetLine;
-import com.expensewise.budget.dto.OverallBudgetLine;
 import com.expensewise.budget.dto.PatchBudgetRequest;
 import com.expensewise.budget.entity.Budget;
 import com.expensewise.budget.mapper.BudgetMapper;
@@ -31,6 +30,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.Month;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
@@ -130,7 +130,7 @@ class BudgetServiceTest {
         budget.setUserId(USER_ID);
         budget.setCategoryId(null);
         budget.setAmount(new BigDecimal("500.00"));
-        budget.setPeriodMonth(LocalDate.of(2026, 7, 1));
+        budget.setPeriodMonth(LocalDate.of(2026, Month.JULY, 1));
         return budget;
     }
 
@@ -140,7 +140,7 @@ class BudgetServiceTest {
         budget.setUserId(OTHER_USER_ID);
         budget.setCategoryId(null);
         budget.setAmount(new BigDecimal("500.00"));
-        budget.setPeriodMonth(LocalDate.of(2026, 7, 1));
+        budget.setPeriodMonth(LocalDate.of(2026, Month.JULY, 1));
         return budget;
     }
 
@@ -164,9 +164,9 @@ class BudgetServiceTest {
     @Test
     void updateBudgetOnAnotherUsersBudgetIsRejectedAs404() {
         when(budgetRepository.findById(200L)).thenReturn(Optional.of(othersBudget()));
+        BudgetRequest request = new BudgetRequest(new BigDecimal("100.00"), null, LocalDate.of(2026, Month.JULY, 1));
 
-        assertThatThrownBy(() -> budgetService.updateBudget(USER_ID, 200L,
-                new BudgetRequest(new BigDecimal("100.00"), null, LocalDate.of(2026, 7, 1))))
+        assertThatThrownBy(() -> budgetService.updateBudget(USER_ID, 200L, request))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -185,9 +185,9 @@ class BudgetServiceTest {
     @Test
     void createBudgetRejectsAnIncomeCategory() {
         when(categoryRepository.findById(11L)).thenReturn(Optional.of(incomeCategory()));
+        BudgetRequest request = new BudgetRequest(new BigDecimal("100.00"), 11L, LocalDate.of(2026, Month.JULY, 1));
 
-        assertThatThrownBy(() -> budgetService.createBudget(USER_ID,
-                new BudgetRequest(new BigDecimal("100.00"), 11L, LocalDate.of(2026, 7, 1))))
+        assertThatThrownBy(() -> budgetService.createBudget(USER_ID, request))
                 .isInstanceOf(InvalidBudgetCategoryException.class);
 
         verify(budgetRepository, never()).save(any());
@@ -196,9 +196,9 @@ class BudgetServiceTest {
     @Test
     void createBudgetRejectsAnotherUsersPrivateCategory() {
         when(categoryRepository.findById(30L)).thenReturn(Optional.of(otherUsersCategory()));
+        BudgetRequest request = new BudgetRequest(new BigDecimal("100.00"), 30L, LocalDate.of(2026, Month.JULY, 1));
 
-        assertThatThrownBy(() -> budgetService.createBudget(USER_ID,
-                new BudgetRequest(new BigDecimal("100.00"), 30L, LocalDate.of(2026, 7, 1))))
+        assertThatThrownBy(() -> budgetService.createBudget(USER_ID, request))
                 .isInstanceOf(InvalidBudgetCategoryException.class);
 
         verify(budgetRepository, never()).save(any());
@@ -207,9 +207,9 @@ class BudgetServiceTest {
     @Test
     void createBudgetRejectsAMissingCategory() {
         when(categoryRepository.findById(99L)).thenReturn(Optional.empty());
+        BudgetRequest request = new BudgetRequest(new BigDecimal("100.00"), 99L, LocalDate.of(2026, Month.JULY, 1));
 
-        assertThatThrownBy(() -> budgetService.createBudget(USER_ID,
-                new BudgetRequest(new BigDecimal("100.00"), 99L, LocalDate.of(2026, 7, 1))))
+        assertThatThrownBy(() -> budgetService.createBudget(USER_ID, request))
                 .isInstanceOf(InvalidBudgetCategoryException.class);
     }
 
@@ -217,13 +217,13 @@ class BudgetServiceTest {
     void createBudgetSavesForAVisibleExpenseCategory() {
         when(categoryRepository.findById(10L)).thenReturn(Optional.of(expenseCategory()));
         // A category budget requires an overall budget to already exist for the month.
-        when(budgetRepository.findByUserIdAndPeriodMonth(USER_ID, LocalDate.of(2026, 7, 1)))
+        when(budgetRepository.findByUserIdAndPeriodMonth(USER_ID, LocalDate.of(2026, Month.JULY, 1)))
                 .thenReturn(List.of(ownOverallBudget()));
         when(budgetRepository.save(any(Budget.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(transactionRepository.findAll(any(Specification.class))).thenReturn(List.of());
 
         BudgetResponse response = budgetService.createBudget(USER_ID,
-                new BudgetRequest(new BigDecimal("300.00"), 10L, LocalDate.of(2026, 7, 1)));
+                new BudgetRequest(new BigDecimal("300.00"), 10L, LocalDate.of(2026, Month.JULY, 1)));
 
         assertThat(response.categoryName()).isEqualTo("Food");
         assertThat(response.amount()).isEqualByComparingTo("300.00");
@@ -232,10 +232,10 @@ class BudgetServiceTest {
     @Test
     void createBudgetRejectsACategoryBudgetWhenNoOverallBudgetExistsYet() {
         when(categoryRepository.findById(10L)).thenReturn(Optional.of(expenseCategory()));
-        when(budgetRepository.findByUserIdAndPeriodMonth(USER_ID, LocalDate.of(2026, 7, 1))).thenReturn(List.of());
+        when(budgetRepository.findByUserIdAndPeriodMonth(USER_ID, LocalDate.of(2026, Month.JULY, 1))).thenReturn(List.of());
+        BudgetRequest request = new BudgetRequest(new BigDecimal("100.00"), 10L, LocalDate.of(2026, Month.JULY, 1));
 
-        assertThatThrownBy(() -> budgetService.createBudget(USER_ID,
-                new BudgetRequest(new BigDecimal("100.00"), 10L, LocalDate.of(2026, 7, 1))))
+        assertThatThrownBy(() -> budgetService.createBudget(USER_ID, request))
                 .isInstanceOf(OverallBudgetRequiredException.class);
 
         verify(budgetRepository, never()).save(any());
@@ -249,14 +249,14 @@ class BudgetServiceTest {
         transportBudget.setUserId(USER_ID);
         transportBudget.setCategoryId(12L);
         transportBudget.setAmount(new BigDecimal("400.00"));
-        transportBudget.setPeriodMonth(LocalDate.of(2026, 7, 1));
+        transportBudget.setPeriodMonth(LocalDate.of(2026, Month.JULY, 1));
 
         when(categoryRepository.findById(10L)).thenReturn(Optional.of(expenseCategory()));
-        when(budgetRepository.findByUserIdAndPeriodMonth(USER_ID, LocalDate.of(2026, 7, 1)))
+        when(budgetRepository.findByUserIdAndPeriodMonth(USER_ID, LocalDate.of(2026, Month.JULY, 1)))
                 .thenReturn(List.of(ownOverallBudget(), transportBudget));
+        BudgetRequest request = new BudgetRequest(new BigDecimal("150.00"), 10L, LocalDate.of(2026, Month.JULY, 1));
 
-        assertThatThrownBy(() -> budgetService.createBudget(USER_ID,
-                new BudgetRequest(new BigDecimal("150.00"), 10L, LocalDate.of(2026, 7, 1))))
+        assertThatThrownBy(() -> budgetService.createBudget(USER_ID, request))
                 .isInstanceOf(BudgetExceedsOverallException.class);
 
         verify(budgetRepository, never()).save(any());
@@ -270,14 +270,14 @@ class BudgetServiceTest {
         foodBudget.setUserId(USER_ID);
         foodBudget.setCategoryId(10L);
         foodBudget.setAmount(new BigDecimal("300.00"));
-        foodBudget.setPeriodMonth(LocalDate.of(2026, 7, 1));
+        foodBudget.setPeriodMonth(LocalDate.of(2026, Month.JULY, 1));
 
         when(budgetRepository.findById(100L)).thenReturn(Optional.of(overall));
-        when(budgetRepository.findByUserIdAndPeriodMonth(USER_ID, LocalDate.of(2026, 7, 1)))
+        when(budgetRepository.findByUserIdAndPeriodMonth(USER_ID, LocalDate.of(2026, Month.JULY, 1)))
                 .thenReturn(List.of(overall, foodBudget));
+        BudgetRequest request = new BudgetRequest(new BigDecimal("200.00"), null, LocalDate.of(2026, Month.JULY, 1));
 
-        assertThatThrownBy(() -> budgetService.updateBudget(USER_ID, 100L,
-                new BudgetRequest(new BigDecimal("200.00"), null, LocalDate.of(2026, 7, 1))))
+        assertThatThrownBy(() -> budgetService.updateBudget(USER_ID, 100L, request))
                 .isInstanceOf(BudgetExceedsOverallException.class);
     }
 
@@ -289,10 +289,10 @@ class BudgetServiceTest {
         foodBudget.setUserId(USER_ID);
         foodBudget.setCategoryId(10L);
         foodBudget.setAmount(new BigDecimal("100.00"));
-        foodBudget.setPeriodMonth(LocalDate.of(2026, 7, 1));
+        foodBudget.setPeriodMonth(LocalDate.of(2026, Month.JULY, 1));
 
         when(budgetRepository.findById(100L)).thenReturn(Optional.of(overall));
-        when(budgetRepository.findByUserIdAndPeriodMonth(USER_ID, LocalDate.of(2026, 7, 1)))
+        when(budgetRepository.findByUserIdAndPeriodMonth(USER_ID, LocalDate.of(2026, Month.JULY, 1)))
                 .thenReturn(List.of(overall, foodBudget));
 
         assertThatThrownBy(() -> budgetService.deleteBudget(USER_ID, 100L))
@@ -305,8 +305,9 @@ class BudgetServiceTest {
 
     @Test
     void createBudgetRejectsAPeriodMonthThatIsNotTheFirstOfTheMonth() {
-        assertThatThrownBy(() -> budgetService.createBudget(USER_ID,
-                new BudgetRequest(new BigDecimal("100.00"), null, LocalDate.of(2026, 7, 15))))
+        BudgetRequest request = new BudgetRequest(new BigDecimal("100.00"), null, LocalDate.of(2026, Month.JULY, 15));
+
+        assertThatThrownBy(() -> budgetService.createBudget(USER_ID, request))
                 .isInstanceOf(InvalidBudgetPeriodException.class);
 
         verify(budgetRepository, never()).save(any());
@@ -316,11 +317,11 @@ class BudgetServiceTest {
 
     @Test
     void createBudgetRejectsADuplicateOverallBudgetForTheSameMonth() {
-        when(budgetRepository.findByUserIdAndPeriodMonth(USER_ID, LocalDate.of(2026, 7, 1)))
+        when(budgetRepository.findByUserIdAndPeriodMonth(USER_ID, LocalDate.of(2026, Month.JULY, 1)))
                 .thenReturn(List.of(ownOverallBudget()));
+        BudgetRequest request = new BudgetRequest(new BigDecimal("100.00"), null, LocalDate.of(2026, Month.JULY, 1));
 
-        assertThatThrownBy(() -> budgetService.createBudget(USER_ID,
-                new BudgetRequest(new BigDecimal("100.00"), null, LocalDate.of(2026, 7, 1))))
+        assertThatThrownBy(() -> budgetService.createBudget(USER_ID, request))
                 .isInstanceOf(DuplicateBudgetException.class);
 
         verify(budgetRepository, never()).save(any());
@@ -329,13 +330,13 @@ class BudgetServiceTest {
     @Test
     void createBudgetAllowsACategoryBudgetAlongsideAnExistingOverallBudgetForTheSameMonth() {
         when(categoryRepository.findById(10L)).thenReturn(Optional.of(expenseCategory()));
-        when(budgetRepository.findByUserIdAndPeriodMonth(USER_ID, LocalDate.of(2026, 7, 1)))
+        when(budgetRepository.findByUserIdAndPeriodMonth(USER_ID, LocalDate.of(2026, Month.JULY, 1)))
                 .thenReturn(List.of(ownOverallBudget()));
         when(budgetRepository.save(any(Budget.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(transactionRepository.findAll(any(Specification.class))).thenReturn(List.of());
 
         BudgetResponse response = budgetService.createBudget(USER_ID,
-                new BudgetRequest(new BigDecimal("200.00"), 10L, LocalDate.of(2026, 7, 1)));
+                new BudgetRequest(new BigDecimal("200.00"), 10L, LocalDate.of(2026, Month.JULY, 1)));
 
         assertThat(response.categoryId()).isEqualTo(10L);
     }
@@ -344,12 +345,12 @@ class BudgetServiceTest {
     void updateBudgetAllowsKeepingItsOwnSlotWithoutTrippingTheDuplicateCheck() {
         Budget existing = ownOverallBudget();
         when(budgetRepository.findById(100L)).thenReturn(Optional.of(existing));
-        when(budgetRepository.findByUserIdAndPeriodMonth(USER_ID, LocalDate.of(2026, 7, 1)))
+        when(budgetRepository.findByUserIdAndPeriodMonth(USER_ID, LocalDate.of(2026, Month.JULY, 1)))
                 .thenReturn(List.of(existing));
         when(transactionRepository.findAll(any(Specification.class))).thenReturn(List.of());
 
         BudgetResponse response = budgetService.updateBudget(USER_ID, 100L,
-                new BudgetRequest(new BigDecimal("600.00"), null, LocalDate.of(2026, 7, 1)));
+                new BudgetRequest(new BigDecimal("600.00"), null, LocalDate.of(2026, Month.JULY, 1)));
 
         assertThat(response.amount()).isEqualByComparingTo("600.00");
     }
@@ -360,14 +361,14 @@ class BudgetServiceTest {
     void patchBudgetOnlyChangesTheAmountWhenOnlyAmountIsProvided() {
         Budget existing = ownOverallBudget();
         when(budgetRepository.findById(100L)).thenReturn(Optional.of(existing));
-        when(budgetRepository.findByUserIdAndPeriodMonth(USER_ID, LocalDate.of(2026, 7, 1)))
+        when(budgetRepository.findByUserIdAndPeriodMonth(USER_ID, LocalDate.of(2026, Month.JULY, 1)))
                 .thenReturn(List.of(existing));
         when(transactionRepository.findAll(any(Specification.class))).thenReturn(List.of());
 
         budgetService.patchBudget(USER_ID, 100L, new PatchBudgetRequest(new BigDecimal("450.00"), null, null));
 
         assertThat(existing.getAmount()).isEqualByComparingTo("450.00");
-        assertThat(existing.getPeriodMonth()).isEqualTo(LocalDate.of(2026, 7, 1));
+        assertThat(existing.getPeriodMonth()).isEqualTo(LocalDate.of(2026, Month.JULY, 1));
     }
 
     // --- computation: spent / remaining / progress / exceeded ---
@@ -405,13 +406,13 @@ class BudgetServiceTest {
     @Test
     void computationWithNoBudgetSetHasNullRemainingAndProgressAndIsNeverExceeded() {
         // getMonthBudgets exercises the "no budget for this category" path.
-        when(budgetRepository.findByUserIdAndPeriodMonth(USER_ID, LocalDate.of(2026, 7, 1))).thenReturn(List.of());
+        when(budgetRepository.findByUserIdAndPeriodMonth(USER_ID, LocalDate.of(2026, Month.JULY, 1))).thenReturn(List.of());
         when(categoryRepository.findAllVisibleToUserByType(USER_ID, "EXPENSE"))
                 .thenReturn(List.of(expenseCategory()));
         when(transactionRepository.findAll(any(Specification.class)))
                 .thenReturn(List.of(expense("40.00")));
 
-        BudgetMonthResponse response = budgetService.getMonthBudgets(USER_ID, LocalDate.of(2026, 7, 1));
+        BudgetMonthResponse response = budgetService.getMonthBudgets(USER_ID, LocalDate.of(2026, Month.JULY, 1));
 
         assertThat(response.overall().amount()).isNull();
         assertThat(response.overall().remaining()).isNull();
@@ -434,9 +435,9 @@ class BudgetServiceTest {
         foodBudget.setUserId(USER_ID);
         foodBudget.setCategoryId(10L);
         foodBudget.setAmount(new BigDecimal("100.00"));
-        foodBudget.setPeriodMonth(LocalDate.of(2026, 7, 1));
+        foodBudget.setPeriodMonth(LocalDate.of(2026, Month.JULY, 1));
 
-        when(budgetRepository.findByUserIdAndPeriodMonth(USER_ID, LocalDate.of(2026, 7, 1)))
+        when(budgetRepository.findByUserIdAndPeriodMonth(USER_ID, LocalDate.of(2026, Month.JULY, 1)))
                 .thenReturn(List.of(overallBudget, foodBudget));
         when(categoryRepository.findAllVisibleToUserByType(USER_ID, "EXPENSE"))
                 .thenReturn(List.of(expenseCategory()));
@@ -448,7 +449,7 @@ class BudgetServiceTest {
                 .thenReturn(List.of(expense("80.00"), expense("20.00")))
                 .thenReturn(List.of(expense("80.00")));
 
-        BudgetMonthResponse response = budgetService.getMonthBudgets(USER_ID, LocalDate.of(2026, 7, 1));
+        BudgetMonthResponse response = budgetService.getMonthBudgets(USER_ID, LocalDate.of(2026, Month.JULY, 1));
 
         assertThat(response.overall().spent()).isEqualByComparingTo("100.00");
         assertThat(response.categories().get(0).spent()).isEqualByComparingTo("80.00");
@@ -465,12 +466,12 @@ class BudgetServiceTest {
         BudgetService klService = new BudgetService(budgetRepository, categoryRepository, transactionRepository,
                 budgetMapper, lateJulyUtc);
 
-        when(budgetRepository.findByUserIdAndPeriodMonth(USER_ID, LocalDate.of(2026, 8, 1))).thenReturn(List.of());
+        when(budgetRepository.findByUserIdAndPeriodMonth(USER_ID, LocalDate.of(2026, Month.AUGUST, 1))).thenReturn(List.of());
         when(categoryRepository.findAllVisibleToUserByType(USER_ID, "EXPENSE")).thenReturn(List.of());
         when(transactionRepository.findAll(any(Specification.class))).thenReturn(List.of());
 
         BudgetMonthResponse response = klService.getMonthBudgets(USER_ID, null);
 
-        assertThat(response.periodMonth()).isEqualTo(LocalDate.of(2026, 8, 1));
+        assertThat(response.periodMonth()).isEqualTo(LocalDate.of(2026, Month.AUGUST, 1));
     }
 }

@@ -19,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.Month;
 import java.time.ZoneId;
 import java.util.List;
 
@@ -129,7 +130,7 @@ class AdminDashboardServiceTest {
         List<MonthlyCountPoint> signups = service.getDashboard(3, 5).signupsOverTime();
 
         assertThat(signups).extracting(MonthlyCountPoint::month).containsExactly(
-                LocalDate.of(2026, 5, 1), LocalDate.of(2026, 6, 1), LocalDate.of(2026, 7, 1));
+                LocalDate.of(2026, Month.MAY, 1), LocalDate.of(2026, Month.JUNE, 1), LocalDate.of(2026, Month.JULY, 1));
         assertThat(signups).extracting(MonthlyCountPoint::count).containsExactly(1L, 0L, 1L);
     }
 
@@ -144,7 +145,7 @@ class AdminDashboardServiceTest {
         List<MonthlyCountPoint> activity = service.getDashboard(2, 5).activityOverTime();
 
         assertThat(activity).extracting(MonthlyCountPoint::month).containsExactly(
-                LocalDate.of(2026, 6, 1), LocalDate.of(2026, 7, 1));
+                LocalDate.of(2026, Month.JUNE, 1), LocalDate.of(2026, Month.JULY, 1));
         assertThat(activity).extracting(MonthlyCountPoint::count).containsExactly(1L, 2L);
     }
 
@@ -186,6 +187,7 @@ class AdminDashboardServiceTest {
 
         List<com.expensewise.admin.dto.FeatureUsageResponse> usage = service.getDashboard(6, 5).featureUsage();
 
+        assertThat(usage).isNotEmpty();
         assertThat(usage).allSatisfy(f -> {
             assertThat(f.enabledCount()).isEqualTo(1);
             assertThat(f.percentage()).isEqualTo(100);
@@ -198,6 +200,7 @@ class AdminDashboardServiceTest {
 
         List<com.expensewise.admin.dto.FeatureUsageResponse> usage = service.getDashboard(6, 5).featureUsage();
 
+        assertThat(usage).isNotEmpty();
         assertThat(usage).allSatisfy(f -> assertThat(f.percentage()).isZero());
     }
 
@@ -209,7 +212,8 @@ class AdminDashboardServiceTest {
         user.setEmail("priya@example.com");
         when(userRepository.findAllByOrderByCreatedAtDesc(any())).thenReturn(List.of(user));
         when(dashboardMapper.toRecentSignupResponse(user)).thenReturn(
-                new com.expensewise.admin.dto.RecentSignupResponse(42L, "Priya", "priya@example.com", Instant.now(), true));
+                new com.expensewise.admin.dto.RecentSignupResponse(42L, "Priya", "priya@example.com",
+                        Instant.parse("2026-07-15T09:00:00Z"), true));
 
         List<com.expensewise.admin.dto.RecentSignupResponse> recent = service.getDashboard(6, 3).recentSignups();
 

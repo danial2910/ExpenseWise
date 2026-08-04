@@ -18,6 +18,7 @@ import org.springframework.data.domain.PageImpl;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,8 +33,8 @@ class AiContextServiceTest {
 
     private static final Long USER_ID = 1L;
     private static final Long OTHER_USER_ID = 2L;
-    private static final LocalDate MONTH = LocalDate.of(2026, 7, 1);
-    private static final LocalDate MONTH_END = LocalDate.of(2026, 7, 31);
+    private static final LocalDate MONTH = LocalDate.of(2026, Month.JULY, 1);
+    private static final LocalDate MONTH_END = LocalDate.of(2026, Month.JULY, 31);
 
     @Mock
     private TransactionService transactionService;
@@ -47,9 +48,11 @@ class AiContextServiceTest {
         aiContextService = new AiContextService(transactionService, budgetService);
     }
 
+    private static final Instant FIXED_INSTANT = Instant.parse("2026-07-15T00:00:00Z");
+
     private TransactionResponse expense(String categoryName, String amount) {
         return new TransactionResponse(1L, "EXPENSE", new BigDecimal(amount), 10L, categoryName, "utensils",
-                LocalDate.of(2026, 7, 15), "desc", Instant.now(), Instant.now(), null);
+                LocalDate.of(2026, Month.JULY, 15), "desc", FIXED_INSTANT, FIXED_INSTANT, null);
     }
 
     private OverallBudgetLine overallLine(BigDecimal amount, BigDecimal spent, BigDecimal progressPercent, boolean exceeded) {
@@ -74,10 +77,10 @@ class AiContextServiceTest {
 
         String context = aiContextService.buildContextText(USER_ID);
 
-        assertThat(context).contains("Total income: RM 2000.00");
-        assertThat(context).contains("Total expenses: RM 100.00");
-        assertThat(context).contains("Food RM 100.00");
-        assertThat(context).contains("Overall budget: RM 500.00 limit");
+        assertThat(context).contains("Total income: RM 2000.00")
+                .contains("Total expenses: RM 100.00")
+                .contains("Food RM 100.00")
+                .contains("Overall budget: RM 500.00 limit");
 
         verify(budgetService).getMonthBudgets(eq(USER_ID), isNull());
         verify(transactionService).getSummary(eq(USER_ID), isNull(), isNull(), eq(MONTH), eq(MONTH_END));
@@ -119,8 +122,8 @@ class AiContextServiceTest {
         int transportIdx = context.indexOf("Transport");
         int billsIdx = context.indexOf("Bills");
         int shoppingIdx = context.indexOf("Shopping");
-        assertThat(transportIdx).isPositive();
-        assertThat(transportIdx).isLessThan(billsIdx);
+        assertThat(transportIdx).isPositive()
+                .isLessThan(billsIdx);
         assertThat(billsIdx).isLessThan(shoppingIdx);
         assertThat(context).doesNotContain("Food RM");
     }
@@ -158,8 +161,8 @@ class AiContextServiceTest {
 
         assertThat(insights.get(0).severity()).isEqualTo("CRITICAL");
         assertThat(insights.get(0).title()).contains("Food");
-        assertThat(insights).anySatisfy(i -> assertThat(i.severity()).isEqualTo("WARNING"));
-        assertThat(insights).anySatisfy(i -> assertThat(i.severity()).isEqualTo("POSITIVE"));
+        assertThat(insights).anySatisfy(i -> assertThat(i.severity()).isEqualTo("WARNING"))
+                .anySatisfy(i -> assertThat(i.severity()).isEqualTo("POSITIVE"));
     }
 
     @Test

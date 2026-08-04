@@ -19,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -76,7 +77,7 @@ class BudgetIntegrationTest extends AbstractIntegrationTest {
     }
 
     private static LocalDate firstOfThisMonth() {
-        return LocalDate.now().withDayOfMonth(1);
+        return LocalDate.of(2026, Month.MARCH, 1);
     }
 
     @Test
@@ -251,7 +252,7 @@ class BudgetIntegrationTest extends AbstractIntegrationTest {
         Long foodCategoryId = systemCategoryId(user.token(), "Food", "EXPENSE");
         Long salaryCategoryId = systemCategoryId(user.token(), "Salary", "INCOME");
         LocalDate month = firstOfThisMonth();
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.of(2026, Month.MARCH, 15);
 
         createBudget(user.token(), new BudgetRequest(new BigDecimal("500.00"), null, month));
         createBudget(user.token(), new BudgetRequest(new BigDecimal("50.00"), foodCategoryId, month));

@@ -38,6 +38,7 @@ public class UserService {
     private static final long MAX_AVATAR_BYTES = 2L * 1024 * 1024;
     private static final Set<String> ALLOWED_AVATAR_CONTENT_TYPES = Set.of("image/jpeg", "image/png", "image/webp");
     private static final List<String> LOGIN_ACTIONS = List.of(ActivityAction.LOGIN_SUCCESS, ActivityAction.LOGIN_FAILED);
+    private static final String PATH_DELIMITER = "/";
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
@@ -105,7 +106,8 @@ public class UserService {
         validateAvatarFile(file);
         User user = findUserOrThrow(userId);
 
-        String newPath = "avatars/" + userId + "/" + UUID.randomUUID() + extensionFor(file.getContentType());
+        String newPath = "avatars" + PATH_DELIMITER + userId + PATH_DELIMITER + UUID.randomUUID()
+                + extensionFor(file.getContentType());
         storageService.upload(newPath, readBytes(file), file.getContentType());
 
         String previousPath = user.getAvatarPath();

@@ -35,6 +35,10 @@ public class RefreshTokenService {
 
     @Transactional
     public IssuedToken issue(Long userId) {
+        return doIssue(userId);
+    }
+
+    private IssuedToken doIssue(Long userId) {
         String rawValue = TokenHasher.generateRawToken();
         Instant expiresAt = Instant.now().plusSeconds(jwtProperties.refreshTokenExpirationSeconds());
 
@@ -75,7 +79,7 @@ public class RefreshTokenService {
 
         existing.setRevokedAt(Instant.now());
 
-        IssuedToken next = issue(existing.getUserId());
+        IssuedToken next = doIssue(existing.getUserId());
         return new RotatedToken(existing.getUserId(), next.rawValue(), next.expiresAt());
     }
 

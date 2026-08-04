@@ -19,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -101,8 +102,8 @@ class RecurringRuleServiceTest {
         rule.setType("EXPENSE");
         rule.setAmount(new BigDecimal("50.00"));
         rule.setFrequency("MONTHLY");
-        rule.setStartDate(LocalDate.of(2026, 6, 1));
-        rule.setNextDueDate(LocalDate.of(2026, 8, 1));
+        rule.setStartDate(LocalDate.of(2026, Month.JUNE, 1));
+        rule.setNextDueDate(LocalDate.of(2026, Month.AUGUST, 1));
         rule.setActive(true);
         return rule;
     }
@@ -115,8 +116,8 @@ class RecurringRuleServiceTest {
         rule.setType("EXPENSE");
         rule.setAmount(new BigDecimal("50.00"));
         rule.setFrequency("MONTHLY");
-        rule.setStartDate(LocalDate.of(2026, 6, 1));
-        rule.setNextDueDate(LocalDate.of(2026, 8, 1));
+        rule.setStartDate(LocalDate.of(2026, Month.JUNE, 1));
+        rule.setNextDueDate(LocalDate.of(2026, Month.AUGUST, 1));
         rule.setActive(true);
         return rule;
     }
@@ -134,10 +135,10 @@ class RecurringRuleServiceTest {
     @Test
     void updateRuleOnAnotherUsersRuleIsRejectedAs404() {
         when(recurringRuleRepository.findById(200L)).thenReturn(Optional.of(othersRule()));
+        RecurringRuleRequest request = new RecurringRuleRequest("EXPENSE", new BigDecimal("50.00"), 10L, null,
+                "MONTHLY", LocalDate.of(2026, Month.JUNE, 1), null);
 
-        assertThatThrownBy(() -> recurringRuleService.updateRule(USER_ID, 200L,
-                new RecurringRuleRequest("EXPENSE", new BigDecimal("50.00"), 10L, null, "MONTHLY",
-                        LocalDate.of(2026, 6, 1), null)))
+        assertThatThrownBy(() -> recurringRuleService.updateRule(USER_ID, 200L, request))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -156,10 +157,10 @@ class RecurringRuleServiceTest {
     @Test
     void createRuleRejectsAMismatchedCategoryType() {
         when(categoryRepository.findById(11L)).thenReturn(Optional.of(incomeCategory()));
+        RecurringRuleRequest request = new RecurringRuleRequest("EXPENSE", new BigDecimal("50.00"), 11L, null,
+                "MONTHLY", LocalDate.of(2026, Month.JUNE, 1), null);
 
-        assertThatThrownBy(() -> recurringRuleService.createRule(USER_ID,
-                new RecurringRuleRequest("EXPENSE", new BigDecimal("50.00"), 11L, null, "MONTHLY",
-                        LocalDate.of(2026, 6, 1), null)))
+        assertThatThrownBy(() -> recurringRuleService.createRule(USER_ID, request))
                 .isInstanceOf(InvalidRecurringCategoryException.class);
 
         verify(recurringRuleRepository, never()).save(any());
@@ -168,10 +169,10 @@ class RecurringRuleServiceTest {
     @Test
     void createRuleRejectsAnotherUsersPrivateCategory() {
         when(categoryRepository.findById(30L)).thenReturn(Optional.of(otherUsersCategory()));
+        RecurringRuleRequest request = new RecurringRuleRequest("EXPENSE", new BigDecimal("50.00"), 30L, null,
+                "MONTHLY", LocalDate.of(2026, Month.JUNE, 1), null);
 
-        assertThatThrownBy(() -> recurringRuleService.createRule(USER_ID,
-                new RecurringRuleRequest("EXPENSE", new BigDecimal("50.00"), 30L, null, "MONTHLY",
-                        LocalDate.of(2026, 6, 1), null)))
+        assertThatThrownBy(() -> recurringRuleService.createRule(USER_ID, request))
                 .isInstanceOf(InvalidRecurringCategoryException.class);
     }
 
@@ -182,10 +183,10 @@ class RecurringRuleServiceTest {
 
         RecurringRuleResponse response = recurringRuleService.createRule(USER_ID,
                 new RecurringRuleRequest("EXPENSE", new BigDecimal("50.00"), 10L, "Electricity", "MONTHLY",
-                        LocalDate.of(2026, 6, 1), null));
+                        LocalDate.of(2026, Month.JUNE, 1), null));
 
         assertThat(response.categoryName()).isEqualTo("Bills");
-        assertThat(response.nextDueDate()).isEqualTo(LocalDate.of(2026, 6, 1));
+        assertThat(response.nextDueDate()).isEqualTo(LocalDate.of(2026, Month.JUNE, 1));
         assertThat(response.isActive()).isTrue();
     }
 
@@ -193,9 +194,10 @@ class RecurringRuleServiceTest {
 
     @Test
     void createRuleRejectsAnEndDateBeforeTheStartDate() {
-        assertThatThrownBy(() -> recurringRuleService.createRule(USER_ID,
-                new RecurringRuleRequest("EXPENSE", new BigDecimal("50.00"), 10L, null, "MONTHLY",
-                        LocalDate.of(2026, 6, 1), LocalDate.of(2026, 5, 1))))
+        RecurringRuleRequest request = new RecurringRuleRequest("EXPENSE", new BigDecimal("50.00"), 10L, null,
+                "MONTHLY", LocalDate.of(2026, Month.JUNE, 1), LocalDate.of(2026, Month.MAY, 1));
+
+        assertThatThrownBy(() -> recurringRuleService.createRule(USER_ID, request))
                 .isInstanceOf(InvalidRecurringPeriodException.class);
 
         verify(recurringRuleRepository, never()).save(any());
@@ -211,9 +213,9 @@ class RecurringRuleServiceTest {
 
         recurringRuleService.updateRule(USER_ID, 100L,
                 new RecurringRuleRequest("EXPENSE", new BigDecimal("75.00"), 10L, "Updated", "MONTHLY",
-                        LocalDate.of(2026, 7, 1), null));
+                        LocalDate.of(2026, Month.JULY, 1), null));
 
-        assertThat(existing.getNextDueDate()).isEqualTo(LocalDate.of(2026, 8, 1));
+        assertThat(existing.getNextDueDate()).isEqualTo(LocalDate.of(2026, Month.AUGUST, 1));
         assertThat(existing.getAmount()).isEqualByComparingTo("75.00");
     }
 
@@ -225,9 +227,9 @@ class RecurringRuleServiceTest {
 
         recurringRuleService.updateRule(USER_ID, 100L,
                 new RecurringRuleRequest("EXPENSE", new BigDecimal("75.00"), 10L, null, "MONTHLY",
-                        LocalDate.of(2026, 9, 1), null));
+                        LocalDate.of(2026, Month.SEPTEMBER, 1), null));
 
-        assertThat(existing.getNextDueDate()).isEqualTo(LocalDate.of(2026, 9, 1));
+        assertThat(existing.getNextDueDate()).isEqualTo(LocalDate.of(2026, Month.SEPTEMBER, 1));
     }
 
     // --- patch: pause/resume ---

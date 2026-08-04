@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -74,7 +75,7 @@ class TransactionIntegrationTest extends AbstractIntegrationTest {
 
         Long foodCategoryId = systemCategoryId(userB.token(), "Food", "EXPENSE");
         Long transactionId = createTransaction(userB.token(),
-                new TransactionRequest("EXPENSE", new BigDecimal("15.00"), foodCategoryId, LocalDate.now(), "Lunch"))
+                new TransactionRequest("EXPENSE", new BigDecimal("15.00"), foodCategoryId, LocalDate.of(2026, Month.MARCH, 15), "Lunch"))
                 .getBody().id();
 
         ResponseEntity<ApiErrorResponse> getResponse = restTemplate.exchange(
@@ -84,7 +85,7 @@ class TransactionIntegrationTest extends AbstractIntegrationTest {
 
         ResponseEntity<ApiErrorResponse> updateResponse = restTemplate.exchange(
                 baseUrl("/api/v1/transactions/" + transactionId), HttpMethod.PUT,
-                new HttpEntity<>(new TransactionRequest("EXPENSE", new BigDecimal("20.00"), foodCategoryId, LocalDate.now(), "Edited"),
+                new HttpEntity<>(new TransactionRequest("EXPENSE", new BigDecimal("20.00"), foodCategoryId, LocalDate.of(2026, Month.MARCH, 15), "Edited"),
                         bearerHeaders(userA.token())),
                 ApiErrorResponse.class);
         assertThat(updateResponse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
@@ -102,7 +103,7 @@ class TransactionIntegrationTest extends AbstractIntegrationTest {
 
         ResponseEntity<ApiErrorResponse> response = restTemplate.exchange(
                 baseUrl("/api/v1/transactions"), HttpMethod.POST,
-                new HttpEntity<>(new TransactionRequest("EXPENSE", new BigDecimal("10.00"), salaryCategoryId, LocalDate.now(), null),
+                new HttpEntity<>(new TransactionRequest("EXPENSE", new BigDecimal("10.00"), salaryCategoryId, LocalDate.of(2026, Month.MARCH, 15), null),
                         bearerHeaders(user.token())),
                 ApiErrorResponse.class);
 
@@ -120,7 +121,7 @@ class TransactionIntegrationTest extends AbstractIntegrationTest {
 
         ResponseEntity<ApiErrorResponse> response = restTemplate.exchange(
                 baseUrl("/api/v1/transactions"), HttpMethod.POST,
-                new HttpEntity<>(new TransactionRequest("INCOME", new BigDecimal("10.00"), privateCategoryId, LocalDate.now(), null),
+                new HttpEntity<>(new TransactionRequest("INCOME", new BigDecimal("10.00"), privateCategoryId, LocalDate.of(2026, Month.MARCH, 15), null),
                         bearerHeaders(other.token())),
                 ApiErrorResponse.class);
 
@@ -134,7 +135,7 @@ class TransactionIntegrationTest extends AbstractIntegrationTest {
         Long foodCategoryId = systemCategoryId(user.token(), "Food", "EXPENSE");
         Long salaryCategoryId = systemCategoryId(user.token(), "Salary", "INCOME");
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.of(2026, Month.MARCH, 15);
         createTransaction(user.token(), new TransactionRequest("INCOME", new BigDecimal("2000.00"), salaryCategoryId, today, "Payday"));
         createTransaction(user.token(), new TransactionRequest("EXPENSE", new BigDecimal("50.00"), foodCategoryId, today, "Groceries"));
         createTransaction(user.token(), new TransactionRequest("EXPENSE", new BigDecimal("25.50"), foodCategoryId, today, "Dinner"));
@@ -155,13 +156,13 @@ class TransactionIntegrationTest extends AbstractIntegrationTest {
         Long foodCategoryId = systemCategoryId(user.token(), "Food", "EXPENSE");
 
         TransactionResponse created = createTransaction(user.token(),
-                new TransactionRequest("EXPENSE", new BigDecimal("12.00"), foodCategoryId, LocalDate.now(), "Coffee"))
+                new TransactionRequest("EXPENSE", new BigDecimal("12.00"), foodCategoryId, LocalDate.of(2026, Month.MARCH, 15), "Coffee"))
                 .getBody();
         assertThat(created.categoryName()).isEqualTo("Food");
 
         ResponseEntity<TransactionResponse> updateResponse = restTemplate.exchange(
                 baseUrl("/api/v1/transactions/" + created.id()), HttpMethod.PUT,
-                new HttpEntity<>(new TransactionRequest("EXPENSE", new BigDecimal("15.00"), foodCategoryId, LocalDate.now(), "Coffee and cake"),
+                new HttpEntity<>(new TransactionRequest("EXPENSE", new BigDecimal("15.00"), foodCategoryId, LocalDate.of(2026, Month.MARCH, 15), "Coffee and cake"),
                         bearerHeaders(user.token())),
                 TransactionResponse.class);
         assertThat(updateResponse.getStatusCode()).isEqualTo(HttpStatus.OK);

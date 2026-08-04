@@ -27,6 +27,10 @@ public class FeatureEntitlementInterceptor implements HandlerInterceptor {
         this.entitlementService = entitlementService;
     }
 
+    // Every path either permits the request (true) or rejects it by throwing
+    // FeatureNotEnabledException — there is no "return false" case for
+    // HandlerInterceptor#preHandle here by design.
+    @SuppressWarnings("java:S3516")
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         if (!(handler instanceof HandlerMethod handlerMethod)) {
@@ -42,14 +46,14 @@ public class FeatureEntitlementInterceptor implements HandlerInterceptor {
         }
 
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (!(principal instanceof AuthPrincipal authPrincipal)) {
+        if (!(principal instanceof AuthPrincipal(Long userId, String role))) {
             return true;
         }
-        if ("ADMIN".equals(authPrincipal.role())) {
+        if ("ADMIN".equals(role)) {
             return true;
         }
 
-        if (!entitlementService.isEnabled(authPrincipal.userId(), annotation.value())) {
+        if (!entitlementService.isEnabled(userId, annotation.value())) {
             throw new FeatureNotEnabledException("This feature is not enabled for your account");
         }
         return true;

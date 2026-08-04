@@ -15,21 +15,23 @@ import org.springframework.stereotype.Component;
 public class RefreshCookieFactory {
 
     private static final String COOKIE_NAME = "refreshToken";
-    private static final String COOKIE_PATH = "/api/v1/auth";
 
     private final JwtProperties jwtProperties;
     private final boolean secure;
+    private final String cookiePath;
 
-    public RefreshCookieFactory(JwtProperties jwtProperties, @Value("${cookie.secure}") boolean secure) {
+    public RefreshCookieFactory(JwtProperties jwtProperties, @Value("${cookie.secure}") boolean secure,
+                                 @Value("${cookie.auth-path:/api/v1/auth}") String cookiePath) {
         this.jwtProperties = jwtProperties;
         this.secure = secure;
+        this.cookiePath = cookiePath;
     }
 
     public Cookie create(String rawValue) {
         Cookie cookie = new Cookie(COOKIE_NAME, rawValue);
         cookie.setHttpOnly(true);
         cookie.setSecure(secure);
-        cookie.setPath(COOKIE_PATH);
+        cookie.setPath(cookiePath);
         cookie.setAttribute("SameSite", "Lax");
         cookie.setMaxAge((int) jwtProperties.refreshTokenExpirationSeconds());
         return cookie;
@@ -39,7 +41,7 @@ public class RefreshCookieFactory {
         Cookie cookie = new Cookie(COOKIE_NAME, "");
         cookie.setHttpOnly(true);
         cookie.setSecure(secure);
-        cookie.setPath(COOKIE_PATH);
+        cookie.setPath(cookiePath);
         cookie.setAttribute("SameSite", "Lax");
         cookie.setMaxAge(0);
         return cookie;

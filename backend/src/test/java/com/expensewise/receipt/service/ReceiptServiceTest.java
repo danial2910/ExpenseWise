@@ -248,7 +248,7 @@ class ReceiptServiceTest {
         Receipt existing = new Receipt();
         existing.setStoragePath("receipts/1/100/file.jpg");
         when(receiptRepository.findByTransactionId(TRANSACTION_ID)).thenReturn(Optional.of(existing));
-        when(storageService.generateSignedUrl(eq("receipts/1/100/file.jpg"), eq(Duration.ofMinutes(15))))
+        when(storageService.generateSignedUrl("receipts/1/100/file.jpg", Duration.ofMinutes(15)))
                 .thenReturn("https://signed.example/file.jpg");
 
         assertThat(receiptService.findReceiptUrl(TRANSACTION_ID)).isEqualTo("https://signed.example/file.jpg");

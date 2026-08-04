@@ -18,7 +18,6 @@ import com.expensewise.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -95,8 +94,9 @@ class AdminUserServiceTest {
     void createUserRejectsADuplicateEmail() {
         when(userRepository.existsByEmail("new@example.com")).thenReturn(true);
 
-        assertThatThrownBy(() -> adminUserService.createUser(
-                new AdminCreateUserRequest("New User", "new@example.com", "USER", null), ADMIN_ID))
+        AdminCreateUserRequest request = new AdminCreateUserRequest("New User", "new@example.com", "USER", null);
+
+        assertThatThrownBy(() -> adminUserService.createUser(request, ADMIN_ID))
                 .isInstanceOf(EmailAlreadyExistsException.class);
 
         verify(userRepository, never()).save(any());
@@ -156,8 +156,9 @@ class AdminUserServiceTest {
 
     @Test
     void anAdminCannotDisableThemselvesViaUpdateAccess() {
-        assertThatThrownBy(() -> adminUserService.updateAccess(ADMIN_ID,
-                new AdminUpdateUserAccessRequest("ADMIN", false, Set.of()), ADMIN_ID))
+        AdminUpdateUserAccessRequest request = new AdminUpdateUserAccessRequest("ADMIN", false, Set.of());
+
+        assertThatThrownBy(() -> adminUserService.updateAccess(ADMIN_ID, request, ADMIN_ID))
                 .isInstanceOf(SelfActionNotAllowedException.class);
 
         verify(userRepository, never()).findById(any());

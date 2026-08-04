@@ -123,8 +123,9 @@ class AiServiceTest {
     @Test
     void postMessageOnAnotherUsersConversationIsRejectedAs404() {
         when(conversationRepository.findById(60L)).thenReturn(Optional.of(othersConversation()));
+        PostMessageRequest request = new PostMessageRequest("Hello?");
 
-        assertThatThrownBy(() -> aiService.postMessage(USER_ID, 60L, new PostMessageRequest("Hello?")))
+        assertThatThrownBy(() -> aiService.postMessage(USER_ID, 60L, request))
                 .isInstanceOf(ResourceNotFoundException.class);
 
         verify(aiChatClient, never()).chat(anyList());
@@ -230,7 +231,7 @@ class AiServiceTest {
 
         aiService.postMessage(USER_ID, 50L, new PostMessageRequest("How's my spending?"));
 
-        verify(aiContextService).buildContextText(eq(USER_ID));
+        verify(aiContextService).buildContextText(USER_ID);
     }
 
     @Test

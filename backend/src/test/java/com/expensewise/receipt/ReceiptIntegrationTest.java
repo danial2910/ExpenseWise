@@ -8,7 +8,6 @@ import com.expensewise.storage.StorageService;
 import com.expensewise.transaction.dto.TransactionRequest;
 import com.expensewise.transaction.dto.TransactionResponse;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
@@ -23,6 +22,7 @@ import org.springframework.util.MultiValueMap;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -71,7 +71,7 @@ class ReceiptIntegrationTest extends AbstractIntegrationTest {
     private Long createTransaction(String token, Long categoryId) {
         ResponseEntity<TransactionResponse> response = restTemplate.exchange(baseUrl("/api/v1/transactions"),
                 HttpMethod.POST,
-                new HttpEntity<>(new TransactionRequest("EXPENSE", new BigDecimal("15.00"), categoryId, LocalDate.now(), "Lunch"),
+                new HttpEntity<>(new TransactionRequest("EXPENSE", new BigDecimal("15.00"), categoryId, LocalDate.of(2026, Month.MARCH, 15), "Lunch"),
                         bearerHeaders(token)),
                 TransactionResponse.class);
         return response.getBody().id();

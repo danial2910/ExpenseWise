@@ -177,7 +177,7 @@ public class TransactionService {
         List<Long> categoryIds = transactions.stream()
                 .map(Transaction::getCategoryId)
                 .distinct()
-                .collect(Collectors.toList());
+                .toList();
         return categoryRepository.findAllById(categoryIds).stream()
                 .collect(Collectors.toMap(Category::getId, Function.identity()));
     }

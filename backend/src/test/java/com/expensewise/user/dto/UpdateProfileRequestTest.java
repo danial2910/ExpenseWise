@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,7 +38,7 @@ class UpdateProfileRequestTest {
     @Test
     void aFullyPopulatedRequestIsValid() {
         UpdateProfileRequest request = new UpdateProfileRequest(
-                "Sarah Lim", "+60 12-345 6789", LocalDate.of(1995, 6, 1), "FEMALE", "1 Jalan Test, KL");
+                "Sarah Lim", "+60 12-345 6789", LocalDate.of(1995, Month.JUNE, 1), "FEMALE", "1 Jalan Test, KL");
 
         assertThat(validator.validate(request)).isEmpty();
     }

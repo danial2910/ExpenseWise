@@ -36,6 +36,7 @@ public class ReceiptService {
     private static final long MAX_RECEIPT_BYTES = 5L * 1024 * 1024;
     private static final Set<String> ALLOWED_RECEIPT_CONTENT_TYPES =
             Set.of("image/jpeg", "image/png", "image/webp", "application/pdf");
+    private static final String PATH_DELIMITER = "/";
 
     private final TransactionRepository transactionRepository;
     private final ReceiptRepository receiptRepository;
@@ -60,8 +61,8 @@ public class ReceiptService {
         validateReceiptFile(file);
         findOwnedTransactionOrThrow(userId, transactionId);
 
-        String newPath = "receipts/" + userId + "/" + transactionId + "/" + UUID.randomUUID()
-                + extensionFor(file.getContentType());
+        String newPath = "receipts" + PATH_DELIMITER + userId + PATH_DELIMITER + transactionId + PATH_DELIMITER
+                + UUID.randomUUID() + extensionFor(file.getContentType());
         storageService.upload(newPath, readBytes(file), file.getContentType());
 
         Receipt receipt = receiptRepository.findByTransactionId(transactionId).orElseGet(Receipt::new);

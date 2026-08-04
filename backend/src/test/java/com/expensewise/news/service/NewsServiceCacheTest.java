@@ -81,8 +81,10 @@ class NewsServiceCacheTest {
         List<ArticleResponse> first = newsService.getLatestNews();
         assertThat(first.get(0).title()).isEqualTo("Before expiry");
 
-        // newsdata.cache-ttl-seconds=1 for this test class.
-        Thread.sleep(1500);
+        // newsdata.cache-ttl-seconds=1 for this test class. Real TTL expiry test against
+        // a Caffeine wall-clock cache (CacheConfig has no injectable Clock seam, and adding
+        // one would mean touching production code; Awaitility is not a project dependency).
+        Thread.sleep(1500); // NOSONAR - see comment above
 
         List<ArticleResponse> second = newsService.getLatestNews();
         assertThat(second.get(0).title()).isEqualTo("After expiry");

@@ -17,11 +17,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -119,7 +119,7 @@ class TransactionServiceTest {
         transaction.setType("EXPENSE");
         transaction.setAmount(new BigDecimal("25.00"));
         transaction.setCategoryId(10L);
-        transaction.setTransactionDate(LocalDate.of(2026, 7, 15));
+        transaction.setTransactionDate(LocalDate.of(2026, Month.JULY, 15));
         transaction.setDescription("Lunch");
         return transaction;
     }
@@ -131,7 +131,7 @@ class TransactionServiceTest {
         transaction.setType("EXPENSE");
         transaction.setAmount(new BigDecimal("40.00"));
         transaction.setCategoryId(10L);
-        transaction.setTransactionDate(LocalDate.of(2026, 7, 15));
+        transaction.setTransactionDate(LocalDate.of(2026, Month.JULY, 15));
         return transaction;
     }
 
@@ -148,9 +148,10 @@ class TransactionServiceTest {
     @Test
     void updateTransactionOnAnotherUsersTransactionIsRejectedAs404() {
         when(transactionRepository.findById(200L)).thenReturn(Optional.of(othersTransaction()));
+        TransactionRequest request = new TransactionRequest("EXPENSE", new BigDecimal("10.00"), 10L,
+                LocalDate.of(2026, Month.JULY, 15), null);
 
-        assertThatThrownBy(() -> transactionService.updateTransaction(USER_ID, 200L,
-                new TransactionRequest("EXPENSE", new BigDecimal("10.00"), 10L, LocalDate.now(), null)))
+        assertThatThrownBy(() -> transactionService.updateTransaction(USER_ID, 200L, request))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -169,9 +170,10 @@ class TransactionServiceTest {
     @Test
     void createTransactionRejectsATypeThatDoesNotMatchTheCategorysType() {
         when(categoryRepository.findById(11L)).thenReturn(Optional.of(incomeCategory()));
+        TransactionRequest request = new TransactionRequest("EXPENSE", new BigDecimal("10.00"), 11L,
+                LocalDate.of(2026, Month.JULY, 15), null);
 
-        assertThatThrownBy(() -> transactionService.createTransaction(USER_ID,
-                new TransactionRequest("EXPENSE", new BigDecimal("10.00"), 11L, LocalDate.now(), null)))
+        assertThatThrownBy(() -> transactionService.createTransaction(USER_ID, request))
                 .isInstanceOf(InvalidTransactionCategoryException.class);
 
         verify(transactionRepository, never()).save(any());
@@ -180,9 +182,10 @@ class TransactionServiceTest {
     @Test
     void createTransactionRejectsAnotherUsersPrivateCategory() {
         when(categoryRepository.findById(30L)).thenReturn(Optional.of(otherUsersCategory()));
+        TransactionRequest request = new TransactionRequest("INCOME", new BigDecimal("10.00"), 30L,
+                LocalDate.of(2026, Month.JULY, 15), null);
 
-        assertThatThrownBy(() -> transactionService.createTransaction(USER_ID,
-                new TransactionRequest("INCOME", new BigDecimal("10.00"), 30L, LocalDate.now(), null)))
+        assertThatThrownBy(() -> transactionService.createTransaction(USER_ID, request))
                 .isInstanceOf(InvalidTransactionCategoryException.class);
 
         verify(transactionRepository, never()).save(any());
@@ -191,9 +194,10 @@ class TransactionServiceTest {
     @Test
     void createTransactionRejectsAMissingCategory() {
         when(categoryRepository.findById(99L)).thenReturn(Optional.empty());
+        TransactionRequest request = new TransactionRequest("EXPENSE", new BigDecimal("10.00"), 99L,
+                LocalDate.of(2026, Month.JULY, 15), null);
 
-        assertThatThrownBy(() -> transactionService.createTransaction(USER_ID,
-                new TransactionRequest("EXPENSE", new BigDecimal("10.00"), 99L, LocalDate.now(), null)))
+        assertThatThrownBy(() -> transactionService.createTransaction(USER_ID, request))
                 .isInstanceOf(InvalidTransactionCategoryException.class);
     }
 
@@ -203,7 +207,7 @@ class TransactionServiceTest {
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         TransactionResponse response = transactionService.createTransaction(USER_ID,
-                new TransactionRequest("EXPENSE", new BigDecimal("25.00"), 10L, LocalDate.of(2026, 7, 15), "Lunch"));
+                new TransactionRequest("EXPENSE", new BigDecimal("25.00"), 10L, LocalDate.of(2026, Month.JULY, 15), "Lunch"));
 
         assertThat(response.categoryName()).isEqualTo("Food");
         assertThat(response.amount()).isEqualByComparingTo("25.00");
@@ -218,12 +222,12 @@ class TransactionServiceTest {
         when(categoryRepository.findById(11L)).thenReturn(Optional.of(incomeCategory()));
 
         transactionService.updateTransaction(USER_ID, 100L,
-                new TransactionRequest("INCOME", new BigDecimal("500.00"), 11L, LocalDate.of(2026, 7, 20), "Bonus"));
+                new TransactionRequest("INCOME", new BigDecimal("500.00"), 11L, LocalDate.of(2026, Month.JULY, 20), "Bonus"));
 
         assertThat(existing.getType()).isEqualTo("INCOME");
         assertThat(existing.getAmount()).isEqualByComparingTo("500.00");
         assertThat(existing.getCategoryId()).isEqualTo(11L);
-        assertThat(existing.getTransactionDate()).isEqualTo(LocalDate.of(2026, 7, 20));
+        assertThat(existing.getTransactionDate()).isEqualTo(LocalDate.of(2026, Month.JULY, 20));
         assertThat(existing.getDescription()).isEqualTo("Bonus");
     }
 
@@ -239,7 +243,7 @@ class TransactionServiceTest {
         assertThat(existing.getAmount()).isEqualByComparingTo("30.00");
         assertThat(existing.getType()).isEqualTo("EXPENSE");
         assertThat(existing.getDescription()).isEqualTo("Lunch");
-        assertThat(existing.getTransactionDate()).isEqualTo(LocalDate.of(2026, 7, 15));
+        assertThat(existing.getTransactionDate()).isEqualTo(LocalDate.of(2026, Month.JULY, 15));
     }
 
     @Test
@@ -272,7 +276,7 @@ class TransactionServiceTest {
                 .thenReturn(List.of(income1, income2, expense1));
 
         TransactionSummaryResponse summary = transactionService.getSummary(USER_ID, null, null,
-                LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 31));
+                LocalDate.of(2026, Month.JULY, 1), LocalDate.of(2026, Month.JULY, 31));
 
         assertThat(summary.totalIncome()).isEqualByComparingTo("1250.50");
         assertThat(summary.totalExpense()).isEqualByComparingTo("300.25");
@@ -285,7 +289,7 @@ class TransactionServiceTest {
                 .thenReturn(List.of());
 
         TransactionSummaryResponse summary = transactionService.getSummary(USER_ID, null, null,
-                LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 31));
+                LocalDate.of(2026, Month.JULY, 1), LocalDate.of(2026, Month.JULY, 31));
 
         assertThat(summary.totalIncome()).isEqualByComparingTo("0");
         assertThat(summary.totalExpense()).isEqualByComparingTo("0");

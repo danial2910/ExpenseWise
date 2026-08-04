@@ -115,8 +115,9 @@ class CategoryServiceTest {
     @Test
     void createCategoryRejectsADuplicateNameAndType() {
         when(categoryRepository.existsByUserIdAndNameAndType(USER_ID, "Pet Care", "EXPENSE")).thenReturn(true);
+        CategoryRequest request = new CategoryRequest("Pet Care", "EXPENSE", "pet");
 
-        assertThatThrownBy(() -> categoryService.createCategory(USER_ID, new CategoryRequest("Pet Care", "EXPENSE", "pet")))
+        assertThatThrownBy(() -> categoryService.createCategory(USER_ID, request))
                 .isInstanceOf(DuplicateCategoryException.class);
 
         verify(categoryRepository, never()).save(any());
@@ -136,16 +137,18 @@ class CategoryServiceTest {
     @Test
     void updateCategoryOnASystemCategoryIsRejectedAs404() {
         when(categoryRepository.findById(10L)).thenReturn(Optional.of(systemCategory()));
+        CategoryRequest request = new CategoryRequest("Food 2", "EXPENSE", "utensils");
 
-        assertThatThrownBy(() -> categoryService.updateCategory(USER_ID, 10L, new CategoryRequest("Food 2", "EXPENSE", "utensils")))
+        assertThatThrownBy(() -> categoryService.updateCategory(USER_ID, 10L, request))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
     void updateCategoryOnAnotherUsersCategoryIsRejectedAs404() {
         when(categoryRepository.findById(30L)).thenReturn(Optional.of(otherUsersCategory()));
+        CategoryRequest request = new CategoryRequest("Renamed", "INCOME", "freelance");
 
-        assertThatThrownBy(() -> categoryService.updateCategory(USER_ID, 30L, new CategoryRequest("Renamed", "INCOME", "freelance")))
+        assertThatThrownBy(() -> categoryService.updateCategory(USER_ID, 30L, request))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -154,8 +157,9 @@ class CategoryServiceTest {
         when(categoryRepository.findById(20L)).thenReturn(Optional.of(ownCategory()));
         when(categoryRepository.existsByUserIdAndNameAndTypeAndIdNot(USER_ID, "Book Club", "EXPENSE", 20L))
                 .thenReturn(true);
+        CategoryRequest request = new CategoryRequest("Book Club", "EXPENSE", "pet");
 
-        assertThatThrownBy(() -> categoryService.updateCategory(USER_ID, 20L, new CategoryRequest("Book Club", "EXPENSE", "pet")))
+        assertThatThrownBy(() -> categoryService.updateCategory(USER_ID, 20L, request))
                 .isInstanceOf(DuplicateCategoryException.class);
     }
 

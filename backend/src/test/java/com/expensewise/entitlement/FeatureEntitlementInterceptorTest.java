@@ -79,14 +79,17 @@ class FeatureEntitlementInterceptorTest {
     void userWithTheFeatureDisabledIsRejected() throws NoSuchMethodException {
         authenticateAs(3L, "USER");
         when(entitlementService.isEnabled(3L, Feature.BUDGETS)).thenReturn(false);
+        HandlerMethod handlerMethod = gatedHandlerMethod();
 
-        assertThatThrownBy(() -> interceptor.preHandle(request, response, gatedHandlerMethod()))
+        assertThatThrownBy(() -> interceptor.preHandle(request, response, handlerMethod))
                 .isInstanceOf(FeatureNotEnabledException.class);
     }
 
     @RequiresFeature(Feature.BUDGETS)
     static class GatedController {
         public void handle() {
+            // intentionally empty — this stub method body is never invoked, only its
+            // signature/annotation is used by the interceptor via reflection in the test
         }
     }
 }
