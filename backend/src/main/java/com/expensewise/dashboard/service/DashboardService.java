@@ -156,14 +156,11 @@ public class DashboardService {
 
         Map<Long, BigDecimal> totalsByCategory = new LinkedHashMap<>();
         for (Transaction transaction : transactions) {
-            if (!EXPENSE.equals(transaction.getType())) {
-                continue;
-            }
             LocalDate date = transaction.getTransactionDate();
-            if (date.isBefore(currentMonth) || date.isAfter(monthEnd)) {
-                continue;
+            boolean inCurrentMonth = !date.isBefore(currentMonth) && !date.isAfter(monthEnd);
+            if (EXPENSE.equals(transaction.getType()) && inCurrentMonth) {
+                totalsByCategory.merge(transaction.getCategoryId(), transaction.getAmount(), BigDecimal::add);
             }
-            totalsByCategory.merge(transaction.getCategoryId(), transaction.getAmount(), BigDecimal::add);
         }
 
         if (totalsByCategory.isEmpty()) {

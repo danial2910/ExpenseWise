@@ -19,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
@@ -41,6 +42,9 @@ class DashboardIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private Clock clock;
 
     private record PageResponse<T>(List<T> content) {
     }
@@ -88,7 +92,7 @@ class DashboardIntegrationTest extends AbstractIntegrationTest {
         Registered user = registerAndGetToken("Aggregator");
         Long foodCategoryId = systemCategoryId(user.token(), "Food", "EXPENSE");
         Long salaryCategoryId = systemCategoryId(user.token(), "Salary", "INCOME");
-        LocalDate today = LocalDate.now(KL_ZONE);
+        LocalDate today = LocalDate.now(clock.withZone(KL_ZONE));
         LocalDate thisMonth = today.withDayOfMonth(1);
 
         createBudget(user.token(), new BudgetRequest(new BigDecimal("500.00"), null, thisMonth));
@@ -124,7 +128,7 @@ class DashboardIntegrationTest extends AbstractIntegrationTest {
     void anotherUsersTransactionsAndBudgetsNeverAppearInThisUsersDashboard() {
         Registered userA = registerAndGetToken("Viewer");
         Registered userB = registerAndGetToken("Stranger");
-        LocalDate today = LocalDate.now(KL_ZONE);
+        LocalDate today = LocalDate.now(clock.withZone(KL_ZONE));
 
         Long foodCategoryIdB = systemCategoryId(userB.token(), "Food", "EXPENSE");
         createTransaction(userB.token(), new TransactionRequest("EXPENSE", new BigDecimal("999.00"), foodCategoryIdB, today, "Should not leak"));
