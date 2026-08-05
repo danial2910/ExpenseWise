@@ -22,7 +22,7 @@ test.describe('Authentication', () => {
     await page.getByTestId('register-submit-button').click()
 
     await expect(page).toHaveURL(/\/dashboard$/)
-    await expect(page.getByTestId('dashboard-welcome')).toContainText('Sarah Lim')
+    await expect(page.getByTestId('current-user-name')).toContainText('Sarah Lim')
   })
 
   test('registering with an already-used email shows an inline error', async ({ page }) => {
@@ -135,7 +135,7 @@ test.describe('Authentication', () => {
     await page.getByTestId('login-submit-button').click()
 
     await expect(page).toHaveURL(/\/dashboard$/)
-    await expect(page.getByTestId('dashboard-welcome')).toContainText('Sarah Lim')
+    await expect(page.getByTestId('current-user-name')).toContainText('Sarah Lim')
   })
 
   test('an invalid reset token shows an inline error instead of resetting the password', async ({ page }) => {
@@ -214,6 +214,6 @@ test.describe('Authentication', () => {
 
   // Assert: we land on the dashboard and it greets us by name.
   await expect(page).toHaveURL(/\/dashboard$/)
-  await expect(page.getByTestId('dashboard-welcome')).toContainText('Sarah Lim')
+  await expect(page.getByTestId('current-user-name')).toContainText('Sarah Lim')
   })
 })

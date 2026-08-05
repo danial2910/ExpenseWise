@@ -100,7 +100,7 @@ com.expensewise
                     shared across any module storing a file (Profile's
                     avatar, Receipt later) — mirrors the ai.client seam
 └── <module>        auth, user, category, transaction, budget,
-                    recurring, receipt, report, ai, news, admin
+                    recurring, receipt, report, ai, news, admin, dashboard
     ├── controller
     ├── service
     ├── repository
@@ -239,7 +239,7 @@ JDBC prepared statement caching without it. Keep the Hikari pool small (5–10).
 Test pyramid, not an ice cream cone.
 
 - **Unit tests** for business logic: budget utilisation, balance calculation,
-  financial health score, recurring date advancement, report aggregation.
+  dashboard aggregation, recurring date advancement, report aggregation.
   These are where correctness lives.
 - **Integration tests** for repositories and security rules.
 - **E2E (Playwright):** each feature module includes all e2e test cases covering for **all possible cases**

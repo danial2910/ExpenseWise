@@ -2,6 +2,82 @@
 
 Non-obvious decisions and their rationale, logged as they're made.
 
+## 2026-08-05 — Dashboard module phase (personal, informational home screen)
+
+- **The financial-health-score idea was dropped before this phase started** — the
+  task explicitly scoped the Dashboard as purely factual analytics (summary totals,
+  trends, budget utilisation, recent activity), no derived "score." CLAUDE.md's
+  Testing section still listed "financial health score" as a unit-test example from
+  an earlier plan that was never implemented (confirmed via a repo-wide grep — no
+  code anywhere referenced it); that line is now "dashboard aggregation" instead.
+- **One `GET /api/v1/dashboard` bundles everything the screen renders** (summary,
+  monthly trend, expense-by-category, budget utilisation, recent transactions) —
+  same "single view, no independent per-section loading state" reasoning as the
+  Admin Dashboard phase.
+- **`budgetUtilisation` reuses `BudgetService.getMonthBudgets` untouched, returning
+  its own `BudgetMonthResponse` type straight through** — the task explicitly said
+  not to recompute budget progress, and the design's budget section needs exactly
+  the same overall/per-category spent-remaining-progress shape the Budgets screen
+  already computes. `recentTransactions` likewise reuses
+  `TransactionService.listTransactions(..., PageRequest.of(0, N, sort by
+  transactionDate desc))` and returns `TransactionResponse` directly, rather than a
+  second, dashboard-specific transaction DTO.
+- **`DashboardService` fetches a user's transactions once (unfiltered, just
+  `ownedBy(userId)`) and derives every other figure — this-month/overall summary,
+  the monthly income/expense series, and the current month's expense-by-category
+  breakdown — from that single list in Java**, rather than one query per widget.
+  Same "small dataset for a solo-user demo app" precedent as
+  `TransactionService.getSummary`/`BudgetService.sumExpenses`. Monthly bucketing
+  keys directly off `transaction_date` (already a plain `DATE`, no `Instant`/
+  timezone conversion needed) rather than `AdminDashboardService`'s `Instant
+  createdAt` pattern — simpler here since the column is already a KL-meaningful
+  calendar date, not a timestamp.
+- **The income-vs-expense comparison and the net/savings trend share one backend
+  series (`MonthlyFlowPoint[]` of income+expense per month)** instead of two
+  separate endpoints returning overlapping figures — the frontend derives
+  `net = income - expense` for the "Monthly Trend — Net" chart's per-bar
+  green/red coloring, and uses income/expense directly for the grouped
+  "Income vs Expense" bars. One series, two chart views.
+- **The design's 3 summary cards (Income / Expense / Balance) are all scoped to
+  the current month** — `DashboardSummaryResponse` also returns an all-time
+  `overallBalance` per the task's explicit requirement, but no card in the
+  imported "ExpenseWise Dashboard" design shows it. Same "backend computes more
+  than the design visually renders" precedent as the Admin Dashboard phase's
+  summary — no invented UI, just an API response slightly ahead of what the one
+  view currently consumes.
+- **Chart.js needs a distinct color per category on the "Spending by Category"
+  donut**, more than the two colors (`primary`/`slate`) the Admin Dashboard phase's
+  color-resolution technique covered. Extended the same technique (hidden elements
+  carrying a Tailwind utility class, `getComputedStyle(...).color` read at mount) to
+  an 8-color palette array — every color still traces back to a Tailwind class
+  (`text-primary-600`, `text-sky-600`, `text-amber-600`, ...), never a hardcoded
+  hex value in the component, so "design tokens only" still holds.
+- **Budget-utilisation progress bars reuse `BudgetsView.vue`'s exact status
+  thresholds/colors** (>=100% red, >=80% amber, else slate — duplicated locally
+  rather than extracted into a shared helper, matching the project's established
+  "small duplicated checks over a shared utility" precedent, e.g.
+  `CategoryService`/`TransactionService`'s repeated visibility check).
+- **Empty state is `recentTransactions.length === 0`** — since that list is drawn
+  from all-time transactions (not filtered to the current month), an empty list is
+  a reliable "this user has never logged anything" signal, same reasoning as the
+  Admin Dashboard phase's `totalUsers <= 1`.
+- **Not gated behind `@RequiresFeature`/a new `Feature` value** — the Dashboard is
+  always available to a USER account with no admin-toggleable entitlement, same as
+  Profile. Enforced as USER-only purely via `SecurityConfig.USER_ONLY_PATHS`
+  (`/api/v1/dashboard/**`), consistent with Transactions/Budgets/Categories/
+  Reports/News — an ADMIN hitting it gets 403 before the controller ever runs.
+- **Found and fixed a real regression while running the full Playwright suite**:
+  replacing the old `DashboardView.vue` placeholder shell removed its
+  `data-testid="dashboard-welcome"` greeting, which `auth.spec.ts` asserted on in
+  three places (register, login, password-reset flows) to confirm landing on a
+  personalized dashboard. Fixed by asserting against `AppLayout`'s existing header
+  `current-user-name` element instead — proves the identical thing (landed on the
+  authenticated user's own dashboard) without inventing a UI element purely to keep
+  an old test passing. Running the full suite (not just the new dashboard spec) is
+  what caught this; a module-scoped test run would have missed it.
+- **Only the desktop (1440px) frame of "ExpenseWise Dashboard" was built**, same
+  precedent as every prior module.
+
 ## 2026-08-04 — News module phase (curated financial news, cached, entitlement-gated)
 
 - **`GET /api/v1/news` is deliberately NOT paginated**, despite CLAUDE.md's "list

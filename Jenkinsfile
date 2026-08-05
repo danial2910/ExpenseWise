@@ -108,12 +108,12 @@ pipeline {
 
         // 5. Wait for SonarQube's verdict. SonarQube notifies Jenkins via a
         //    webhook when analysis finishes; this step then reads the result.
-        //    abortPipeline:false = report the gate but don't fail the build yet
-        //    (flip to true once coverage/JaCoCo is set up and the gate is tuned).
+        //    abortPipeline:true = fail the build if the gate is not passed
+        //    (flip to false once coverage/JaCoCo is set up and the gate is tuned).
         stage('Quality Gate') {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: false
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }
