@@ -36,6 +36,7 @@ const USER_NAV_ITEMS: { testid: string; label: string; to: string; routeName: st
   { testid: 'nav-recurring', label: 'Recurring', to: '/recurring', routeName: 'recurring', feature: 'TRANSACTIONS' },
   { testid: 'nav-categories', label: 'Categories', to: '/categories', routeName: 'categories', feature: 'CATEGORIES' },
   { testid: 'nav-budgets', label: 'Budgets', to: '/budgets', routeName: 'budgets', feature: 'BUDGETS' },
+  { testid: 'nav-reports', label: 'Reports', to: '/reports', routeName: 'reports', feature: 'REPORTS' },
   { testid: 'nav-news', label: 'News', to: '/news', routeName: 'news', feature: 'NEWS' },
   { testid: 'nav-ai-assistant', label: 'AI Assistant', to: '/ai-assistant', routeName: 'ai-assistant', feature: 'AI_ASSISTANT' },
   { testid: 'nav-profile', label: 'Profile', to: '/profile', routeName: 'profile', feature: null },

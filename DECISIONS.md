@@ -2,6 +2,128 @@
 
 Non-obvious decisions and their rationale, logged as they're made.
 
+## 2026-08-06 — Unrelated pre-existing bug fixed while running the full suite: `@PastOrPresent` validated against the wrong clock
+
+- **Found while running the full backend test suite as part of the Reports module's
+  own "run full test suite" step** (`ProfileIntegrationTest
+  .aDateOfBirthInTheFutureIsRejectedWithACleanValidationError` failing deterministically,
+  200 instead of 400) — pre-existing, entirely unrelated to Reports; `UpdateProfileRequest
+  .dateOfBirth`'s `@PastOrPresent` validation was already broken. Fixed here rather than
+  left red because CLAUDE.md's Jenkins gate is now enforcing, and a task explicitly
+  asking to "run the full test suite" shouldn't hand back a build that's red for any
+  reason, in-scope or not.
+- **Root cause**: Jakarta Bean Validation's `@Past`/`@Future`/`@PastOrPresent` read "now"
+  from a `ClockProvider` that, unless explicitly configured, defaults to
+  `Clock.systemDefaultZone()` — the JVM/machine's local timezone — never the app's own
+  `ClockConfig.clock()` bean (`Clock.systemUTC()`) that every other date computation in
+  the app (`BudgetService`, `DashboardService`, `ReportService`, this test itself via
+  `LocalDate.now(clock)`) is anchored to. On a machine whose local zone runs ahead of
+  UTC (matching this project's own Asia/Kuala_Lumpur business timezone), a date exactly
+  one calendar day ahead by `LocalDate.now(clock)` could still read as "today" from the
+  validator's local-zone perspective for a few hours around each UTC day boundary —
+  a live instance of the exact class of "two different notions of *now* silently
+  disagreeing" bug this project has hit before (see the 2026-08-02 env-var collision
+  entries), just via a JVM-default-timezone path instead of an env var.
+- **Fix**: `ClockConfig` now also exposes a `ClockProvider` bean bound to the same
+  `clock()`, and a `LocalValidatorFactoryBean` bean (named `defaultValidator`, matching
+  Spring Boot's own autoconfigured bean name so `@ConditionalOnMissingBean` backs off
+  cleanly) wired to it via `setConfigurationInitializer(cfg -> cfg.clockProvider(...))`
+  — `LocalValidatorFactoryBean` has no direct `setClockProvider(...)` setter in this
+  Spring version, only a getter; `setConfigurationInitializer` is the supported hook for
+  customizing the underlying `jakarta.validation.Configuration` before the
+  `ValidatorFactory` is built. Confirmed via `javap` against the actual jar rather than
+  guessing at the API. Blast radius checked first (`grep -rl "@Past\|@Future"` — only
+  `UpdateProfileRequest.dateOfBirth` uses either), so this is a low-risk, narrowly
+  scoped correctness fix, not a broad validation-behavior change.
+
+## 2026-08-06 — Reports module phase (monthly/yearly PDF/Excel exports, final module)
+
+- **Two endpoints instead of the task's suggested single `?format=pdf` URL shape**:
+  `GET /api/v1/reports` returns the JSON `ReportResponse` the on-screen preview renders
+  from; `GET /api/v1/reports/download` streams the same data through an exporter as a
+  binary file. One Spring MVC method can't cleanly return both a typed JSON body and a
+  raw byte array depending on a query param, so the download path was split into its
+  own endpoint rather than forcing both response shapes through one handler.
+- **Apache POI 5.3.0 and JasperReports 6.21.3 added to `pom.xml`**, both already named
+  in CLAUDE.md's stack table. JasperReports pulls in a real `commons-logging` jar,
+  which collides with Spring Boot's `spring-jcl` shim (both provide
+  `org.apache.commons.logging.LogFactory` on the classpath) — excluded via
+  `<exclusions>`, confirmed via `mvn dependency:tree` before it caused a runtime
+  classloading conflict, not after.
+- **`ReportService` reuses `BudgetService.getMonthBudgets` for budget figures and
+  `TransactionService.listTransactions` for the transaction list — never recomputes
+  either.** Its own totals/category-breakdown/monthly-trend are derived in Java from
+  a Specification-scoped `TransactionRepository.findAll` call (same "small dataset for
+  a solo-user demo app" reasoning as `TransactionService.getSummary`/
+  `DashboardService`), scoped to the report's period instead of "this month".
+- **Yearly budget summary sums each of the year's 12 monthly overall-budget lines** —
+  there is no yearly budget row in the schema (`budgets.period_month` is always a
+  calendar month), so `ReportService.yearlyBudgetSummary` calls
+  `BudgetService.getMonthBudgets` once per month and aggregates. A month with no
+  overall budget set contributes 0 to `totalBudgeted` (not treated as "unbounded"),
+  but its `spent` figure — always computed regardless of whether a limit exists —
+  still counts toward `totalSpent`. `hasBudget` is true only if at least one month in
+  the year actually had a budget.
+- **Added a `monthlyTrend` field to `ReportResponse` beyond the task's explicit
+  "Contents:" list** (total income/expense/net, category breakdown, transaction list,
+  budget summary) — the imported "Expensewise Reports" design shows an "Income vs
+  Expense" bar chart the explicit deliverable list didn't originally call for. Unlike
+  the News module's dropped topic-filter bar (which needed data the upstream API
+  couldn't actually provide), this chart is cheaply and correctly derivable from data
+  this module already queries, so it was built rather than dropped: for a MONTHLY
+  report, the 6 consecutive months ending at the reported month (same window
+  Dashboard's own trend chart uses); for a YEARLY report, that year's own 12 months.
+  Reuses the Dashboard module's own `MonthlyFlowPoint` DTO (`{month, income, expense}`)
+  directly rather than a parallel report-only type — one canonical shape for
+  "income/expense per month" across both modules. Screen-only: neither exporter
+  renders it, since a PDF/Excel financial statement for one period has no use for a
+  trailing multi-month trend the way an on-screen chart does.
+- **The on-screen preview does not show `budgetSummary` at all — the imported design's
+  three summary cards are Total Income / Total Expenses / Net Savings only, with no
+  budget card anywhere in the mockup.** `budgetSummary` is still fully computed and
+  exposed in `ReportResponse` (satisfying the task's explicit requirement) and rendered
+  in both the PDF and Excel exports (which do show it) — same "compute more than the
+  design visually renders, don't invent UI it doesn't call for" precedent as the Admin
+  Dashboard phase's summary. The task's own instructions call the on-screen preview
+  "Optional[al]", so the exported files are the primary vehicle for this requirement.
+- **JasperReports' bean-collection datasource requires `public` row classes.**
+  `JasperTransactionRow`/`JasperCategoryRow` (plain JavaBean views of a
+  `TransactionResponse`/`CategoryBreakdownLine`, needed because JasperReports' field
+  binding uses `getXxx()` introspection that a Java record's unprefixed accessors
+  don't satisfy) initially compiled fine but failed at fill-time with
+  "Property 'x' has no getter method" — `java.beans.Introspector` (which
+  `JRAbstractBeanDataSource` uses) only discovers accessor methods declared on a
+  *public* class, even when the methods themselves are `public`. Fixed by making both
+  row classes and their constructors `public`; found via the exporter's own unit test
+  actually filling a real report, not a code-review guess.
+- **The main `report.jrxml` uses `whenNoDataType="AllSectionsNoDetail"`, not
+  `NoDataSection`.** JasperReports' default "no data" handling (when the main
+  datasource has zero rows) either prints nothing at all or, with `NoDataSection`,
+  prints *only* a dedicated no-data band and skips the title band entirely — which
+  would hide the summary/budget figures a report can still meaningfully have even with
+  zero transactions in the period (e.g. a budget was set but nothing was spent).
+  `AllSectionsNoDetail` keeps the title/summary/category-breakdown bands and only
+  skips the empty transaction rows, matching what the on-screen empty state already
+  communicates without a redundant "no transactions" band inside the PDF itself.
+- **A real bug found only by the Playwright E2E test, not the backend's own tests**:
+  `ContentDisposition.attachment().filename(name, StandardCharsets.UTF_8)` in
+  `ReportController` — explicitly passing a `Charset` — made Spring RFC 2047-encode
+  the filename (`=?UTF-8?Q?expensewise-report-2026-08-01.pdf?=`) even though every
+  generated filename is already plain ASCII. Chrome's download manager doesn't decode
+  that form and saved the file under the literal mangled string instead of a `.pdf`/
+  `.xlsx` name. The backend integration tests only asserted the header *contained*
+  `.pdf`/`.xlsx` as a substring (still technically true inside the encoded form) and
+  never caught it; `reports.spec.ts` asserting on Playwright's `download.suggested
+  Filename()` — the actual browser-resolved name — is what caught it. Fixed by
+  dropping the explicit `Charset` argument (`.filename(name)`), which lets Spring emit
+  a plain quoted filename for the ASCII-only names this module ever generates.
+- **Nav entry added as `feature: 'REPORTS'` in `AppLayout.vue`'s `USER_NAV_ITEMS`**,
+  positioned right after Budgets — `Feature.REPORTS` already existed in the enum
+  (unused until this phase), so no entitlement/migration change was needed, only the
+  new `/reports` route and its own gated endpoints.
+- **Only the desktop (1440px) frame of "Expensewise Reports" was built**, same
+  precedent as every prior module.
+
 ## 2026-08-05 — Dashboard module phase (personal, informational home screen)
 
 - **The financial-health-score idea was dropped before this phase started** — the

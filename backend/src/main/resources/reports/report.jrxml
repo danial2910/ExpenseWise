@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+              name="report" pageWidth="595" pageHeight="842" columnWidth="535"
+              leftMargin="30" rightMargin="30" topMargin="30" bottomMargin="30"
+              whenNoDataType="AllSectionsNoDetail">
+
+    <parameter name="REPORT_TITLE" class="java.lang.String"/>
+    <parameter name="PERIOD_LABEL" class="java.lang.String"/>
+    <parameter name="TOTAL_INCOME_DISPLAY" class="java.lang.String"/>
+    <parameter name="TOTAL_EXPENSE_DISPLAY" class="java.lang.String"/>
+    <parameter name="NET_BALANCE_DISPLAY" class="java.lang.String"/>
+    <parameter name="BUDGETED_DISPLAY" class="java.lang.String"/>
+    <parameter name="SPENT_DISPLAY" class="java.lang.String"/>
+    <parameter name="REMAINING_DISPLAY" class="java.lang.String"/>
+    <parameter name="CATEGORY_SUBREPORT" class="net.sf.jasperreports.engine.JasperReport"/>
+    <parameter name="CATEGORY_DATASOURCE" class="net.sf.jasperreports.engine.JRDataSource"/>
+
+    <field name="date" class="java.lang.String"/>
+    <field name="type" class="java.lang.String"/>
+    <field name="categoryName" class="java.lang.String"/>
+    <field name="description" class="java.lang.String"/>
+    <field name="amountDisplay" class="java.lang.String"/>
+
+    <title>
+        <band height="150">
+            <staticText>
+                <reportElement x="0" y="0" width="535" height="24"/>
+                <textElement><font size="16" isBold="true"/></textElement>
+                <text><![CDATA[ExpenseWise Report]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="0" y="26" width="535" height="16"/>
+                <textElement><font size="10" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{REPORT_TITLE} + " — " + $P{PERIOD_LABEL}]]></textFieldExpression>
+            </textField>
+
+            <staticText>
+                <reportElement x="0" y="54" width="175" height="14"/>
+                <textElement><font size="9" isBold="true"/></textElement>
+                <text><![CDATA[Total Income]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="180" y="54" width="175" height="14"/>
+                <textElement><font size="9" isBold="true"/></textElement>
+                <text><![CDATA[Total Expense]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="360" y="54" width="175" height="14"/>
+                <textElement><font size="9" isBold="true"/></textElement>
+                <text><![CDATA[Net Balance]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="0" y="69" width="175" height="18"/>
+                <textElement><font size="12"/></textElement>
+                <textFieldExpression><![CDATA[$P{TOTAL_INCOME_DISPLAY}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="180" y="69" width="175" height="18"/>
+                <textElement><font size="12"/></textElement>
+                <textFieldExpression><![CDATA[$P{TOTAL_EXPENSE_DISPLAY}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="360" y="69" width="175" height="18"/>
+                <textElement><font size="12"/></textElement>
+                <textFieldExpression><![CDATA[$P{NET_BALANCE_DISPLAY}]]></textFieldExpression>
+            </textField>
+
+            <staticText>
+                <reportElement x="0" y="96" width="535" height="14"/>
+                <textElement><font size="9" isBold="true"/></textElement>
+                <text><![CDATA[Budget]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="0" y="111" width="535" height="16"/>
+                <textElement><font size="10"/></textElement>
+                <textFieldExpression><![CDATA["Budgeted: " + $P{BUDGETED_DISPLAY} + "    Spent: " + $P{SPENT_DISPLAY} + "    Remaining: " + $P{REMAINING_DISPLAY}]]></textFieldExpression>
+            </textField>
+
+            <subreport>
+                <reportElement x="0" y="132" width="535" height="18"/>
+                <dataSourceExpression><![CDATA[$P{CATEGORY_DATASOURCE}]]></dataSourceExpression>
+                <subreportExpression><![CDATA[$P{CATEGORY_SUBREPORT}]]></subreportExpression>
+            </subreport>
+        </band>
+    </title>
+
+    <columnHeader>
+        <band height="18">
+            <staticText>
+                <reportElement x="0" y="0" width="65" height="18" backcolor="#F8FAFC" mode="Opaque"/>
+                <textElement verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+                <text><![CDATA[Date]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="65" y="0" width="65" height="18" backcolor="#F8FAFC" mode="Opaque"/>
+                <textElement verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+                <text><![CDATA[Type]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="130" y="0" width="120" height="18" backcolor="#F8FAFC" mode="Opaque"/>
+                <textElement verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+                <text><![CDATA[Category]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="250" y="0" width="180" height="18" backcolor="#F8FAFC" mode="Opaque"/>
+                <textElement verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+                <text><![CDATA[Description]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="430" y="0" width="105" height="18" backcolor="#F8FAFC" mode="Opaque"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+                <text><![CDATA[Amount]]></text>
+            </staticText>
+        </band>
+    </columnHeader>
+
+    <detail>
+        <band height="16">
+            <textField>
+                <reportElement x="0" y="0" width="65" height="16"/>
+                <textElement verticalAlignment="Middle"><font size="8"/></textElement>
+                <textFieldExpression><![CDATA[$F{date}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="65" y="0" width="65" height="16"/>
+                <textElement verticalAlignment="Middle"><font size="8"/></textElement>
+                <textFieldExpression><![CDATA[$F{type}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="130" y="0" width="120" height="16"/>
+                <textElement verticalAlignment="Middle"><font size="8"/></textElement>
+                <textFieldExpression><![CDATA[$F{categoryName}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="250" y="0" width="180" height="16"/>
+                <textElement verticalAlignment="Middle"><font size="8"/></textElement>
+                <textFieldExpression><![CDATA[$F{description}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="430" y="0" width="105" height="16"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font size="8"/></textElement>
+                <textFieldExpression><![CDATA[$F{amountDisplay}]]></textFieldExpression>
+            </textField>
+        </band>
+    </detail>
+
+    <pageFooter>
+        <band height="16">
+            <textField>
+                <reportElement x="0" y="0" width="535" height="16"/>
+                <textElement textAlignment="Right"><font size="7"/></textElement>
+                <textFieldExpression><![CDATA["Page " + $V{PAGE_NUMBER}]]></textFieldExpression>
+            </textField>
+        </band>
+    </pageFooter>
+
+</jasperReport>

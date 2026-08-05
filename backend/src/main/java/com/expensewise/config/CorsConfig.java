@@ -17,6 +17,11 @@ public class CorsConfig {
                         .allowedOrigins("http://localhost:5173")
                         .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
+                        // Content-Disposition isn't on the browser's default
+                        // cross-origin response-header safelist — without this,
+                        // the Reports module's frontend can't read the
+                        // server-suggested filename off a download response.
+                        .exposedHeaders("Content-Disposition")
                         .allowCredentials(true);
             }
         };

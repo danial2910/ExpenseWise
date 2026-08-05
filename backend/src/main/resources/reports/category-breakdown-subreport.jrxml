@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+              name="category-breakdown-subreport" pageWidth="535" pageHeight="842" columnWidth="535"
+              leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0">
+
+    <field name="name" class="java.lang.String"/>
+    <field name="amountDisplay" class="java.lang.String"/>
+    <field name="percentageDisplay" class="java.lang.String"/>
+
+    <columnHeader>
+        <band height="18">
+            <staticText>
+                <reportElement x="0" y="0" width="255" height="18" backcolor="#F8FAFC" mode="Opaque"/>
+                <textElement verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+                <text><![CDATA[Category]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="255" y="0" width="140" height="18" backcolor="#F8FAFC" mode="Opaque"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+                <text><![CDATA[Amount]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="395" y="0" width="140" height="18" backcolor="#F8FAFC" mode="Opaque"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+                <text><![CDATA[Share]]></text>
+            </staticText>
+        </band>
+    </columnHeader>
+
+    <detail>
+        <band height="16">
+            <textField>
+                <reportElement x="0" y="0" width="255" height="16"/>
+                <textElement verticalAlignment="Middle"><font size="9"/></textElement>
+                <textFieldExpression><![CDATA[$F{name}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="255" y="0" width="140" height="16"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font size="9"/></textElement>
+                <textFieldExpression><![CDATA[$F{amountDisplay}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="395" y="0" width="140" height="16"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font size="9"/></textElement>
+                <textFieldExpression><![CDATA[$F{percentageDisplay}]]></textFieldExpression>
+            </textField>
+        </band>
+    </detail>
+</jasperReport>

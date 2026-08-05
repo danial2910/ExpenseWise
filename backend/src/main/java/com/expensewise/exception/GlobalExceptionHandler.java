@@ -209,6 +209,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(body);
     }
 
+    @ExceptionHandler(InvalidReportRequestException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidReportRequest(InvalidReportRequestException ex,
+                                                                          HttpServletRequest request) {
+        return validationFailed(ex.getField(), ex.getMessage(), request);
+    }
+
     @ExceptionHandler(NewsUnavailableException.class)
     public ResponseEntity<ApiErrorResponse> handleNewsUnavailable(NewsUnavailableException ex,
                                                                      HttpServletRequest request) {
