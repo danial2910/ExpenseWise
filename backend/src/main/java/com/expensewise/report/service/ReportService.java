@@ -17,6 +17,8 @@ import com.expensewise.transaction.entity.Transaction;
 import com.expensewise.transaction.repository.TransactionRepository;
 import com.expensewise.transaction.repository.spec.TransactionSpecifications;
 import com.expensewise.transaction.service.TransactionService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -69,6 +71,12 @@ public class ReportService {
     private final BudgetService budgetService;
     private final List<ReportExporter> exporters;
     private final Clock clock;
+    // Self-injected so exportReport can call buildReport through the Spring
+    // proxy rather than via 'this' — a same-class call bypasses the proxy
+    // and would silently skip @Transactional. Setter injection (rather than
+    // constructor) avoids a circular dependency at construction time, and
+    // @Lazy avoids Spring needing to fully initialize the bean to inject it.
+    private ReportService self;
 
     public ReportService(TransactionRepository transactionRepository,
                           CategoryRepository categoryRepository,
@@ -82,6 +90,11 @@ public class ReportService {
         this.budgetService = budgetService;
         this.exporters = exporters;
         this.clock = clock;
+    }
+
+    @Autowired
+    public void setSelf(@Lazy ReportService self) {
+        this.self = self;
     }
 
     @Transactional(readOnly = true)
@@ -137,7 +150,7 @@ public class ReportService {
                 .findFirst()
                 .orElseThrow(() -> new InvalidReportRequestException("format", "Unknown export format: " + format));
 
-        ReportResponse report = buildReport(userId, type, year, month);
+        ReportResponse report = self.buildReport(userId, type, year, month);
         byte[] content = exporter.export(report);
         String filename = "expensewise-report-" + report.periodStart() + "." + exporter.fileExtension();
         return new ExportedReport(content, filename, exporter.contentType());

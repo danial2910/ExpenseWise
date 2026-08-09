@@ -72,6 +72,7 @@ class ReportServiceTest {
         lenient().when(pdfExporter.format()).thenReturn("pdf");
         reportService = new ReportService(transactionRepository, categoryRepository, transactionService,
                 budgetService, List.of(pdfExporter), FIXED_CLOCK);
+        reportService.setSelf(reportService);
     }
 
     private Transaction transaction(String type, String amount, LocalDate date, Long categoryId) {
@@ -199,11 +200,11 @@ class ReportServiceTest {
         OverallBudgetLine january = new OverallBudgetLine(1L, new BigDecimal("500.00"), new BigDecimal("100.00"),
                 new BigDecimal("400.00"), new BigDecimal("20"), false);
         OverallBudgetLine noBudget = new OverallBudgetLine(null, null, new BigDecimal("30.00"), null, null, false);
-        when(budgetService.getMonthBudgets(eq(USER_ID), eq(LocalDate.of(2026, Month.JANUARY, 1))))
+        when(budgetService.getMonthBudgets(USER_ID, LocalDate.of(2026, Month.JANUARY, 1)))
                 .thenReturn(new BudgetMonthResponse(LocalDate.of(2026, Month.JANUARY, 1), january, List.of()));
         for (Month month : Month.values()) {
-            if (month != Month.JANUARY) {
-                lenient().when(budgetService.getMonthBudgets(eq(USER_ID), eq(LocalDate.of(2026, month, 1))))
+            if (!month.equals(Month.JANUARY)) {
+                lenient().when(budgetService.getMonthBudgets(USER_ID, LocalDate.of(2026, month, 1)))
                         .thenReturn(new BudgetMonthResponse(LocalDate.of(2026, month, 1), noBudget, List.of()));
             }
         }
@@ -280,7 +281,7 @@ class ReportServiceTest {
         stubTransactionServiceEmpty();
         OverallBudgetLine overall = new OverallBudgetLine(1L, new BigDecimal("500.00"), new BigDecimal("120.00"),
                 new BigDecimal("380.00"), new BigDecimal("24"), false);
-        when(budgetService.getMonthBudgets(eq(USER_ID), eq(LocalDate.of(2026, Month.MARCH, 1))))
+        when(budgetService.getMonthBudgets(USER_ID, LocalDate.of(2026, Month.MARCH, 1)))
                 .thenReturn(new BudgetMonthResponse(LocalDate.of(2026, Month.MARCH, 1), overall, List.of()));
 
         ReportResponse report = reportService.buildReport(USER_ID, "monthly", 2026, 3);

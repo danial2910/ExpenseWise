@@ -23,10 +23,12 @@ class PdfReportExporterTest {
 
     private final PdfReportExporter exporter = new PdfReportExporter();
 
+    private static final Instant FIXED_INSTANT = Instant.parse("2026-03-05T08:00:00Z");
+
     private TransactionResponse transaction(String type, String amount, Long categoryId, String categoryName,
                                              LocalDate date, String description) {
         return new TransactionResponse(1L, type, new BigDecimal(amount), categoryId, categoryName, "utensils",
-                date, description, Instant.now(), Instant.now(), null);
+                date, description, FIXED_INSTANT, FIXED_INSTANT, null);
     }
 
     private ReportResponse monthlyReport() {
