@@ -23,12 +23,12 @@ public record ExportedReport(
         if (this == o) {
             return true;
         }
-        if (!(o instanceof ExportedReport other)) {
+        if (!(o instanceof ExportedReport(byte[] otherContent, String otherFilename, String otherContentType))) {
             return false;
         }
-        return Arrays.equals(content, other.content)
-                && Objects.equals(filename, other.filename)
-                && Objects.equals(contentType, other.contentType);
+        return Arrays.equals(content, otherContent)
+                && Objects.equals(filename, otherFilename)
+                && Objects.equals(contentType, otherContentType);
     }
 
     @Override
