@@ -54,7 +54,7 @@ function onImageError(index: number) {
       <div
         v-if="loadState === 'error'"
         data-testid="news-error-state"
-        class="flex flex-col items-center justify-center gap-4 py-20 px-8 bg-white border border-surface-200 rounded-lg"
+        class="flex flex-col items-center justify-center gap-4 py-14 px-6 lg:py-20 lg:px-8 bg-white border border-surface-200 rounded-lg"
       >
         <div class="w-14 h-14 rounded-lg bg-red-50 flex items-center justify-center">
           <i class="pi pi-exclamation-triangle text-red-600 text-2xl" />
@@ -70,7 +70,7 @@ function onImageError(index: number) {
       <div
         v-else-if="loadState === 'loading'"
         data-testid="news-loading-skeleton"
-        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
       >
         <div v-for="n in 6" :key="n" class="bg-white border border-surface-200 rounded-lg overflow-hidden">
           <div class="w-full h-[140px] bg-surface-200 animate-pulse" />
@@ -86,7 +86,7 @@ function onImageError(index: number) {
       <div
         v-else-if="articles.length === 0"
         data-testid="news-empty-state"
-        class="flex flex-col items-center justify-center gap-4 py-20 px-8 bg-white border border-surface-200 rounded-lg"
+        class="flex flex-col items-center justify-center gap-4 py-14 px-6 lg:py-20 lg:px-8 bg-white border border-surface-200 rounded-lg"
       >
         <div class="w-14 h-14 rounded-lg bg-surface-100 flex items-center justify-center">
           <i class="pi pi-inbox text-surface-400 text-2xl" />
@@ -96,7 +96,7 @@ function onImageError(index: number) {
       </div>
 
       <!-- ready state -->
-      <div v-else data-testid="news-articles-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div v-else data-testid="news-articles-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         <div
           v-for="(article, index) in articles"
           :key="article.url + index"

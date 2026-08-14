@@ -18,7 +18,7 @@ withDefaults(defineProps<{ title?: string; subtitle?: string }>(), {
         <span class="text-lg font-bold text-surface-900">ExpenseWise</span>
       </div>
 
-      <div class="w-full bg-white border border-surface-200 rounded-lg p-8">
+      <div class="w-full bg-white border border-surface-200 rounded-lg p-6 md:p-8">
         <h1 v-if="title" class="text-xl font-bold text-surface-900 mb-1">{{ title }}</h1>
         <p v-if="subtitle" class="text-sm text-surface-500 mb-5">{{ subtitle }}</p>
         <slot />

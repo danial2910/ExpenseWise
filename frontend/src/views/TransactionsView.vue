@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { isAxiosError } from 'axios'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
@@ -93,7 +94,18 @@ async function loadAll() {
   await loadTransactions()
 }
 
-onMounted(loadAll)
+const route = useRoute()
+const router = useRouter()
+
+onMounted(async () => {
+  await loadAll()
+  // Dashboard's mobile FAB links here with ?add=1 to jump straight into the
+  // add-transaction dialog, since there's no standalone "add" page/route.
+  if (route.query.add === '1') {
+    openAdd()
+    router.replace({ query: {} })
+  }
+})
 
 watch([typeFilter, categoryFilter, dateFrom, dateTo], () => {
   page.value = 0
@@ -333,14 +345,14 @@ async function onDelete(transaction: TransactionResponse) {
 </script>
 
 <template>
-  <AppLayout title="Transactions">
+  <AppLayout title="Transactions" fab-label="Add transaction" @fab="openAdd">
     <div class="flex flex-col gap-6">
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-2xl font-bold text-surface-900">Transactions</h1>
           <p class="text-sm text-surface-500 mt-1">All your income and expenses in one place</p>
         </div>
-        <Button data-testid="add-transaction-button" label="Add transaction" icon="pi pi-plus" @click="openAdd" />
+        <Button data-testid="add-transaction-button" label="Add transaction" icon="pi pi-plus" class="hidden md:inline-flex" @click="openAdd" />
       </div>
 
       <!-- filters -->
@@ -474,7 +486,7 @@ async function onDelete(transaction: TransactionResponse) {
 
         <div v-else data-testid="transactions-table" class="bg-white border border-surface-200 rounded-lg overflow-hidden">
           <div
-            class="grid grid-cols-[110px_1fr_140px_100px_140px_72px] px-5 py-3 border-b border-surface-200 bg-surface-50"
+            class="hidden md:grid grid-cols-[110px_1fr_140px_100px_140px_72px] px-5 py-3 border-b border-surface-200 bg-surface-50"
           >
             <span class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Date</span>
             <span class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Description</span>
@@ -488,50 +500,93 @@ async function onDelete(transaction: TransactionResponse) {
             v-for="transaction in transactions"
             :key="transaction.id"
             :data-testid="`transaction-row-${transaction.id}`"
-            class="grid grid-cols-[110px_1fr_140px_100px_140px_72px] px-5 py-3.5 border-b border-surface-100 items-center"
+            class="border-b border-surface-100"
           >
-            <span class="text-sm text-surface-500">{{ formatDate(transaction.transactionDate) }}</span>
-            <span class="text-sm font-medium text-surface-900 truncate pr-3 flex items-center gap-1.5">
-              {{ transaction.description || '—' }}
-              <a
-                v-if="transaction.receiptUrl"
-                :data-testid="`transaction-receipt-link-${transaction.id}`"
-                :href="transaction.receiptUrl"
-                target="_blank"
-                rel="noopener"
-                class="text-surface-400 hover:text-primary-600 shrink-0"
-                title="View receipt"
-                @click.stop
-              >
-                <i class="pi pi-paperclip text-xs" />
-              </a>
-            </span>
-            <span>
-              <span class="inline-flex items-center gap-1.5 text-xs font-medium text-surface-600 bg-surface-100 px-2.5 py-1 rounded-lg">
-                <i :class="['pi', categoryIconClass(transaction.categoryIcon)]" />
-                {{ transaction.categoryName }}
+            <!-- desktop/tablet row -->
+            <div class="hidden md:grid grid-cols-[110px_1fr_140px_100px_140px_72px] px-5 py-3.5 items-center">
+              <span class="text-sm text-surface-500">{{ formatDate(transaction.transactionDate) }}</span>
+              <span class="text-sm font-medium text-surface-900 truncate pr-3 flex items-center gap-1.5">
+                {{ transaction.description || '—' }}
+                <a
+                  v-if="transaction.receiptUrl"
+                  :data-testid="`transaction-receipt-link-${transaction.id}`"
+                  :href="transaction.receiptUrl"
+                  target="_blank"
+                  rel="noopener"
+                  class="text-surface-400 hover:text-primary-600 shrink-0"
+                  title="View receipt"
+                  @click.stop
+                >
+                  <i class="pi pi-paperclip text-xs" />
+                </a>
               </span>
-            </span>
-            <span class="text-sm text-surface-500">{{ transaction.type === 'INCOME' ? 'Income' : 'Expense' }}</span>
-            <span class="text-sm font-semibold text-right tabular-nums" :class="typeColorClass(transaction.type)">
-              <MoneyDisplay :amount="Number(transaction.amount) * amountSign(transaction.type)" sign />
-            </span>
-            <span class="flex items-center justify-end gap-1">
-              <button
-                :data-testid="`transaction-edit-button-${transaction.id}`"
-                class="w-7 h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-surface-100"
-                @click="openEdit(transaction)"
-              >
-                <i class="pi pi-pencil text-xs" />
-              </button>
-              <button
-                :data-testid="`transaction-delete-button-${transaction.id}`"
-                class="w-7 h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-red-50 hover:text-red-600"
-                @click="onDelete(transaction)"
-              >
-                <i class="pi pi-trash text-xs" />
-              </button>
-            </span>
+              <span>
+                <span class="inline-flex items-center gap-1.5 text-xs font-medium text-surface-600 bg-surface-100 px-2.5 py-1 rounded-lg">
+                  <i :class="['pi', categoryIconClass(transaction.categoryIcon)]" />
+                  {{ transaction.categoryName }}
+                </span>
+              </span>
+              <span class="text-sm text-surface-500">{{ transaction.type === 'INCOME' ? 'Income' : 'Expense' }}</span>
+              <span class="text-sm font-semibold text-right tabular-nums" :class="typeColorClass(transaction.type)">
+                <MoneyDisplay :amount="Number(transaction.amount) * amountSign(transaction.type)" sign />
+              </span>
+              <span class="flex items-center justify-end gap-1">
+                <button
+                  :data-testid="`transaction-edit-button-${transaction.id}`"
+                  class="w-7 h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-surface-100"
+                  @click="openEdit(transaction)"
+                >
+                  <i class="pi pi-pencil text-xs" />
+                </button>
+                <button
+                  :data-testid="`transaction-delete-button-${transaction.id}`"
+                  class="w-7 h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-red-50 hover:text-red-600"
+                  @click="onDelete(transaction)"
+                >
+                  <i class="pi pi-trash text-xs" />
+                </button>
+              </span>
+            </div>
+
+            <!-- mobile card -->
+            <div class="md:hidden flex flex-col gap-2 px-4 py-3.5" @click="openEdit(transaction)">
+              <div class="flex items-center justify-between gap-3">
+                <span class="text-sm font-medium text-surface-900 truncate flex items-center gap-1.5">
+                  {{ transaction.description || '—' }}
+                  <a
+                    v-if="transaction.receiptUrl"
+                    :data-testid="`mobile-transaction-receipt-link-${transaction.id}`"
+                    :href="transaction.receiptUrl"
+                    target="_blank"
+                    rel="noopener"
+                    class="text-surface-400 shrink-0"
+                    title="View receipt"
+                    @click.stop
+                  >
+                    <i class="pi pi-paperclip text-xs" />
+                  </a>
+                </span>
+                <span class="text-sm font-semibold tabular-nums shrink-0" :class="typeColorClass(transaction.type)">
+                  <MoneyDisplay :amount="Number(transaction.amount) * amountSign(transaction.type)" sign />
+                </span>
+              </div>
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="text-xs text-surface-500 shrink-0">{{ formatDate(transaction.transactionDate) }}</span>
+                  <span class="inline-flex items-center gap-1 text-xs font-medium text-surface-600 bg-surface-100 px-2 py-0.5 rounded-lg truncate">
+                    <i :class="['pi', categoryIconClass(transaction.categoryIcon)]" />
+                    {{ transaction.categoryName }}
+                  </span>
+                </div>
+                <button
+                  :data-testid="`mobile-transaction-delete-button-${transaction.id}`"
+                  class="w-7 h-7 rounded-md flex items-center justify-center text-surface-500 shrink-0"
+                  @click.stop="onDelete(transaction)"
+                >
+                  <i class="pi pi-trash text-xs" />
+                </button>
+              </div>
+            </div>
           </div>
 
           <div class="flex items-center justify-between px-5 py-3 border-t border-surface-200">
@@ -564,6 +619,7 @@ async function onDelete(transaction: TransactionResponse) {
       modal
       :header="editorTitle"
       :style="{ width: '480px' }"
+      :breakpoints="{ '768px': '92vw' }"
       data-testid="transaction-editor-dialog"
     >
       <div class="flex flex-col gap-4">

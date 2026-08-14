@@ -277,7 +277,7 @@ function extractErrorMessage(error: unknown, fallback: string): string {
 
         <div class="flex-1"></div>
 
-        <div v-if="loadState === 'ready' && !isEmpty" class="flex items-center gap-2">
+        <div v-if="loadState === 'ready' && !isEmpty" class="flex items-center gap-2 flex-wrap">
           <Button
             data-testid="report-export-pdf-button"
             label="PDF"
@@ -314,7 +314,7 @@ function extractErrorMessage(error: unknown, fallback: string): string {
       <div
         v-if="loadState === 'error'"
         data-testid="reports-error-state"
-        class="flex flex-col items-center justify-center gap-4 py-20 px-8 bg-white border border-surface-200 rounded-lg"
+        class="flex flex-col items-center justify-center gap-4 py-14 px-6 lg:py-20 lg:px-8 bg-white border border-surface-200 rounded-lg"
       >
         <div class="w-14 h-14 rounded-lg bg-red-50 flex items-center justify-center">
           <i class="pi pi-exclamation-triangle text-red-600 text-2xl" />
@@ -330,7 +330,7 @@ function extractErrorMessage(error: unknown, fallback: string): string {
       <div
         v-else-if="loadState === 'loading'"
         data-testid="reports-loading-skeleton"
-        class="flex flex-col items-center justify-center gap-4 py-20 px-8 bg-white border border-surface-200 rounded-lg"
+        class="flex flex-col items-center justify-center gap-4 py-14 px-6 lg:py-20 lg:px-8 bg-white border border-surface-200 rounded-lg"
       >
         <div class="w-9 h-9 border-[3px] border-surface-200 border-t-primary-600 rounded-full animate-spin" />
         <p class="text-base font-semibold text-surface-900">Generating your report</p>
@@ -341,7 +341,7 @@ function extractErrorMessage(error: unknown, fallback: string): string {
       <div
         v-else-if="isEmpty"
         data-testid="reports-empty-state"
-        class="flex flex-col items-center justify-center gap-4 py-20 px-8 bg-white border border-surface-200 rounded-lg"
+        class="flex flex-col items-center justify-center gap-4 py-14 px-6 lg:py-20 lg:px-8 bg-white border border-surface-200 rounded-lg"
       >
         <div class="w-14 h-14 rounded-lg bg-surface-100 flex items-center justify-center">
           <i class="pi pi-chart-bar text-surface-400 text-2xl" />
@@ -354,31 +354,34 @@ function extractErrorMessage(error: unknown, fallback: string): string {
 
       <!-- ready state -->
       <div v-else data-testid="reports-content" class="flex flex-col gap-6">
-        <div class="grid grid-cols-3 gap-4">
-          <div data-testid="summary-income" class="bg-white border border-surface-200 rounded-lg p-5">
-            <p class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Total Income</p>
-            <p class="text-[22px] font-bold text-green-700 mt-1.5 tabular-nums">
+        <div class="grid grid-cols-3 gap-3 sm:gap-4">
+          <div data-testid="summary-income" class="bg-white border border-surface-200 rounded-lg p-4 sm:p-5">
+            <p class="text-[10px] sm:text-xs font-semibold text-surface-500 uppercase tracking-wide">Total Income</p>
+            <p class="text-base sm:text-lg lg:text-[22px] font-bold text-green-700 mt-1.5 tabular-nums">
               + <MoneyDisplay :amount="report!.totalIncome" />
             </p>
           </div>
-          <div data-testid="summary-expense" class="bg-white border border-surface-200 rounded-lg p-5">
-            <p class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Total Expenses</p>
-            <p class="text-[22px] font-bold text-red-600 mt-1.5 tabular-nums">
+          <div data-testid="summary-expense" class="bg-white border border-surface-200 rounded-lg p-4 sm:p-5">
+            <p class="text-[10px] sm:text-xs font-semibold text-surface-500 uppercase tracking-wide">Total Expenses</p>
+            <p class="text-base sm:text-lg lg:text-[22px] font-bold text-red-600 mt-1.5 tabular-nums">
               &minus; <MoneyDisplay :amount="report!.totalExpense" />
             </p>
           </div>
-          <div data-testid="summary-net" class="bg-white border border-surface-200 rounded-lg p-5">
-            <p class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Net Savings</p>
-            <p class="text-[22px] font-bold mt-1.5 tabular-nums" :class="netColorClass">
+          <div data-testid="summary-net" class="bg-white border border-surface-200 rounded-lg p-4 sm:p-5">
+            <p class="text-[10px] sm:text-xs font-semibold text-surface-500 uppercase tracking-wide">Net Savings</p>
+            <p class="text-base sm:text-lg lg:text-[22px] font-bold mt-1.5 tabular-nums" :class="netColorClass">
               {{ netPrefix }} <MoneyDisplay :amount="Math.abs(netBalance)" />
             </p>
           </div>
         </div>
 
-        <div class="grid grid-cols-12 gap-6">
-          <div data-testid="report-category-breakdown" class="col-span-7 bg-white border border-surface-200 rounded-lg overflow-hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div
+            data-testid="report-category-breakdown"
+            class="order-2 lg:order-1 lg:col-span-7 bg-white border border-surface-200 rounded-lg overflow-hidden"
+          >
             <div class="px-5 py-4 border-b border-surface-200 text-sm font-semibold text-surface-900">Category Breakdown</div>
-            <div class="grid grid-cols-[1fr_120px_100px_140px] px-5 py-2.5 bg-surface-50 border-b border-surface-200">
+            <div class="hidden lg:grid grid-cols-[1fr_120px_100px_140px] px-5 py-2.5 bg-surface-50 border-b border-surface-200">
               <span class="text-[11px] font-semibold text-surface-500 uppercase tracking-wide">Category</span>
               <span class="text-[11px] font-semibold text-surface-500 uppercase tracking-wide text-right">Spent</span>
               <span class="text-[11px] font-semibold text-surface-500 uppercase tracking-wide text-right">Share</span>
@@ -391,22 +394,37 @@ function extractErrorMessage(error: unknown, fallback: string): string {
               v-for="c in categoryLegend"
               :key="c.categoryId"
               :data-testid="`report-category-row-${c.categoryId}`"
-              class="grid grid-cols-[1fr_120px_100px_140px] px-5 py-3 border-b border-surface-100 items-center last:border-b-0"
+              class="border-b border-surface-100 last:border-b-0"
             >
-              <span class="text-sm font-medium text-surface-900">{{ c.name }}</span>
-              <span class="text-sm text-surface-700 text-right tabular-nums"><MoneyDisplay :amount="c.amount" /></span>
-              <span class="text-sm text-surface-500 text-right tabular-nums">{{ c.percentage }}%</span>
-              <span class="pl-4">
+              <!-- desktop row -->
+              <div class="hidden lg:grid grid-cols-[1fr_120px_100px_140px] px-5 py-3 items-center">
+                <span class="text-sm font-medium text-surface-900">{{ c.name }}</span>
+                <span class="text-sm text-surface-700 text-right tabular-nums"><MoneyDisplay :amount="c.amount" /></span>
+                <span class="text-sm text-surface-500 text-right tabular-nums">{{ c.percentage }}%</span>
+                <span class="pl-4">
+                  <span class="block w-full h-1.5 rounded-full bg-surface-200 overflow-hidden">
+                    <span class="block h-full rounded-full" :style="{ width: c.percentage + '%', backgroundColor: c.color }" />
+                  </span>
+                </span>
+              </div>
+              <!-- tablet/mobile row -->
+              <div class="lg:hidden flex flex-col gap-1.5 px-5 py-3">
+                <div class="flex items-center justify-between gap-3">
+                  <span class="text-sm font-medium text-surface-900">{{ c.name }}</span>
+                  <span class="text-xs text-surface-500 tabular-nums shrink-0">
+                    <MoneyDisplay :amount="c.amount" /> · {{ c.percentage }}%
+                  </span>
+                </div>
                 <span class="block w-full h-1.5 rounded-full bg-surface-200 overflow-hidden">
                   <span class="block h-full rounded-full" :style="{ width: c.percentage + '%', backgroundColor: c.color }" />
                 </span>
-              </span>
+              </div>
             </div>
           </div>
 
-          <div class="col-span-5 bg-white border border-surface-200 rounded-lg p-6">
+          <div class="order-1 lg:order-2 lg:col-span-5 bg-white border border-surface-200 rounded-lg p-4 lg:p-6">
             <p class="text-sm font-semibold text-surface-900 mb-5">{{ chartTitle }}</p>
-            <div data-testid="report-trend-chart" class="h-52">
+            <div data-testid="report-trend-chart" class="h-40 lg:h-52">
               <Chart type="bar" :data="trendChartData" :options="trendChartOptions" class="h-full" />
             </div>
             <div class="flex items-center gap-4 mt-4">

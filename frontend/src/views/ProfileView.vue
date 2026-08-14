@@ -366,7 +366,7 @@ onMounted(() => {
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-4 mb-4">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
             <div>
               <label for="profile-fullname-input" class="block text-xs font-semibold text-surface-600 mb-1.5">Full name</label>
               <input
@@ -395,7 +395,7 @@ onMounted(() => {
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-4 mb-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label for="profile-phone-input" class="block text-xs font-semibold text-surface-600 mb-1.5">
                 Phone number <span class="text-surface-400 font-normal">(optional)</span>
@@ -523,33 +523,56 @@ onMounted(() => {
 
           <div class="bg-white border border-surface-200 rounded-lg p-6">
             <p class="text-sm font-semibold text-surface-900 mb-4">Login history</p>
-            <div class="grid grid-cols-[1fr_160px_100px] pb-2.5 border-b border-surface-200">
-              <span class="text-[11px] font-semibold text-surface-500 uppercase">Date &amp; time</span>
-              <span class="text-[11px] font-semibold text-surface-500 uppercase">IP address</span>
-              <span class="text-[11px] font-semibold text-surface-500 uppercase text-right">Status</span>
-            </div>
             <div v-if="loginHistory.length === 0" data-testid="login-history-empty" class="py-4 text-sm text-surface-400">
               No login activity yet.
             </div>
-            <div
-              v-for="(entry, index) in loginHistory"
-              :key="index"
-              data-testid="login-history-row"
-              class="grid grid-cols-[1fr_160px_100px] py-3 border-b border-surface-100 items-center"
-            >
-              <span class="text-[13px] text-surface-700">{{ formatDateTime(entry.occurredAt) }}</span>
-              <span class="text-[13px] text-surface-500 tabular-nums">{{ entry.ipAddress ?? '—' }}</span>
-              <span
-                class="text-xs font-medium text-right"
-                :class="entry.status === 'Success' ? 'text-green-700' : 'text-red-600'"
+            <template v-else>
+              <!-- desktop/tablet table -->
+              <div class="hidden md:grid grid-cols-[1fr_160px_100px] pb-2.5 border-b border-surface-200">
+                <span class="text-[11px] font-semibold text-surface-500 uppercase">Date &amp; time</span>
+                <span class="text-[11px] font-semibold text-surface-500 uppercase">IP address</span>
+                <span class="text-[11px] font-semibold text-surface-500 uppercase text-right">Status</span>
+              </div>
+              <div
+                v-for="(entry, index) in loginHistory"
+                :key="index"
               >
-                {{ entry.status }}
-              </span>
-            </div>
+                <!-- desktop/tablet row -->
+                <div
+                  data-testid="login-history-row"
+                  class="hidden md:grid grid-cols-[1fr_160px_100px] py-3 border-b border-surface-100 items-center"
+                >
+                  <span class="text-[13px] text-surface-700">{{ formatDateTime(entry.occurredAt) }}</span>
+                  <span class="text-[13px] text-surface-500 tabular-nums">{{ entry.ipAddress ?? '—' }}</span>
+                  <span
+                    class="text-xs font-medium text-right"
+                    :class="entry.status === 'Success' ? 'text-green-700' : 'text-red-600'"
+                  >
+                    {{ entry.status }}
+                  </span>
+                </div>
+                <!-- mobile card -->
+                <div
+                  data-testid="login-history-row-mobile"
+                  class="md:hidden flex flex-col gap-0.5 py-2.5 border-b border-surface-100"
+                >
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-[13px] text-surface-700">{{ formatDateTime(entry.occurredAt) }}</span>
+                    <span
+                      class="text-xs font-medium shrink-0"
+                      :class="entry.status === 'Success' ? 'text-green-700' : 'text-red-600'"
+                    >
+                      {{ entry.status }}
+                    </span>
+                  </div>
+                  <span class="text-xs text-surface-400 tabular-nums">{{ entry.ipAddress ?? '—' }}</span>
+                </div>
+              </div>
+            </template>
           </div>
 
           <div class="bg-white border border-surface-200 rounded-lg p-6">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div>
                 <p class="text-sm font-semibold text-surface-900">Active sessions</p>
                 <p class="text-[13px] text-surface-500 mt-1">Sign out everywhere except this device.</p>
@@ -557,7 +580,7 @@ onMounted(() => {
               <button
                 v-if="!signOutConfirmOpen"
                 data-testid="logout-others-button"
-                class="min-h-11 flex items-center px-4 border border-red-300 text-red-600 text-[13px] font-semibold rounded-lg"
+                class="min-h-11 flex items-center justify-center px-4 border border-red-300 text-red-600 text-[13px] font-semibold rounded-lg"
                 @click="openSignOutConfirm"
               >
                 Log out of all other sessions
@@ -575,7 +598,7 @@ onMounted(() => {
               <div class="flex items-center gap-3">
                 <button
                   data-testid="logout-others-confirm-button"
-                  class="min-h-9 flex items-center px-3.5 bg-red-600 text-white text-[13px] font-semibold rounded-lg disabled:opacity-60"
+                  class="min-h-9 flex-1 md:flex-none flex items-center justify-center px-3.5 bg-red-600 text-white text-[13px] font-semibold rounded-lg disabled:opacity-60"
                   :disabled="signOutSaving"
                   @click="confirmSignOut"
                 >
@@ -583,7 +606,7 @@ onMounted(() => {
                 </button>
                 <button
                   data-testid="logout-others-cancel-button"
-                  class="min-h-9 flex items-center px-3.5 text-surface-600 text-[13px] font-semibold"
+                  class="min-h-9 flex-1 md:flex-none flex items-center justify-center px-3.5 text-surface-600 text-[13px] font-semibold"
                   @click="closeSignOutConfirm"
                 >
                   Cancel

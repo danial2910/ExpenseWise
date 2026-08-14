@@ -200,17 +200,17 @@ async function onClear(budgetId: number) {
 </script>
 
 <template>
-  <AppLayout title="Budgets">
+  <AppLayout title="Budgets" fab-label="Set overall budget" @fab="openOverallEdit">
     <div class="flex flex-col gap-6">
-      <div class="flex items-center justify-between">
+      <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 class="text-2xl font-bold text-surface-900">Budgets</h1>
           <p class="text-sm text-surface-500 mt-1">Plan and track spending limits by category</p>
         </div>
-        <div v-if="monthData" class="flex items-center gap-2 bg-white border border-surface-200 rounded-lg px-2 py-1.5">
+        <div v-if="monthData" class="flex items-center gap-2 bg-white border border-surface-200 rounded-lg px-2 py-1.5 self-start">
           <button
             data-testid="budget-prev-month-button"
-            class="w-7 h-7 rounded-md flex items-center justify-center text-surface-600 hover:bg-surface-100"
+            class="w-9 h-9 md:w-7 md:h-7 rounded-md flex items-center justify-center text-surface-600 hover:bg-surface-100"
             @click="prevMonth"
           >
             <i class="pi pi-chevron-left text-xs" />
@@ -220,7 +220,7 @@ async function onClear(budgetId: number) {
           </span>
           <button
             data-testid="budget-next-month-button"
-            class="w-7 h-7 rounded-md flex items-center justify-center text-surface-600 hover:bg-surface-100"
+            class="w-9 h-9 md:w-7 md:h-7 rounded-md flex items-center justify-center text-surface-600 hover:bg-surface-100"
             @click="nextMonth"
           >
             <i class="pi pi-chevron-right text-xs" />
@@ -232,7 +232,7 @@ async function onClear(budgetId: number) {
       <div
         v-if="loadState === 'error'"
         data-testid="budgets-error-state"
-        class="flex flex-col items-center justify-center gap-4 py-16 px-8 bg-white border border-surface-200 rounded-lg"
+        class="flex flex-col items-center justify-center gap-4 py-12 px-5 md:py-16 md:px-8 bg-white border border-surface-200 rounded-lg"
       >
         <div class="w-14 h-14 rounded-lg bg-red-50 flex items-center justify-center">
           <i class="pi pi-exclamation-triangle text-red-600 text-2xl" />
@@ -265,7 +265,7 @@ async function onClear(budgetId: number) {
         <div
           v-if="isEmpty"
           data-testid="budgets-empty-state"
-          class="flex flex-col items-center justify-center gap-4 py-16 px-8 bg-white border border-surface-200 rounded-lg"
+          class="flex flex-col items-center justify-center gap-4 py-12 px-5 md:py-16 md:px-8 bg-white border border-surface-200 rounded-lg"
         >
           <div class="w-14 h-14 rounded-lg bg-surface-100 flex items-center justify-center">
             <i class="pi pi-wallet text-surface-400 text-2xl" />
@@ -284,73 +284,115 @@ async function onClear(budgetId: number) {
 
         <template v-else>
           <!-- overall budget card -->
-          <div data-testid="overall-budget-card" class="bg-white border border-surface-200 rounded-lg p-6">
-            <div class="flex items-center justify-between mb-4">
-              <span class="text-sm font-semibold text-surface-900">Overall Monthly Budget</span>
-              <div class="flex items-center gap-4">
-                <button
-                  data-testid="overall-budget-edit-button"
-                  class="text-xs font-semibold text-primary-600"
-                  @click="openOverallEdit"
-                >
-                  {{ monthData!.overall.budgetId === null ? 'Set budget' : 'Edit' }}
-                </button>
-                <button
-                  v-if="monthData!.overall.budgetId !== null"
-                  data-testid="overall-budget-clear-button"
-                  class="text-xs font-semibold"
-                  :class="hasAnyCategoryBudget ? 'text-surface-300 cursor-not-allowed' : 'text-surface-500 hover:text-red-600'"
-                  :disabled="hasAnyCategoryBudget"
-                  :title="hasAnyCategoryBudget ? 'Clear this month\'s category budgets first' : undefined"
-                  @click="!hasAnyCategoryBudget && onClear(monthData!.overall.budgetId!)"
-                >
-                  Clear
-                </button>
+          <div data-testid="overall-budget-card" class="bg-white border border-surface-200 rounded-lg p-4 md:p-6">
+            <!-- desktop/tablet -->
+            <div class="hidden md:block">
+              <div class="flex items-center justify-between mb-4">
+                <span class="text-sm font-semibold text-surface-900">Overall Monthly Budget</span>
+                <div class="flex items-center gap-4">
+                  <button
+                    data-testid="overall-budget-edit-button"
+                    class="text-xs font-semibold text-primary-600"
+                    @click="openOverallEdit"
+                  >
+                    {{ monthData!.overall.budgetId === null ? 'Set budget' : 'Edit' }}
+                  </button>
+                  <button
+                    v-if="monthData!.overall.budgetId !== null"
+                    data-testid="overall-budget-clear-button"
+                    class="text-xs font-semibold"
+                    :class="hasAnyCategoryBudget ? 'text-surface-300 cursor-not-allowed' : 'text-surface-500 hover:text-red-600'"
+                    :disabled="hasAnyCategoryBudget"
+                    :title="hasAnyCategoryBudget ? 'Clear this month\'s category budgets first' : undefined"
+                    @click="!hasAnyCategoryBudget && onClear(monthData!.overall.budgetId!)"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+              <div class="flex items-baseline gap-6 mb-3">
+                <div>
+                  <p class="text-[11px] font-semibold text-surface-500 uppercase tracking-wide">Budget</p>
+                  <p class="text-xl font-bold text-surface-900 tabular-nums">
+                    <MoneyDisplay v-if="monthData!.overall.amount !== null" :amount="monthData!.overall.amount" />
+                    <span v-else class="text-surface-400 text-base font-semibold">Not set</span>
+                  </p>
+                </div>
+                <div>
+                  <p class="text-[11px] font-semibold text-surface-500 uppercase tracking-wide">Spent</p>
+                  <p class="text-xl font-bold text-surface-900 tabular-nums">
+                    <MoneyDisplay :amount="monthData!.overall.spent" />
+                  </p>
+                </div>
+                <div>
+                  <p class="text-[11px] font-semibold text-surface-500 uppercase tracking-wide">Remaining</p>
+                  <p
+                    class="text-xl font-bold tabular-nums"
+                    :class="monthData!.overall.remaining !== null && Number(monthData!.overall.remaining) < 0 ? 'text-red-600' : 'text-surface-900'"
+                  >
+                    <MoneyDisplay
+                      v-if="monthData!.overall.remaining !== null"
+                      :amount="Math.abs(Number(monthData!.overall.remaining))"
+                    />
+                    <span v-else class="text-surface-400 text-base font-semibold">—</span>
+                  </p>
+                </div>
+              </div>
+              <div class="w-full h-2.5 rounded-full bg-surface-200 overflow-hidden">
+                <div
+                  class="h-full rounded-full"
+                  :class="statusBarClass(numberOrNull(monthData!.overall.progressPercent))"
+                  :style="{ width: clampedWidth(monthData!.overall.progressPercent) + '%' }"
+                />
+              </div>
+              <p class="text-xs font-semibold mt-2" :class="statusColorClass(numberOrNull(monthData!.overall.progressPercent))">
+                {{ statusLabel(numberOrNull(monthData!.overall.progressPercent)) }}
+              </p>
+            </div>
+
+            <!-- mobile -->
+            <div class="md:hidden">
+              <div class="flex items-center justify-between mb-2.5">
+                <span class="text-sm font-semibold text-surface-900">Overall Budget</span>
+                <div class="flex items-center gap-3">
+                  <button
+                    data-testid="overall-budget-edit-button-mobile"
+                    class="min-h-11 flex items-center text-sm font-semibold text-primary-600"
+                    @click="openOverallEdit"
+                  >
+                    {{ monthData!.overall.budgetId === null ? 'Set budget' : 'Edit' }}
+                  </button>
+                  <button
+                    v-if="monthData!.overall.budgetId !== null"
+                    data-testid="overall-budget-clear-button-mobile"
+                    class="min-h-11 flex items-center text-xs font-semibold"
+                    :class="hasAnyCategoryBudget ? 'text-surface-300' : 'text-surface-500'"
+                    :disabled="hasAnyCategoryBudget"
+                    @click="!hasAnyCategoryBudget && onClear(monthData!.overall.budgetId!)"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+              <p class="text-xs font-semibold mb-2.5" :class="statusColorClass(numberOrNull(monthData!.overall.progressPercent))">
+                <MoneyDisplay :amount="monthData!.overall.spent" /> of
+                <template v-if="monthData!.overall.amount !== null"><MoneyDisplay :amount="monthData!.overall.amount" /></template>
+                <span v-else>Not set</span>
+                — {{ statusLabel(numberOrNull(monthData!.overall.progressPercent)) }}
+              </p>
+              <div class="w-full h-2.5 rounded-full bg-surface-200 overflow-hidden">
+                <div
+                  class="h-full rounded-full"
+                  :class="statusBarClass(numberOrNull(monthData!.overall.progressPercent))"
+                  :style="{ width: clampedWidth(monthData!.overall.progressPercent) + '%' }"
+                />
               </div>
             </div>
-            <div class="flex items-baseline gap-6 mb-3">
-              <div>
-                <p class="text-[11px] font-semibold text-surface-500 uppercase tracking-wide">Budget</p>
-                <p class="text-xl font-bold text-surface-900 tabular-nums">
-                  <MoneyDisplay v-if="monthData!.overall.amount !== null" :amount="monthData!.overall.amount" />
-                  <span v-else class="text-surface-400 text-base font-semibold">Not set</span>
-                </p>
-              </div>
-              <div>
-                <p class="text-[11px] font-semibold text-surface-500 uppercase tracking-wide">Spent</p>
-                <p class="text-xl font-bold text-surface-900 tabular-nums">
-                  <MoneyDisplay :amount="monthData!.overall.spent" />
-                </p>
-              </div>
-              <div>
-                <p class="text-[11px] font-semibold text-surface-500 uppercase tracking-wide">Remaining</p>
-                <p
-                  class="text-xl font-bold tabular-nums"
-                  :class="monthData!.overall.remaining !== null && Number(monthData!.overall.remaining) < 0 ? 'text-red-600' : 'text-surface-900'"
-                >
-                  <MoneyDisplay
-                    v-if="monthData!.overall.remaining !== null"
-                    :amount="Math.abs(Number(monthData!.overall.remaining))"
-                  />
-                  <span v-else class="text-surface-400 text-base font-semibold">—</span>
-                </p>
-              </div>
-            </div>
-            <div class="w-full h-2.5 rounded-full bg-surface-200 overflow-hidden">
-              <div
-                class="h-full rounded-full"
-                :class="statusBarClass(numberOrNull(monthData!.overall.progressPercent))"
-                :style="{ width: clampedWidth(monthData!.overall.progressPercent) + '%' }"
-              />
-            </div>
-            <p class="text-xs font-semibold mt-2" :class="statusColorClass(numberOrNull(monthData!.overall.progressPercent))">
-              {{ statusLabel(numberOrNull(monthData!.overall.progressPercent)) }}
-            </p>
           </div>
 
           <!-- per-category table -->
           <div data-testid="budgets-table" class="bg-white border border-surface-200 rounded-lg overflow-hidden">
-            <div class="grid grid-cols-[1fr_120px_120px_120px_90px_140px_110px] px-5 py-3 border-b border-surface-200 bg-surface-50">
+            <div class="hidden md:grid grid-cols-[1fr_120px_120px_120px_90px_140px_110px] px-5 py-3 border-b border-surface-200 bg-surface-50">
               <span class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Category</span>
               <span class="text-xs font-semibold text-surface-500 uppercase tracking-wide text-right">Budget</span>
               <span class="text-xs font-semibold text-surface-500 uppercase tracking-wide text-right">Spent</span>
@@ -364,79 +406,147 @@ async function onClear(budgetId: number) {
               v-for="category in monthData!.categories"
               :key="category.categoryId"
               :data-testid="`budget-row-${category.categoryId}`"
-              class="grid grid-cols-[1fr_120px_120px_120px_90px_140px_110px] px-5 py-3.5 border-b border-surface-100 items-center"
+              class="border-b border-surface-100"
             >
-              <span class="text-sm font-medium text-surface-900 flex items-center gap-2">
-                <i :class="['pi', categoryIconClass(category.categoryIcon)]" class="text-surface-400" />
-                {{ category.categoryName }}
-              </span>
+              <!-- desktop/tablet row -->
+              <div class="hidden md:grid grid-cols-[1fr_120px_120px_120px_90px_140px_110px] px-5 py-3.5 items-center">
+                <span class="text-sm font-medium text-surface-900 flex items-center gap-2">
+                  <i :class="['pi', categoryIconClass(category.categoryIcon)]" class="text-surface-400" />
+                  {{ category.categoryName }}
+                </span>
 
-              <template v-if="category.budgetId !== null">
-                <span class="text-sm text-surface-700 text-right tabular-nums">
-                  <MoneyDisplay :amount="category.amount!" />
-                </span>
-                <span class="text-sm text-surface-700 text-right tabular-nums">
-                  <MoneyDisplay :amount="category.spent" />
-                </span>
-                <span
-                  class="text-sm text-right tabular-nums"
-                  :class="Number(category.remaining) < 0 ? 'text-red-600' : 'text-surface-700'"
-                >
-                  <MoneyDisplay :amount="Math.abs(Number(category.remaining))" />
-                </span>
-                <span class="text-sm font-semibold text-right" :class="statusColorClass(numberOrNull(category.progressPercent))">
-                  {{ Math.round(Number(category.progressPercent)) }}%
-                </span>
-                <span class="pl-4">
-                  <span class="block w-full h-1.5 rounded-full bg-surface-200 overflow-hidden">
+                <template v-if="category.budgetId !== null">
+                  <span class="text-sm text-surface-700 text-right tabular-nums">
+                    <MoneyDisplay :amount="category.amount!" />
+                  </span>
+                  <span class="text-sm text-surface-700 text-right tabular-nums">
+                    <MoneyDisplay :amount="category.spent" />
+                  </span>
+                  <span
+                    class="text-sm text-right tabular-nums"
+                    :class="Number(category.remaining) < 0 ? 'text-red-600' : 'text-surface-700'"
+                  >
+                    <MoneyDisplay :amount="Math.abs(Number(category.remaining))" />
+                  </span>
+                  <span class="text-sm font-semibold text-right" :class="statusColorClass(numberOrNull(category.progressPercent))">
+                    {{ Math.round(Number(category.progressPercent)) }}%
+                  </span>
+                  <span class="pl-4">
+                    <span class="block w-full h-1.5 rounded-full bg-surface-200 overflow-hidden">
+                      <span
+                        class="block h-full rounded-full"
+                        :class="statusBarClass(numberOrNull(category.progressPercent))"
+                        :style="{ width: clampedWidth(category.progressPercent) + '%' }"
+                      />
+                    </span>
+                  </span>
+                  <span class="flex items-center justify-end gap-3">
+                    <button
+                      :data-testid="`budget-edit-button-${category.categoryId}`"
+                      class="text-xs font-semibold text-primary-600"
+                      @click="openCategoryEdit(category)"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      :data-testid="`budget-clear-button-${category.categoryId}`"
+                      class="text-xs font-semibold text-surface-500 hover:text-red-600"
+                      @click="onClear(category.budgetId!)"
+                    >
+                      Clear
+                    </button>
+                  </span>
+                </template>
+                <template v-else>
+                  <span class="col-span-4 text-sm text-surface-400">
+                    No budget set · <MoneyDisplay :amount="category.spent" /> spent
+                  </span>
+                  <span></span>
+                  <span class="flex items-center justify-end">
+                    <button
+                      v-if="hasOverallBudget"
+                      :data-testid="`budget-set-button-${category.categoryId}`"
+                      class="text-xs font-semibold text-primary-600 whitespace-nowrap"
+                      @click="openCategoryEdit(category)"
+                    >
+                      Set budget
+                    </button>
                     <span
-                      class="block h-full rounded-full"
+                      v-else
+                      :data-testid="`budget-set-button-${category.categoryId}`"
+                      class="text-xs font-semibold text-surface-300 whitespace-nowrap cursor-not-allowed"
+                      title="Set an overall budget for this month first"
+                    >
+                      Set budget
+                    </span>
+                  </span>
+                </template>
+              </div>
+
+              <!-- mobile card -->
+              <div class="md:hidden flex flex-col gap-2 px-4 py-3.5">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-sm font-medium text-surface-900 flex items-center gap-2 min-w-0">
+                    <i :class="['pi', categoryIconClass(category.categoryIcon)]" class="text-surface-400 shrink-0" />
+                    <span class="truncate">{{ category.categoryName }}</span>
+                  </span>
+                  <div class="flex items-center gap-3 shrink-0">
+                    <button
+                      v-if="category.budgetId !== null"
+                      :data-testid="`mobile-budget-edit-button-${category.categoryId}`"
+                      class="min-h-11 flex items-center text-xs font-semibold text-primary-600"
+                      @click="openCategoryEdit(category)"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      v-else-if="hasOverallBudget"
+                      :data-testid="`mobile-budget-set-button-${category.categoryId}`"
+                      class="min-h-11 flex items-center text-xs font-semibold text-primary-600 whitespace-nowrap"
+                      @click="openCategoryEdit(category)"
+                    >
+                      Set budget
+                    </button>
+                    <span
+                      v-else
+                      :data-testid="`mobile-budget-set-button-${category.categoryId}`"
+                      class="min-h-11 flex items-center text-xs font-semibold text-surface-300 whitespace-nowrap"
+                    >
+                      Set budget
+                    </span>
+                  </div>
+                </div>
+
+                <template v-if="category.budgetId !== null">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs text-surface-500">
+                      <MoneyDisplay :amount="category.spent" /> of <MoneyDisplay :amount="category.amount!" />
+                    </span>
+                    <span class="text-xs font-semibold" :class="statusColorClass(numberOrNull(category.progressPercent))">
+                      {{ Math.round(Number(category.progressPercent)) }}%
+                    </span>
+                  </div>
+                  <div class="w-full h-1.5 rounded-full bg-surface-200 overflow-hidden">
+                    <div
+                      class="h-full rounded-full"
                       :class="statusBarClass(numberOrNull(category.progressPercent))"
                       :style="{ width: clampedWidth(category.progressPercent) + '%' }"
                     />
-                  </span>
-                </span>
-                <span class="flex items-center justify-end gap-3">
+                  </div>
                   <button
-                    :data-testid="`budget-edit-button-${category.categoryId}`"
-                    class="text-xs font-semibold text-primary-600"
-                    @click="openCategoryEdit(category)"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    :data-testid="`budget-clear-button-${category.categoryId}`"
-                    class="text-xs font-semibold text-surface-500 hover:text-red-600"
+                    :data-testid="`mobile-budget-clear-button-${category.categoryId}`"
+                    class="self-start min-h-11 text-xs font-semibold text-surface-500"
                     @click="onClear(category.budgetId!)"
                   >
                     Clear
                   </button>
-                </span>
-              </template>
-              <template v-else>
-                <span class="col-span-4 text-sm text-surface-400">
-                  No budget set · <MoneyDisplay :amount="category.spent" /> spent
-                </span>
-                <span></span>
-                <span class="flex items-center justify-end">
-                  <button
-                    v-if="hasOverallBudget"
-                    :data-testid="`budget-set-button-${category.categoryId}`"
-                    class="text-xs font-semibold text-primary-600 whitespace-nowrap"
-                    @click="openCategoryEdit(category)"
-                  >
-                    Set budget
-                  </button>
-                  <span
-                    v-else
-                    :data-testid="`budget-set-button-${category.categoryId}`"
-                    class="text-xs font-semibold text-surface-300 whitespace-nowrap cursor-not-allowed"
-                    title="Set an overall budget for this month first"
-                  >
-                    Set budget
+                </template>
+                <template v-else>
+                  <span class="text-xs text-surface-400">
+                    No budget set · <MoneyDisplay :amount="category.spent" /> spent
                   </span>
-                </span>
-              </template>
+                </template>
+              </div>
             </div>
           </div>
         </template>
@@ -448,6 +558,7 @@ async function onClear(budgetId: number) {
       modal
       :header="editorTitle"
       :style="{ width: '420px' }"
+      :breakpoints="{ '768px': '92vw' }"
       data-testid="budget-editor-dialog"
     >
       <div class="flex flex-col gap-4">

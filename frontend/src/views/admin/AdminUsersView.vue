@@ -255,14 +255,20 @@ async function runConfirm() {
 </script>
 
 <template>
-  <AppLayout title="Admin · User Management">
+  <AppLayout title="Admin · User Management" fab-label="Create user" @fab="openCreate">
     <div class="flex flex-col gap-6">
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-2xl font-bold text-surface-900">User Management</h1>
           <p class="text-sm text-surface-500 mt-1">Manage accounts, roles, and feature access</p>
         </div>
-        <Button data-testid="create-user-button" label="Create user" icon="pi pi-plus" @click="openCreate" />
+        <Button
+          data-testid="create-user-button"
+          label="Create user"
+          icon="pi pi-plus"
+          class="hidden md:inline-flex"
+          @click="openCreate"
+        />
       </div>
 
       <div class="flex items-center gap-3 flex-wrap">
@@ -294,7 +300,7 @@ async function runConfirm() {
       <div
         v-if="loadState === 'error'"
         data-testid="admin-users-error-state"
-        class="flex flex-col items-center justify-center gap-4 py-16 px-8 bg-white border border-surface-200 rounded-lg"
+        class="flex flex-col items-center justify-center gap-4 py-14 px-6 lg:py-16 lg:px-8 bg-white border border-surface-200 rounded-lg"
       >
         <div class="w-14 h-14 rounded-lg bg-red-50 flex items-center justify-center">
           <i class="pi pi-exclamation-triangle text-red-600 text-2xl" />
@@ -319,7 +325,7 @@ async function runConfirm() {
         <div
           v-if="users.length === 0"
           data-testid="admin-users-empty-state"
-          class="flex flex-col items-center justify-center gap-3 py-16 px-8"
+          class="flex flex-col items-center justify-center gap-3 py-14 px-6 lg:py-16 lg:px-8"
         >
           <p class="text-sm font-semibold text-surface-900">No users found</p>
           <p class="text-sm text-surface-500 text-center max-w-sm">No accounts match your filters, or none have been created yet.</p>
@@ -327,7 +333,7 @@ async function runConfirm() {
         </div>
 
         <template v-else>
-          <div class="grid grid-cols-[1fr_220px_100px_100px_120px_180px] px-5 py-3 border-b border-surface-200 bg-surface-50">
+          <div class="hidden lg:grid grid-cols-[1fr_220px_100px_100px_120px_180px] px-5 py-3 border-b border-surface-200 bg-surface-50">
             <span class="text-xs font-semibold text-surface-500 uppercase">Name</span>
             <span class="text-xs font-semibold text-surface-500 uppercase">Email</span>
             <span class="text-xs font-semibold text-surface-500 uppercase">Role</span>
@@ -340,68 +346,133 @@ async function runConfirm() {
             v-for="user in users"
             :key="user.id"
             :data-testid="`admin-user-row-${user.id}`"
-            class="grid grid-cols-[1fr_220px_100px_100px_120px_180px] items-center px-5 py-3.5 border-b border-surface-100 last:border-b-0"
+            class="border-b border-surface-100 last:border-b-0"
           >
-            <div class="flex items-center gap-2.5 min-w-0">
-              <div class="w-8 h-8 rounded-lg bg-primary-50 text-primary-600 text-xs font-semibold flex items-center justify-center shrink-0">
-                {{ initials(user.fullName) }}
+            <!-- desktop row -->
+            <div class="hidden lg:grid grid-cols-[1fr_220px_100px_100px_120px_180px] items-center px-5 py-3.5">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-8 h-8 rounded-lg bg-primary-50 text-primary-600 text-xs font-semibold flex items-center justify-center shrink-0">
+                  {{ initials(user.fullName) }}
+                </div>
+                <span class="text-sm font-medium text-surface-900 truncate">{{ user.fullName }}</span>
               </div>
-              <span class="text-sm font-medium text-surface-900 truncate">{{ user.fullName }}</span>
+              <span class="text-sm text-surface-500 truncate pr-2">{{ user.email }}</span>
+              <span>
+                <span
+                  class="text-xs font-medium px-2.5 py-1 rounded-lg"
+                  :class="user.role === 'ADMIN' ? 'text-primary-600 bg-primary-50' : 'text-surface-600 bg-surface-100'"
+                >
+                  {{ user.role === 'ADMIN' ? 'Admin' : 'User' }}
+                </span>
+              </span>
+              <span class="flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full" :class="user.active ? 'bg-green-700' : 'bg-surface-300'" />
+                <span class="text-sm" :class="user.active ? 'text-green-700' : 'text-surface-400'">
+                  {{ user.active ? 'Active' : 'Disabled' }}
+                </span>
+              </span>
+              <span class="text-sm text-surface-500">{{ formatDate(user.createdAt) }}</span>
+              <span class="flex items-center justify-end gap-1">
+                <button
+                  :data-testid="`admin-user-edit-${user.id}`"
+                  class="w-7 h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-surface-100"
+                  @click="openEdit(user)"
+                >
+                  <i class="pi pi-pencil text-xs" />
+                </button>
+                <button
+                  :data-testid="`admin-user-deactivate-${user.id}`"
+                  class="w-7 h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-surface-100"
+                  @click="openConfirm(user, user.active ? 'deactivate' : 'activate')"
+                >
+                  <i :class="['pi text-xs', user.active ? 'pi-ban' : 'pi-check']" />
+                </button>
+                <button
+                  :data-testid="`admin-user-delete-${user.id}`"
+                  class="w-7 h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-red-50 hover:text-red-600"
+                  @click="openConfirm(user, 'delete')"
+                >
+                  <i class="pi pi-trash text-xs" />
+                </button>
+              </span>
             </div>
-            <span class="text-sm text-surface-500 truncate pr-2">{{ user.email }}</span>
-            <span>
-              <span
-                class="text-xs font-medium px-2.5 py-1 rounded-lg"
-                :class="user.role === 'ADMIN' ? 'text-primary-600 bg-primary-50' : 'text-surface-600 bg-surface-100'"
-              >
-                {{ user.role === 'ADMIN' ? 'Admin' : 'User' }}
-              </span>
-            </span>
-            <span class="flex items-center gap-1.5">
-              <span class="w-1.5 h-1.5 rounded-full" :class="user.active ? 'bg-green-700' : 'bg-surface-300'" />
-              <span class="text-sm" :class="user.active ? 'text-green-700' : 'text-surface-400'">
-                {{ user.active ? 'Active' : 'Disabled' }}
-              </span>
-            </span>
-            <span class="text-sm text-surface-500">{{ formatDate(user.createdAt) }}</span>
-            <span class="flex items-center justify-end gap-1">
-              <button
-                :data-testid="`admin-user-edit-${user.id}`"
-                class="w-7 h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-surface-100"
-                @click="openEdit(user)"
-              >
-                <i class="pi pi-pencil text-xs" />
-              </button>
-              <button
-                :data-testid="`admin-user-deactivate-${user.id}`"
-                class="w-7 h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-surface-100"
-                @click="openConfirm(user, user.active ? 'deactivate' : 'activate')"
-              >
-                <i :class="['pi text-xs', user.active ? 'pi-ban' : 'pi-check']" />
-              </button>
-              <button
-                :data-testid="`admin-user-delete-${user.id}`"
-                class="w-7 h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-red-50 hover:text-red-600"
-                @click="openConfirm(user, 'delete')"
-              >
-                <i class="pi pi-trash text-xs" />
-              </button>
-            </span>
+
+            <!-- tablet/mobile card -->
+            <div class="lg:hidden flex flex-col gap-2.5 px-4 py-3.5">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-8 h-8 rounded-lg bg-primary-50 text-primary-600 text-xs font-semibold flex items-center justify-center shrink-0">
+                  {{ initials(user.fullName) }}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium text-surface-900 truncate">{{ user.fullName }}</p>
+                  <p class="text-xs text-surface-400 truncate">{{ user.email }}</p>
+                </div>
+              </div>
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <span
+                    class="text-xs font-medium px-2.5 py-1 rounded-lg"
+                    :class="user.role === 'ADMIN' ? 'text-primary-600 bg-primary-50' : 'text-surface-600 bg-surface-100'"
+                  >
+                    {{ user.role === 'ADMIN' ? 'Admin' : 'User' }}
+                  </span>
+                  <span class="flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full" :class="user.active ? 'bg-green-700' : 'bg-surface-300'" />
+                    <span class="text-xs" :class="user.active ? 'text-green-700' : 'text-surface-400'">
+                      {{ user.active ? 'Active' : 'Disabled' }}
+                    </span>
+                  </span>
+                </div>
+                <span class="text-xs text-surface-400 shrink-0">{{ formatDate(user.createdAt) }}</span>
+              </div>
+              <div class="flex items-center gap-1 border-t border-surface-100 pt-2">
+                <button
+                  :data-testid="`mobile-admin-user-edit-${user.id}`"
+                  class="flex-1 h-9 rounded-md flex items-center justify-center gap-1.5 text-sm text-surface-600 hover:bg-surface-100"
+                  @click="openEdit(user)"
+                >
+                  <i class="pi pi-pencil text-xs" /> Edit
+                </button>
+                <button
+                  :data-testid="`mobile-admin-user-deactivate-${user.id}`"
+                  class="flex-1 h-9 rounded-md flex items-center justify-center gap-1.5 text-sm text-surface-600 hover:bg-surface-100"
+                  @click="openConfirm(user, user.active ? 'deactivate' : 'activate')"
+                >
+                  <i :class="['pi text-xs', user.active ? 'pi-ban' : 'pi-check']" />
+                  {{ user.active ? 'Deactivate' : 'Activate' }}
+                </button>
+                <button
+                  :data-testid="`mobile-admin-user-delete-${user.id}`"
+                  class="flex-1 h-9 rounded-md flex items-center justify-center gap-1.5 text-sm text-surface-600 hover:bg-red-50 hover:text-red-600"
+                  @click="openConfirm(user, 'delete')"
+                >
+                  <i class="pi pi-trash text-xs" /> Delete
+                </button>
+              </div>
+            </div>
           </div>
 
-          <Paginator
-            data-testid="admin-users-paginator"
-            :rows="PAGE_SIZE"
-            :total-records="totalRecords"
-            :first="page * PAGE_SIZE"
-            @page="onPageChange"
-          />
+          <div class="overflow-x-auto">
+            <Paginator
+              data-testid="admin-users-paginator"
+              :rows="PAGE_SIZE"
+              :total-records="totalRecords"
+              :first="page * PAGE_SIZE"
+              @page="onPageChange"
+            />
+          </div>
         </template>
       </div>
     </div>
 
     <!-- create/edit drawer -->
-    <Drawer v-model:visible="panelOpen" position="right" :style="{ width: '440px' }" data-testid="user-panel-drawer">
+    <Drawer
+      v-model:visible="panelOpen"
+      position="right"
+      :style="{ width: '440px' }"
+      :breakpoints="{ '768px': '92vw' }"
+      data-testid="user-panel-drawer"
+    >
       <template #header>
         <span class="text-base font-semibold text-surface-900">{{ panelMode === 'edit' ? 'Edit user' : 'Create user' }}</span>
       </template>
@@ -512,7 +583,14 @@ async function runConfirm() {
     </Drawer>
 
     <!-- deactivate/activate/delete confirm -->
-    <Dialog v-model:visible="confirmOpen" modal :style="{ width: '400px' }" data-testid="user-confirm-dialog" :header="confirmTitle">
+    <Dialog
+      v-model:visible="confirmOpen"
+      modal
+      :style="{ width: '400px' }"
+      :breakpoints="{ '768px': '92vw' }"
+      data-testid="user-confirm-dialog"
+      :header="confirmTitle"
+    >
       <FormError v-if="confirmError" :message="confirmError" testid="user-confirm-error-banner" />
       <p class="text-sm text-surface-500">{{ confirmBody }}</p>
       <template #footer>

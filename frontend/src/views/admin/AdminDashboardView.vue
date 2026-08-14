@@ -138,7 +138,7 @@ function joinedDisplay(iso: string): string {
       <div
         v-if="loadState === 'error'"
         data-testid="admin-dashboard-error-state"
-        class="flex flex-col items-center justify-center gap-4 py-20 px-8 bg-white border border-surface-200 rounded-lg"
+        class="flex flex-col items-center justify-center gap-4 py-14 px-6 lg:py-20 lg:px-8 bg-white border border-surface-200 rounded-lg"
       >
         <div class="w-14 h-14 rounded-lg bg-red-50 flex items-center justify-center">
           <i class="pi pi-exclamation-triangle text-red-600 text-2xl" />
@@ -149,15 +149,15 @@ function joinedDisplay(iso: string): string {
       </div>
 
       <!-- loading state -->
-      <div v-else-if="loadState === 'loading'" data-testid="admin-dashboard-loading-skeleton" class="grid grid-cols-12 gap-6">
-        <div v-for="n in 3" :key="n" class="col-span-4 bg-white border border-surface-200 rounded-lg p-5 flex flex-col gap-2">
+      <div v-else-if="loadState === 'loading'" data-testid="admin-dashboard-loading-skeleton" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div v-for="n in 3" :key="n" class="lg:col-span-4 bg-white border border-surface-200 rounded-lg p-5 flex flex-col gap-2">
           <div class="w-24 h-3 rounded bg-surface-200 animate-pulse" />
           <div class="w-28 h-7 rounded bg-surface-200 animate-pulse" />
         </div>
-        <div class="col-span-6 bg-white border border-surface-200 rounded-lg p-6">
+        <div class="lg:col-span-6 bg-white border border-surface-200 rounded-lg p-6">
           <div class="w-full h-48 rounded bg-surface-200 animate-pulse" />
         </div>
-        <div class="col-span-6 bg-white border border-surface-200 rounded-lg p-6">
+        <div class="lg:col-span-6 bg-white border border-surface-200 rounded-lg p-6">
           <div class="w-full h-48 rounded bg-surface-200 animate-pulse" />
         </div>
       </div>
@@ -166,7 +166,7 @@ function joinedDisplay(iso: string): string {
       <div
         v-else-if="isEmpty"
         data-testid="admin-dashboard-empty-state"
-        class="flex flex-col items-center justify-center gap-4 py-20 px-8 bg-white border border-surface-200 rounded-lg"
+        class="flex flex-col items-center justify-center gap-4 py-14 px-6 lg:py-20 lg:px-8 bg-white border border-surface-200 rounded-lg"
       >
         <div class="w-14 h-14 rounded-lg bg-surface-100 flex items-center justify-center">
           <i class="pi pi-chart-bar text-surface-400 text-2xl" />
@@ -178,42 +178,50 @@ function joinedDisplay(iso: string): string {
       </div>
 
       <!-- ready state -->
-      <div v-else data-testid="admin-dashboard-content" class="grid grid-cols-12 gap-6">
+      <div v-else data-testid="admin-dashboard-content" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div
           v-for="card in summaryCards"
           :key="card.testid"
           :data-testid="card.testid"
-          class="col-span-4 bg-white border border-surface-200 rounded-lg p-5 flex flex-col gap-2"
+          class="lg:col-span-4 bg-white border border-surface-200 rounded-lg p-4 md:p-5"
         >
-          <span class="text-xs font-semibold text-surface-500 uppercase tracking-wide">{{ card.label }}</span>
-          <span class="text-2xl font-bold tabular-nums" :class="card.colorClass">{{ card.value }}</span>
+          <!-- desktop/tablet: label above value -->
+          <div class="hidden md:flex flex-col gap-2">
+            <span class="text-xs font-semibold text-surface-500 uppercase tracking-wide">{{ card.label }}</span>
+            <span class="text-2xl font-bold tabular-nums" :class="card.colorClass">{{ card.value }}</span>
+          </div>
+          <!-- mobile: label and value side by side -->
+          <div class="md:hidden flex items-center justify-between">
+            <span class="text-xs font-semibold text-surface-500 uppercase tracking-wide">{{ card.label }}</span>
+            <span class="text-lg font-bold tabular-nums" :class="card.colorClass">{{ card.value }}</span>
+          </div>
         </div>
 
-        <div class="col-span-6 bg-white border border-surface-200 rounded-lg p-6">
+        <div class="lg:col-span-6 bg-white border border-surface-200 rounded-lg p-4 lg:p-6">
           <div class="flex items-baseline justify-between mb-5">
             <span class="text-sm font-semibold text-surface-900">User Signups — last {{ MONTHS }} months</span>
             <span class="text-sm text-surface-500">
               Total <span data-testid="signups-total" class="font-bold text-surface-900 tabular-nums">{{ signupsTotal }}</span>
             </span>
           </div>
-          <div data-testid="signups-chart" class="h-52">
+          <div data-testid="signups-chart" class="h-36 md:h-40 lg:h-52">
             <Chart v-if="signupsChartData" type="line" :data="signupsChartData" :options="chartOptions" class="h-full" />
           </div>
         </div>
 
-        <div class="col-span-6 bg-white border border-surface-200 rounded-lg p-6">
+        <div class="lg:col-span-6 bg-white border border-surface-200 rounded-lg p-4 lg:p-6">
           <div class="flex items-baseline justify-between mb-5">
             <span class="text-sm font-semibold text-surface-900">Transactions Recorded — last {{ MONTHS }} months</span>
             <span class="text-sm text-surface-500">
               Total <span data-testid="activity-total" class="font-bold text-surface-900 tabular-nums">{{ activityTotal }}</span>
             </span>
           </div>
-          <div data-testid="activity-chart" class="h-52">
+          <div data-testid="activity-chart" class="h-36 md:h-40 lg:h-52">
             <Chart v-if="activityChartData" type="line" :data="activityChartData" :options="chartOptions" class="h-full" />
           </div>
         </div>
 
-        <div class="col-span-6 bg-white border border-surface-200 rounded-lg p-6">
+        <div class="lg:col-span-6 bg-white border border-surface-200 rounded-lg p-4 lg:p-6">
           <span class="text-sm font-semibold text-surface-900 block mb-5">Feature Usage — % of users active</span>
           <div data-testid="feature-usage-list" class="flex flex-col gap-4">
             <div v-for="usage in dashboard?.featureUsage" :key="usage.feature" :data-testid="`feature-usage-${usage.feature}`">
@@ -228,14 +236,14 @@ function joinedDisplay(iso: string): string {
           </div>
         </div>
 
-        <div class="col-span-6 bg-white border border-surface-200 rounded-lg overflow-hidden">
-          <div class="px-6 py-4 border-b border-surface-200 text-sm font-semibold text-surface-900">Recent Signups</div>
+        <div class="lg:col-span-6 bg-white border border-surface-200 rounded-lg overflow-hidden">
+          <div class="px-4 md:px-6 py-3 md:py-4 border-b border-surface-200 text-sm font-semibold text-surface-900">Recent Signups</div>
           <div data-testid="recent-signups-list">
             <div
               v-for="signup in dashboard?.recentSignups"
               :key="signup.id"
               :data-testid="`recent-signup-${signup.id}`"
-              class="flex items-center gap-3 px-6 py-3 border-b border-surface-100 last:border-b-0"
+              class="flex items-center gap-3 px-4 md:px-6 py-3 border-b border-surface-100 last:border-b-0"
             >
               <div class="w-8 h-8 rounded-lg bg-primary-50 text-primary-600 text-xs font-semibold flex items-center justify-center shrink-0">
                 {{ initials(signup.fullName) }}

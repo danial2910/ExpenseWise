@@ -1268,3 +1268,45 @@ Non-obvious decisions and their rationale, logged as they're made.
 - **`AppLayout` gained a `title` prop and route-aware nav highlighting** (was
   hardcoded to "Dashboard" with one static nav item) — the minimum shared-layout
   change needed to host a second real screen, not a mobile redesign.
+
+## 2026-08-14 — Responsive / mobile-shell pass (cross-cutting, all modules)
+
+- **Breakpoints map directly to Tailwind's stock scale**, no `tailwind.config.js`
+  changes: mobile = base (no prefix, <768px), tablet = `md:` (768–1023px),
+  desktop = `lg:` (≥1024px). These line up with the imported designs' Mobile
+  390 / Tablet 768 / Desktop 1440 frames.
+- **`AppLayout` shell is one file with three CSS-only responsive states**, not
+  three components or JS breakpoint detection: the desktop sidebar and the
+  tablet icon-rail are the *same* `<nav>`/`navItems` DOM nodes, re-styled via
+  `md:w-[72px] lg:w-60` + `hidden lg:inline` on the label — this reuses every
+  existing `nav-*` testid with zero risk of duplicates. Mobile gets a wholly
+  separate sibling block (bottom tab bar + "More" bottom sheet + FAB), hidden
+  above `md:` via Tailwind, not `v-if` — cheaper and simpler for a shell that's
+  always mounted anyway.
+- **Mobile bottom tab bar caps at 4 direct tabs + a "More" sheet** for the
+  9-item USER nav (Dashboard/Transactions/Budgets/Reports direct; Recurring/
+  Categories/News/AI Assistant/Profile + Log out in the sheet). ADMIN's 4 items
+  fit directly with no overflow tab. The imported mobile design showed a
+  "More" tab but not its contents, so the sheet is a new PrimeVue
+  `Drawer position="bottom"`, matching the `Drawer position="right"` pattern
+  `AdminUsersView` already used for its create/edit panel.
+- **FAB is opt-in per view** via two new `AppLayout` props (`fab-label` plus
+  either `fab-to` for a route or a `@fab` emit for a callback), not a global
+  default — screens with no natural "create" action (Reports, News,
+  AI Assistant, Profile, AdminDashboard, all auth screens) simply don't pass
+  it. Dashboard's FAB (which the design shows opening "Add transaction," a
+  page that doesn't exist in this app) routes to `/transactions?add=1`;
+  `TransactionsView` checks that query param on mount and calls its existing
+  `openAdd()`, then clears the query — reuses the real add flow instead of
+  inventing a page.
+- **Hand-rolled CSS-grid "table" rows get a mobile card fallback via one outer
+  testid'd wrapper containing two inner CSS-toggled blocks** (`hidden md:grid`
+  desktop/tablet row, `md:hidden` mobile card) rather than `v-if`-switching
+  markup — cheaper, and the outer wrapper keeps the row-level testid
+  (`transaction-row-${id}` etc.) stable. The one sharp edge: because both
+  inner blocks exist in the DOM at all times (CSS `display:none`, not
+  removed), any interactive element's testid that appears in *both* blocks
+  must be suffixed distinctly (`-mobile-`) or Playwright's strict-mode
+  locators fail even on desktop, since a hidden duplicate is still a DOM
+  match. Applied everywhere this pattern is reused (Transactions, Budgets,
+  Recurring, AdminUsers).

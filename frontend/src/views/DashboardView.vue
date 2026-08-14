@@ -212,7 +212,7 @@ function signedAmount(tx: { type: string; amount: number | string }): number {
 </script>
 
 <template>
-  <AppLayout title="Dashboard">
+  <AppLayout title="Dashboard" fab-label="Add transaction" fab-to="/transactions?add=1">
     <span
       v-for="(cls, i) in DONUT_PALETTE_CLASSES"
       :key="cls"
@@ -247,18 +247,18 @@ function signedAmount(tx: { type: string; amount: number | string }): number {
       </div>
 
       <!-- loading state -->
-      <div v-else-if="loadState === 'loading'" data-testid="dashboard-loading-skeleton" class="grid grid-cols-12 gap-6">
-        <div v-for="n in 3" :key="n" class="col-span-4 bg-white border border-surface-200 rounded-lg p-5 flex flex-col gap-2">
+      <div v-else-if="loadState === 'loading'" data-testid="dashboard-loading-skeleton" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div v-for="n in 3" :key="n" class="lg:col-span-4 bg-white border border-surface-200 rounded-lg p-5 flex flex-col gap-2">
           <div class="w-24 h-3 rounded bg-surface-200 animate-pulse" />
           <div class="w-28 h-7 rounded bg-surface-200 animate-pulse" />
         </div>
-        <div class="col-span-12 bg-white border border-surface-200 rounded-lg p-6">
+        <div class="lg:col-span-12 bg-white border border-surface-200 rounded-lg p-6">
           <div class="w-full h-24 rounded bg-surface-200 animate-pulse" />
         </div>
-        <div class="col-span-5 bg-white border border-surface-200 rounded-lg p-6">
+        <div class="lg:col-span-5 bg-white border border-surface-200 rounded-lg p-6">
           <div class="w-40 h-40 rounded-full bg-surface-200 animate-pulse mx-auto" />
         </div>
-        <div class="col-span-7 bg-white border border-surface-200 rounded-lg p-6">
+        <div class="lg:col-span-7 bg-white border border-surface-200 rounded-lg p-6">
           <div class="w-full h-48 rounded bg-surface-200 animate-pulse" />
         </div>
       </div>
@@ -287,13 +287,13 @@ function signedAmount(tx: { type: string; amount: number | string }): number {
       </div>
 
       <!-- ready state -->
-      <div v-else data-testid="dashboard-content" class="grid grid-cols-12 gap-6">
+      <div v-else data-testid="dashboard-content" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <!-- summary cards -->
         <div
           v-for="card in summaryCards"
           :key="card.testid"
           :data-testid="card.testid"
-          class="col-span-4 bg-white border border-surface-200 rounded-lg p-5 flex flex-col gap-2"
+          class="lg:col-span-4 bg-white border border-surface-200 rounded-lg p-5 flex flex-col gap-2"
         >
           <div class="flex items-center gap-2">
             <div class="w-7 h-7 rounded-lg bg-surface-100 flex items-center justify-center text-surface-600">
@@ -307,7 +307,7 @@ function signedAmount(tx: { type: string; amount: number | string }): number {
         </div>
 
         <!-- budget utilisation -->
-        <div class="col-span-12 bg-white border border-surface-200 rounded-lg p-6">
+        <div class="lg:col-span-12 bg-white border border-surface-200 rounded-lg p-6">
           <div class="flex items-center justify-between mb-4">
             <span class="text-sm font-semibold text-surface-900">Budget Utilisation</span>
             <span
@@ -331,7 +331,7 @@ function signedAmount(tx: { type: string; amount: number | string }): number {
           <div
             v-if="budgetedCategories(dashboard!.budgetUtilisation.categories).length"
             data-testid="dashboard-budget-categories"
-            class="grid grid-cols-3 gap-x-6 gap-y-5"
+            class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-5"
           >
             <div v-for="b in budgetedCategories(dashboard!.budgetUtilisation.categories)" :key="b.categoryId">
               <div class="flex items-center justify-between mb-1.5">
@@ -356,9 +356,9 @@ function signedAmount(tx: { type: string; amount: number | string }): number {
         </div>
 
         <!-- spending by category (donut) -->
-        <div class="col-span-5 bg-white border border-surface-200 rounded-lg p-6">
+        <div class="lg:col-span-5 bg-white border border-surface-200 rounded-lg p-6">
           <span class="text-sm font-semibold text-surface-900 block mb-4">Spending by Category</span>
-          <div v-if="donutChartData" class="flex items-center gap-6">
+          <div v-if="donutChartData" class="flex flex-col sm:flex-row items-center gap-6">
             <div data-testid="dashboard-category-donut" class="relative w-40 h-40 shrink-0">
               <Chart type="doughnut" :data="donutChartData" :options="donutOptions" class="w-full h-full" />
               <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
@@ -382,15 +382,15 @@ function signedAmount(tx: { type: string; amount: number | string }): number {
         </div>
 
         <!-- monthly trend (net) -->
-        <div class="col-span-7 bg-white border border-surface-200 rounded-lg p-6">
+        <div class="lg:col-span-7 bg-white border border-surface-200 rounded-lg p-6">
           <span class="text-sm font-semibold text-surface-900 block mb-4">Monthly Trend — Net (last {{ MONTHS }} months)</span>
-          <div data-testid="dashboard-net-trend-chart" class="h-52">
+          <div data-testid="dashboard-net-trend-chart" class="h-40 lg:h-52">
             <Chart type="bar" :data="netTrendChartData" :options="netTrendOptions" class="h-full" />
           </div>
         </div>
 
         <!-- income vs expense -->
-        <div class="col-span-12 bg-white border border-surface-200 rounded-lg p-6">
+        <div class="lg:col-span-12 bg-white border border-surface-200 rounded-lg p-6">
           <div class="flex items-center justify-between mb-4">
             <span class="text-sm font-semibold text-surface-900">Income vs Expense (last {{ MONTHS }} months)</span>
             <div class="flex items-center gap-4">
@@ -402,13 +402,13 @@ function signedAmount(tx: { type: string; amount: number | string }): number {
               </span>
             </div>
           </div>
-          <div data-testid="dashboard-income-expense-chart" class="h-44">
+          <div data-testid="dashboard-income-expense-chart" class="h-36 lg:h-44">
             <Chart type="bar" :data="comparisonChartData" :options="comparisonOptions" class="h-full" />
           </div>
         </div>
 
         <!-- recent transactions -->
-        <div class="col-span-12 bg-white border border-surface-200 rounded-lg overflow-hidden">
+        <div class="lg:col-span-12 bg-white border border-surface-200 rounded-lg overflow-hidden">
           <div class="flex items-center justify-between px-6 py-4 border-b border-surface-200">
             <span class="text-sm font-semibold text-surface-900">Recent Transactions</span>
             <router-link data-testid="dashboard-view-all-transactions-link" to="/transactions" class="text-sm font-semibold text-primary-600">
@@ -420,17 +420,36 @@ function signedAmount(tx: { type: string; amount: number | string }): number {
               v-for="tx in dashboard!.recentTransactions"
               :key="tx.id"
               :data-testid="`dashboard-recent-transaction-${tx.id}`"
-              class="flex items-center gap-4 px-6 py-3.5 border-b border-surface-100 last:border-b-0"
+              class="px-4 sm:px-6 py-3.5 border-b border-surface-100 last:border-b-0"
             >
-              <span class="w-16 text-sm text-surface-500 shrink-0">{{ dateDisplay(tx.transactionDate) }}</span>
-              <span class="flex-1 text-sm font-medium text-surface-900 truncate">{{ tx.description || tx.categoryName }}</span>
-              <span class="text-xs font-medium text-surface-600 bg-surface-100 px-2.5 py-1 rounded-lg shrink-0">{{ tx.categoryName }}</span>
-              <span
-                class="w-28 text-right text-sm font-semibold tabular-nums shrink-0"
-                :class="tx.type === 'INCOME' ? 'text-green-700' : 'text-red-600'"
-              >
-                <MoneyDisplay :amount="signedAmount(tx)" sign />
-              </span>
+              <!-- desktop/tablet row -->
+              <div class="hidden sm:flex items-center gap-4">
+                <span class="w-16 text-sm text-surface-500 shrink-0">{{ dateDisplay(tx.transactionDate) }}</span>
+                <span class="flex-1 text-sm font-medium text-surface-900 truncate">{{ tx.description || tx.categoryName }}</span>
+                <span class="text-xs font-medium text-surface-600 bg-surface-100 px-2.5 py-1 rounded-lg shrink-0">{{ tx.categoryName }}</span>
+                <span
+                  class="w-28 text-right text-sm font-semibold tabular-nums shrink-0"
+                  :class="tx.type === 'INCOME' ? 'text-green-700' : 'text-red-600'"
+                >
+                  <MoneyDisplay :amount="signedAmount(tx)" sign />
+                </span>
+              </div>
+              <!-- mobile card -->
+              <div class="sm:hidden flex flex-col gap-1.5">
+                <div class="flex items-center justify-between gap-3">
+                  <span class="text-sm font-medium text-surface-900 truncate">{{ tx.description || tx.categoryName }}</span>
+                  <span
+                    class="text-sm font-semibold tabular-nums shrink-0"
+                    :class="tx.type === 'INCOME' ? 'text-green-700' : 'text-red-600'"
+                  >
+                    <MoneyDisplay :amount="signedAmount(tx)" sign />
+                  </span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-surface-500">{{ dateDisplay(tx.transactionDate) }}</span>
+                  <span class="text-xs font-medium text-surface-600 bg-surface-100 px-2 py-0.5 rounded-lg">{{ tx.categoryName }}</span>
+                </div>
+              </div>
             </div>
             <div v-if="!dashboard!.recentTransactions.length" class="px-6 py-8 text-sm text-surface-500 text-center">
               No transactions yet.

@@ -146,7 +146,7 @@ async function onDelete(category: CategoryResponse) {
 </script>
 
 <template>
-  <AppLayout title="Categories">
+  <AppLayout title="Categories" fab-label="Add category" @fab="openAdd">
     <div class="flex flex-col gap-6">
       <div class="flex items-center justify-between">
         <div>
@@ -157,6 +157,7 @@ async function onDelete(category: CategoryResponse) {
           data-testid="add-category-button"
           label="Add category"
           icon="pi pi-plus"
+          class="hidden md:inline-flex"
           @click="openAdd"
         />
       </div>
@@ -174,7 +175,7 @@ async function onDelete(category: CategoryResponse) {
       <div
         v-if="loadState === 'error'"
         data-testid="categories-error-state"
-        class="flex flex-col items-center justify-center gap-4 py-16 px-8 bg-white border border-surface-200 rounded-lg"
+        class="flex flex-col items-center justify-center gap-4 py-12 px-5 md:py-16 md:px-8 bg-white border border-surface-200 rounded-lg"
       >
         <div class="w-14 h-14 rounded-lg bg-red-50 flex items-center justify-center">
           <i class="pi pi-exclamation-triangle text-red-600 text-2xl" />
@@ -201,14 +202,14 @@ async function onDelete(category: CategoryResponse) {
       <div v-else class="flex flex-col gap-6">
         <div>
           <h2 class="text-xs font-semibold text-surface-500 uppercase tracking-wide mb-3">System categories</h2>
-          <div data-testid="system-categories-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div data-testid="system-categories-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4">
             <div
               v-for="category in systemCategories"
               :key="category.id"
               :data-testid="`system-category-card-${category.id}`"
-              class="bg-surface-50 border border-surface-200 rounded-lg p-4 flex items-center gap-3"
+              class="bg-surface-50 border border-surface-200 rounded-lg p-3 md:p-4 flex items-center gap-3"
             >
-              <div class="w-10 h-10 rounded-lg bg-surface-100 text-surface-500 flex items-center justify-center shrink-0">
+              <div class="w-9 h-9 md:w-10 md:h-10 rounded-lg bg-surface-100 text-surface-500 flex items-center justify-center shrink-0">
                 <i :class="['pi', categoryIconClass(category.icon)]" />
               </div>
               <div class="min-w-0 flex-1">
@@ -232,7 +233,7 @@ async function onDelete(category: CategoryResponse) {
           <div
             v-if="customCategories.length === 0"
             data-testid="custom-categories-empty-state"
-            class="flex flex-col items-center justify-center gap-3 py-12 px-8 bg-white border border-dashed border-surface-300 rounded-lg"
+            class="flex flex-col items-center justify-center gap-3 py-10 px-5 md:py-12 md:px-8 bg-white border border-dashed border-surface-300 rounded-lg"
           >
             <p class="text-sm font-semibold text-surface-900">No custom categories yet</p>
             <p class="text-sm text-surface-500 text-center max-w-sm">
@@ -247,14 +248,14 @@ async function onDelete(category: CategoryResponse) {
             />
           </div>
 
-          <div v-else data-testid="custom-categories-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div v-else data-testid="custom-categories-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4">
             <div
               v-for="category in customCategories"
               :key="category.id"
               :data-testid="`custom-category-card-${category.id}`"
-              class="bg-white border border-surface-200 rounded-lg p-4 flex items-center gap-3"
+              class="bg-white border border-surface-200 rounded-lg p-3 md:p-4 flex items-center gap-3"
             >
-              <div class="w-10 h-10 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center shrink-0">
+              <div class="w-9 h-9 md:w-10 md:h-10 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center shrink-0">
                 <i :class="['pi', categoryIconClass(category.icon)]" />
               </div>
               <div class="min-w-0 flex-1">
@@ -264,14 +265,14 @@ async function onDelete(category: CategoryResponse) {
               <div class="flex items-center gap-1 shrink-0">
                 <button
                   :data-testid="`category-edit-button-${category.id}`"
-                  class="w-7 h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-surface-100"
+                  class="w-11 h-11 md:w-7 md:h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-surface-100"
                   @click="openEdit(category)"
                 >
                   <i class="pi pi-pencil text-xs" />
                 </button>
                 <button
                   :data-testid="`category-delete-button-${category.id}`"
-                  class="w-7 h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-red-50 hover:text-red-600"
+                  class="w-11 h-11 md:w-7 md:h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-red-50 hover:text-red-600"
                   @click="onDelete(category)"
                 >
                   <i class="pi pi-trash text-xs" />
@@ -288,6 +289,7 @@ async function onDelete(category: CategoryResponse) {
       modal
       :header="editorTitle"
       :style="{ width: '420px' }"
+      :breakpoints="{ '768px': '92vw' }"
       data-testid="category-editor-dialog"
     >
       <div class="flex flex-col gap-4">
