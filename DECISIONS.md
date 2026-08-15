@@ -2,6 +2,35 @@
 
 Non-obvious decisions and their rationale, logged as they're made.
 
+## 2026-08-15 — Settings module dropped, replaced by a lean static About page
+
+- **The Settings module (appearance prefs, dark mode, clear-AI-history/deactivate-account
+  privacy actions) was built earlier this session, then explicitly asked to be removed
+  entirely** and replaced with something much smaller: a static About screen holding just
+  Terms of Service / Privacy Policy / Help & Support (plus the app version). No dark mode,
+  no appearance preferences, no account-management actions — this page is pure static
+  content, matching CLAUDE.md's "out of scope unless explicitly asked" spirit now that the
+  broader Settings scope was withdrawn.
+- **Removal was a clean revert to the pre-Settings commit** (frontend view/store/nav/e2e,
+  backend clear-AI-history/deactivate-account endpoints and their tests, the CSS
+  custom-property token layer and PrimeVue dark-mode preset branch added to support
+  Settings' dark mode) — confirmed with the project owner that the backend endpoints should
+  go too, not just be left unused, since nothing in the UI calls them anymore.
+- **`AboutView.vue` mirrors `ProfileView.vue`'s single plain-Tailwind card layout** (no
+  PrimeVue Card, matching the project's established pattern for these simple screens) —
+  app version (from `vite.config.ts`'s `__APP_VERSION__` define, reading `package.json`'s
+  own version field, same single-source-of-truth reasoning as before) plus three buttons
+  opening `PrimeVue Dialog`s with placeholder legal/support copy — reused verbatim from the
+  removed Settings page's own placeholder text, since the copy itself was never in question.
+- **Nav entry**: added to both `ADMIN_NAV_ITEMS` and `USER_NAV_ITEMS` in `AppLayout.vue`,
+  same position Settings previously occupied (after Profile). Reintroduced
+  `ADMIN_PRIMARY_TAB_COUNT = 4` so the mobile bottom tab bar's admin branch keeps Admin
+  Dashboard/User Management/AI Assistant/Profile as fixed primary tabs and pushes About into
+  the existing "More" sheet, same reasoning as the original Settings nav entry.
+- **One Playwright E2E (`about.spec.ts`)**: log in, open About, see the version, open and
+  close each of the three info dialogs — matches CLAUDE.md's "one focused journey per
+  module" rule for what is now a purely static, low-risk screen.
+
 ## 2026-08-06 — Unrelated pre-existing bug fixed while running the full suite: `@PastOrPresent` validated against the wrong clock
 
 - **Found while running the full backend test suite as part of the Reports module's

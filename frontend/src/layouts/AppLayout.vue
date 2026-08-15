@@ -34,6 +34,7 @@ const ADMIN_NAV_ITEMS = [
   { testid: 'nav-admin-users', label: 'User Management', to: '/admin/users', routeName: 'admin-users', icon: 'pi-users' },
   { testid: 'nav-ai-assistant', label: 'AI Assistant', to: '/ai-assistant', routeName: 'ai-assistant', icon: 'pi-sparkles' },
   { testid: 'nav-profile', label: 'Profile', to: '/profile', routeName: 'profile', icon: 'pi-user' },
+  { testid: 'nav-about', label: 'About', to: '/about', routeName: 'about', icon: 'pi-info-circle' },
 ]
 
 const USER_NAV_ITEMS: { testid: string; label: string; to: string; routeName: string; feature: Feature | null; icon: string }[] = [
@@ -46,6 +47,7 @@ const USER_NAV_ITEMS: { testid: string; label: string; to: string; routeName: st
   { testid: 'nav-news', label: 'News', to: '/news', routeName: 'news', feature: 'NEWS', icon: 'pi-globe' },
   { testid: 'nav-ai-assistant', label: 'AI Assistant', to: '/ai-assistant', routeName: 'ai-assistant', feature: 'AI_ASSISTANT', icon: 'pi-sparkles' },
   { testid: 'nav-profile', label: 'Profile', to: '/profile', routeName: 'profile', feature: null, icon: 'pi-user' },
+  { testid: 'nav-about', label: 'About', to: '/about', routeName: 'about', feature: null, icon: 'pi-info-circle' },
 ]
 
 const navItems = computed(() => {
@@ -56,16 +58,18 @@ const navItems = computed(() => {
 })
 
 // Mobile bottom tab bar shows up to 4 fixed slots plus a "More" sheet for
-// the rest — the admin nav (4 items) always fits without an overflow tab.
+// the rest — the admin nav's first 4 items (Admin Dashboard/User Management/
+// AI Assistant/Profile) fill the bar, with About pushed into "More".
 const PRIMARY_TAB_ROUTE_NAMES = new Set(['dashboard', 'transactions', 'budgets', 'reports'])
+const ADMIN_PRIMARY_TAB_COUNT = 4
 
 const primaryTabItems = computed(() => {
-  if (authStore.isAdmin) return navItems.value
+  if (authStore.isAdmin) return navItems.value.slice(0, ADMIN_PRIMARY_TAB_COUNT)
   return navItems.value.filter((item) => PRIMARY_TAB_ROUTE_NAMES.has(item.routeName))
 })
 
 const overflowNavItems = computed(() => {
-  if (authStore.isAdmin) return []
+  if (authStore.isAdmin) return navItems.value.slice(ADMIN_PRIMARY_TAB_COUNT)
   return navItems.value.filter((item) => !PRIMARY_TAB_ROUTE_NAMES.has(item.routeName))
 })
 
