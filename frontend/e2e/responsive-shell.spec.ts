@@ -41,7 +41,7 @@ test.describe('Responsive shell', () => {
     await expect(page.getByTestId('bottom-nav')).toBeHidden()
   })
 
-  test("an admin's 4 nav items fit the bottom tab bar directly, with no More tab", async ({ page }) => {
+  test("an admin's first 4 nav items fit the bottom tab bar directly, with the rest in More", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     const email = await registerAndLand(page, 'Mobile Admin', 'responsive.admin')
     await promoteToAdmin(email)
@@ -50,6 +50,11 @@ test.describe('Responsive shell', () => {
 
     await expect(page.getByTestId('bottom-nav')).toBeVisible()
     await expect(page.getByTestId('bottom-nav-admin-dashboard')).toBeVisible()
-    await expect(page.getByTestId('bottom-nav-more')).toBeHidden()
+
+    // Admin has 5 nav items (Admin Dashboard/User Management/AI Assistant/
+    // Profile/About) — only the first 4 (ADMIN_PRIMARY_TAB_COUNT in
+    // AppLayout.vue) fit as direct tabs, so About overflows into "More".
+    await page.getByTestId('bottom-nav-more').click()
+    await expect(page.getByTestId('more-sheet-link-about')).toBeVisible()
   })
 })

@@ -2,6 +2,34 @@
 
 Non-obvious decisions and their rationale, logged as they're made.
 
+## 2026-08-15 — Playwright E2E suite serialized (`workers: 1`) to stop cross-spec contention
+
+- **The full suite (`npx playwright test`) passed when each spec ran alone but failed with
+  ~13 spec failures when run all together.** `fullyParallel: false` was already set, but
+  that only disables intra-file parallelism (tests *within* one spec file still run in
+  order) — Playwright still schedules different spec *files* across worker processes in
+  parallel by default. Every spec here runs against one shared, stateful backend
+  (`mvn spring-boot:run`) and one shared local Postgres (docker-compose, `:5433`), not an
+  isolated instance per worker, so concurrent specs contended over shared state: mainly the
+  login rate limiter (keyed per-IP — every worker process is `localhost`, so simultaneous
+  `auth.spec.ts`/`responsive-shell.spec.ts`/etc. registrations tripped it and got bounced
+  back to `/register` instead of landing on `/dashboard`).
+- **Fix: `workers: 1` in `playwright.config.ts`**, serializing the whole run — matches how
+  the suite already passed spec-by-spec. E2E isn't part of the Jenkins pipeline (only unit/
+  integration tests with JaCoCo feed the SonarQube gate there), so the added wall-clock time
+  (~2.5 min for all 45 tests, one worker) is an acceptable trade for a suite that's actually
+  green end to end rather than flaky depending on worker count.
+- **One further failure remained after serializing, but it was not a shared-state race**:
+  `responsive-shell.spec.ts`'s admin nav test asserted `bottom-nav-more` stays hidden for an
+  admin with exactly 4 nav items — a stale assumption from before this session's About-page
+  work added a 5th admin nav item (`About`, via `ADMIN_PRIMARY_TAB_COUNT = 4` in
+  `AppLayout.vue`), which correctly overflows into the "More" sheet. Fixed by updating the
+  test to assert the current, correct behavior (first 4 items direct, About inside More) —
+  same pattern the mobile USER nav test right above it already used. No rate-limiter change
+  and no production/business-logic change were needed; the residual failure was a test that
+  had fallen behind the app, not a concurrency bug.
+- Verified by running the full suite twice in a row (both 45/45 green) after both fixes.
+
 ## 2026-08-15 — Settings module dropped, replaced by a lean static About page
 
 - **The Settings module (appearance prefs, dark mode, clear-AI-history/deactivate-account
