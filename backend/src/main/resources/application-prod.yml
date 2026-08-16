@@ -4,6 +4,31 @@ spring:
 
 cookie:
   secure: true
+  # Vercel (frontend) and Render (backend) are different domains, so the
+  # refresh-token cookie is cross-site. SameSite=None is required for a
+  # cross-site cookie to be sent/accepted at all, and browsers require
+  # Secure=true (set above) alongside it.
+  same-site: None
+
+# --- Database ---
+# spring.datasource is intentionally NOT configured here. DataSourceConfig's
+# prodDataSource bean (@Profile("!local")) binds DB_URL_EXPENSEWISE/
+# DB_USER_EXPENSEWISE/DB_PASSWORD_EXPENSEWISE directly via @Value, same
+# env-var-collision reasoning as GroqProperties/JwtProperties (see
+# DECISIONS.md), and already sizes the Hikari pool small (max 8, min idle 2 —
+# inside CLAUDE.md's 5-10 range) for the !local branch, which "prod" is.
+#
+# In prod, DB_URL_EXPENSEWISE must point at Supabase's Supavisor pooler
+# (port 6543, transaction mode) with ?prepareThreshold=0 appended, e.g.:
+#   jdbc:postgresql://<project>.pooler.supabase.com:6543/postgres?prepareThreshold=0
+# Transaction-mode pooling breaks JDBC prepared statement caching without
+# that query param. See DEPLOYMENT.md and backend/.env.example.
+#
+# All other secrets (JWT, Groq, Supabase Storage, NewsData, Brevo) are also
+# read straight from their *_EXPENSEWISE env vars by the existing
+# JwtProperties/GroqProperties/SupabaseProperties/NewsDataProperties/
+# MailServiceImpl @Value bindings — no per-profile yml needed for those
+# either, same as local.
 
 logging:
   level:

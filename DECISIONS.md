@@ -2,6 +2,69 @@
 
 Non-obvious decisions and their rationale, logged as they're made.
 
+## 2026-08-17 — Deployment prep: Vercel (frontend) + Render (backend, Docker) + Supabase
+
+- **Everything new is profile/env-driven, defaulting to today's local
+  behaviour when unset** — the explicit constraint for this task was that
+  local dev, the test suite, and Jenkins CI must not change at all. No new
+  env var is set locally or in CI, so `APP_CORS_ALLOWED_ORIGINS_EXPENSEWISE`
+  unset still yields `http://localhost:5173`, and `SPRING_PROFILES_ACTIVE`
+  unset still yields `local` → `cookie.secure=false`, `cookie.same-site=Lax`.
+  See DEPLOYMENT.md for the full platform-by-platform setup.
+- **CORS origin moved from a hardcoded `localhost:5173` in `CorsConfig` to
+  `app.cors.allowed-origins`** (backed by
+  `APP_CORS_ALLOWED_ORIGINS_EXPENSEWISE`, comma-split for more than one
+  origin). Kept as a plain `application.yml` placeholder rather than a
+  directly-`@Value`-bound literal like `JwtProperties`/`GroqProperties` —
+  those are bound directly because Spring's relaxed binding could otherwise
+  derive a *collision-prone* generic env var name (e.g. `GROQ_API_KEY`) that
+  an unrelated project on the same machine might also set; `app.cors.
+  allowed-origins`'s own relaxed-binding candidate (`APP_CORS_ALLOWED_
+  ORIGINS`) doesn't collide with the deliberately `_EXPENSEWISE`-suffixed
+  name we actually use, so the simpler yml-placeholder form was fine here.
+- **Refresh-token cookie's `SameSite` is now `cookie.same-site`
+  (`RefreshCookieFactory`), not a hardcoded `"Lax"`** — `application.yml`
+  defaults it to `Lax` (unchanged for local/CI), `application-prod.yml` sets
+  `None`. Cross-site cookies (Vercel frontend, Render backend — different
+  domains) require `SameSite=None`, which browsers additionally require
+  pairing with `Secure=true`; prod already sets `cookie.secure=true`, so the
+  pairing is satisfied without an extra flag.
+- **`server.port` changed from a bare `8080` to `${PORT:8080}`** — Render
+  injects its own listen port via `$PORT` at runtime for Docker web
+  services; nothing else sets `PORT`, so this is a no-op everywhere else.
+- **`DataSourceConfig`'s existing `@Profile("!local")` `prodDataSource`
+  bean already covered the "small Hikari pool, secrets from env" part of
+  this task before this session started** (max pool 8, min idle 2 — inside
+  CLAUDE.md's 5-10 range; `DB_URL_EXPENSEWISE`/`DB_USER_EXPENSEWISE`/
+  `DB_PASSWORD_EXPENSEWISE` read directly via `@Value` with no default, so a
+  missing env var fails fast instead of silently falling back to the local
+  dev connection). `application-prod.yml` was left without a duplicate
+  `spring.datasource.*` block — a comment there points at
+  `DataSourceConfig`/`.env.example` instead, so there's exactly one place
+  that resolves the DB connection, not two that could drift out of sync.
+  The Supavisor pooler URL + `?prepareThreshold=0` requirement is
+  operator-supplied as part of `DB_URL_EXPENSEWISE` itself (documented in
+  `.env.example` and DEPLOYMENT.md), not something the app code needs to
+  construct.
+- **`backend/Dockerfile` skips tests (`-DskipTests`) in the build stage on
+  purpose** — the image has no Postgres available while it's being built
+  (`mvn verify` would fail for an unrelated reason, not a real regression),
+  and tests already run in Jenkins CI against `ci-postgres` before any image
+  is ever built. Multi-stage: `maven:3.9-eclipse-temurin-21` compiles and
+  packages; `eclipse-temurin:21-jre` runs just the repackaged jar as a
+  non-root user. `JAVA_TOOL_OPTIONS=-XX:TieredStopAtLevel=1` trims JIT
+  tiering work to shorten cold starts on Render's free/starter tier.
+- **Frontend needed no code changes** — `frontend/src/api/http.ts` already
+  set `withCredentials: true` on the shared axios instance and already read
+  `VITE_API_BASE_URL` from the environment rather than a hardcoded URL (both
+  predate this task). Only `DEPLOYMENT.md` documents setting
+  `VITE_API_BASE_URL` to the Render URL on Vercel.
+- **Added `CorsConfigTest` and `RefreshCookieFactoryTest`** so the new
+  branching (origin list parsing; `SameSite` value threaded through
+  `create()`/`clear()`) has direct unit coverage — neither class had a
+  dedicated test before, so this is net-new coverage rather than a
+  reduction, keeping the enforcing SonarQube quality gate green.
+
 ## 2026-08-15 — Playwright E2E suite serialized (`workers: 1`) to stop cross-spec contention
 
 - **The full suite (`npx playwright test`) passed when each spec ran alone but failed with
