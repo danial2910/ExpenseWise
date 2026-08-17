@@ -210,6 +210,7 @@ function openAdd() {
   saveError.value = ''
   editReceiptUrl.value = null
   receiptError.value = ''
+  pendingReceiptFile.value = null
   editorOpen.value = true
 }
 
@@ -224,6 +225,7 @@ function openEdit(transaction: TransactionResponse) {
   saveError.value = ''
   editReceiptUrl.value = transaction.receiptUrl
   receiptError.value = ''
+  pendingReceiptFile.value = null
   editorOpen.value = true
 }
 
@@ -231,8 +233,13 @@ function closeEditor() {
   editorOpen.value = false
 }
 
-// --- receipt (only attachable once the transaction has been saved and has an id) ---
+// --- receipt ---
+// When adding a new transaction there is no id yet (receipts.transaction_id
+// is a NOT NULL FK — see V1__baseline.sql), so the picked file is staged
+// locally in pendingReceiptFile and only actually uploaded once
+// createTransaction() returns a real id, inside saveEditor().
 const editReceiptUrl = ref<string | null>(null)
+const pendingReceiptFile = ref<File | null>(null)
 const receiptUploading = ref(false)
 const receiptError = ref('')
 const receiptFileInputRef = ref<HTMLInputElement | null>(null)
@@ -253,10 +260,16 @@ async function onReceiptSelected(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   input.value = ''
-  if (!file || editingId.value === null) return
+  if (!file) return
+
+  receiptError.value = ''
+
+  if (editingId.value === null) {
+    pendingReceiptFile.value = file
+    return
+  }
 
   receiptUploading.value = true
-  receiptError.value = ''
   try {
     const updated = await uploadReceipt(editingId.value, file)
     applyUpdatedTransaction(updated)
@@ -269,6 +282,10 @@ async function onReceiptSelected(event: Event) {
   } finally {
     receiptUploading.value = false
   }
+}
+
+function clearPendingReceipt() {
+  pendingReceiptFile.value = null
 }
 
 async function onRemoveReceipt() {
@@ -308,11 +325,31 @@ async function saveEditor() {
       transactionDate: editDate.value,
       description: editDescription.value.trim() || null,
     }
-    if (editingId.value === null) {
-      await createTransaction(request)
-    } else {
-      await updateTransaction(editingId.value, request)
+    const isCreating = editingId.value === null
+    const saved = isCreating ? await createTransaction(request) : await updateTransaction(editingId.value as number, request)
+
+    if (isCreating && pendingReceiptFile.value) {
+      // The transaction now has a real id, so the staged file can finally be
+      // uploaded. Switch the editor into edit mode for this id so that, if
+      // the upload fails, the user can retry it from the normal receipt UI
+      // instead of losing the file picked at create time.
+      editingId.value = saved.id
+      try {
+        receiptUploading.value = true
+        await uploadReceipt(saved.id, pendingReceiptFile.value)
+      } catch (error) {
+        receiptError.value = isAxiosError<ApiErrorResponse>(error) && error.response?.data.message
+          ? error.response.data.message
+          : 'Transaction was created, but the receipt could not be uploaded. Try again below.'
+        page.value = 0
+        await loadTransactions()
+        return
+      } finally {
+        receiptUploading.value = false
+        pendingReceiptFile.value = null
+      }
     }
+
     editorOpen.value = false
     page.value = 0
     await loadTransactions()
@@ -697,9 +734,25 @@ async function onDelete(transaction: TransactionResponse) {
 
           <FormError v-if="receiptError" :message="receiptError" testid="receipt-error-banner" />
 
-          <p v-if="editingId === null" data-testid="receipt-unavailable-hint" class="text-xs text-surface-400">
-            Save the transaction first to attach a receipt.
-          </p>
+          <div v-if="pendingReceiptFile" class="flex items-center gap-3 p-3 border border-surface-200 rounded-lg bg-surface-50">
+            <div class="w-11 h-11 rounded-md bg-surface-200 flex items-center justify-center text-surface-500 shrink-0">
+              <i class="pi pi-file text-lg" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <p data-testid="receipt-pending-filename" class="text-sm font-medium text-surface-900 truncate">
+                {{ pendingReceiptFile.name }}
+              </p>
+              <p class="text-xs text-surface-400">Will be attached when you save</p>
+            </div>
+            <button
+              type="button"
+              data-testid="receipt-remove-pending-button"
+              class="w-7 h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-surface-200 shrink-0"
+              @click="clearPendingReceipt"
+            >
+              <i class="pi pi-times text-xs" />
+            </button>
+          </div>
 
           <template v-else-if="!editReceiptUrl">
             <button

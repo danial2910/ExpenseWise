@@ -2,6 +2,35 @@
 
 Non-obvious decisions and their rationale, logged as they're made.
 
+## 2026-08-17 — Attach a receipt during transaction creation (frontend-only)
+
+- **Revisits the "save first" call from the receipt module phase** (see the
+  2026-08-03 entry below): the API still can't accept a file before a
+  transaction exists (`receipts.transaction_id` is a `NOT NULL UNIQUE FK` in
+  `V1__baseline.sql` — unchanged, no migration needed), so instead of
+  changing the schema/endpoints, the Add-transaction dialog now stages the
+  picked file client-side (`pendingReceiptFile` in `TransactionsView.vue`)
+  and uploads it via the existing `POST /transactions/{id}/receipt` endpoint
+  immediately after `createTransaction()` returns a real id, before the
+  dialog closes.
+- **If the staged upload fails after the transaction was already created**,
+  the dialog does not lose the user's data or silently drop the file
+  failure: `editingId` is switched to the new transaction's id (flipping the
+  dialog into Edit mode) and the list is refreshed, so the transaction shows
+  up saved and the user can retry the upload from the normal edit-mode
+  receipt control instead of the create flow silently swallowing the error.
+- **No backend or DTO changes** — `TransactionController`/`ReceiptController`
+  and `TransactionRequest` are untouched. This keeps `createTransaction`
+  still always returning `receiptUrl: null` (transaction and receipt remain
+  two separate writes/requests), which matches the existing "a brand new
+  transaction can never already have a receipt" comment in
+  `TransactionService.createTransaction`.
+- Updated `frontend/e2e/receipts.spec.ts`'s single receipt journey to attach
+  the file during creation (asserting `receipt-pending-filename` while
+  staged, then the receipt link appearing on the row right after save)
+  instead of asserting the now-removed `receipt-unavailable-hint`; removal
+  via the edit-mode control is still covered in the same test.
+
 ## 2026-08-17 — Deployment prep: Vercel (frontend) + Render (backend, Docker) + Supabase
 
 - **Everything new is profile/env-driven, defaulting to today's local
@@ -429,14 +458,12 @@ Non-obvious decisions and their rationale, logged as they're made.
   design's filename/size, since that metadata isn't returned — a deliberate
   simplification, not a design-fidelity miss.
 - **A receipt can only be attached to a transaction that already has an id**
-  — the imported design's "Add Transaction" modal shows the upload
-  dropzone active even before saving, implying a locally-queued file
-  uploaded after creation, but the API (correctly) requires a real
-  `transactionId`. Resolved by only rendering the upload control in Edit
-  mode; Add mode shows "Save the transaction first to attach a receipt."
-  instead. Simplest correct option for a real, obvious ambiguity — not
-  worth blocking on, since the fallback (save, then immediately reopen Edit)
-  is one click.
+  (the API correctly requires a real `transactionId`), so at this phase Add
+  mode showed "Save the transaction first to attach a receipt." instead of
+  the upload control the imported design's "Add Transaction" modal displays
+  pre-save. Superseded by the 2026-08-17 entry above: the dropzone is now
+  active in Add mode too, and the picked file is staged client-side and
+  uploaded right after `createTransaction()` returns an id.
 - **`TransactionService` now depends on `ReceiptService`**, not the other
   way around — every response-building path (`listTransactions`,
   `getTransaction`, `updateTransaction`, `patchTransaction`) resolves

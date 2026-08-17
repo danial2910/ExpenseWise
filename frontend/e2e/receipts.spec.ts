@@ -30,41 +30,37 @@ const FAKE_JPEG = Buffer.from(
 )
 
 test.describe('Receipts', () => {
-  test('a user can attach a receipt to a transaction and remove it', async ({ page }) => {
+  test('a user can attach a receipt while creating a transaction, and remove it later', async ({ page }) => {
     await registerAndLand(page, 'Priya Receipts', 'priya.receipts')
     await page.getByTestId('nav-transactions').click()
     await expect(page).toHaveURL(/\/transactions$/)
 
-    // Add a transaction — receipts can only be attached once it has an id.
+    // Add a transaction and attach a receipt before it's even saved.
     await page.getByTestId('add-transaction-button').click()
     await page.getByTestId('transaction-amount-input').fill('32.50')
     await page.locator('[data-testid=transaction-date-input]').fill(isoDate(new Date()))
     await page.getByTestId('transaction-category-select').click()
     await page.getByRole('option', { name: 'Food', exact: true }).click()
     await page.getByTestId('transaction-description-input').fill('Grocery run')
-    await expect(page.getByTestId('receipt-unavailable-hint')).toBeVisible()
-    await page.getByTestId('transaction-save-button').click()
-    await expect(page.getByTestId('transaction-editor-dialog')).toBeHidden()
 
-    const row = page.locator('[data-testid^="transaction-row-"]', { hasText: 'Grocery run' })
-    await expect(row).toBeVisible()
-    await expect(row.locator('[data-testid^="transaction-receipt-link-"]')).toHaveCount(0)
-
-    // Reopen for editing and upload a receipt.
-    await row.getByTestId(/^transaction-edit-button-/).click()
     await expect(page.getByTestId('receipt-upload-button')).toBeVisible()
     await page.getByTestId('receipt-upload-input').setInputFiles({
       name: 'receipt.jpg',
       mimeType: 'image/jpeg',
       buffer: FAKE_JPEG,
     })
-    await expect(page.getByTestId('receipt-view-link')).toBeVisible()
-    await page.getByTestId('transaction-cancel-button').click()
+    // Staged locally — nothing has been uploaded yet, there is no id to upload against.
+    await expect(page.getByTestId('receipt-pending-filename')).toHaveText('receipt.jpg')
 
-    // The row now shows a receipt indicator linking to the signed URL.
+    await page.getByTestId('transaction-save-button').click()
+    await expect(page.getByTestId('transaction-editor-dialog')).toBeHidden()
+
+    // Creating the transaction uploaded the staged file in the same step.
+    const row = page.locator('[data-testid^="transaction-row-"]', { hasText: 'Grocery run' })
+    await expect(row).toBeVisible()
     await expect(row.getByTestId(/^transaction-receipt-link-/)).toBeVisible()
 
-    // Remove it via the editor.
+    // Reopen for editing — the receipt is already attached.
     await row.getByTestId(/^transaction-edit-button-/).click()
     await expect(page.getByTestId('receipt-view-link')).toBeVisible()
     await page.getByTestId('receipt-remove-button').click()
