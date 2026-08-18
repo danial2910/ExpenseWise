@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import Button from 'primevue/button'
+import { isAxiosError } from 'axios'
 import AppLayout from '../layouts/AppLayout.vue'
+import ErrorState from '../components/common/ErrorState.vue'
+import EmptyState from '../components/common/EmptyState.vue'
 import { fetchNews } from '../api/news'
 import type { Article } from '../types/news'
 
-type LoadState = 'loading' | 'error' | 'ready'
+type LoadState = 'loading' | 'error' | 'locked' | 'ready'
 
 const loadState = ref<LoadState>('loading')
 const articles = ref<Article[]>([])
@@ -17,8 +19,11 @@ async function loadNews() {
   try {
     articles.value = await fetchNews()
     loadState.value = 'ready'
-  } catch {
-    loadState.value = 'error'
+  } catch (error) {
+    // A disabled News entitlement gets its own calm "not available" state,
+    // not the generic error — this is an expected, designed outcome (an
+    // admin turned the feature off), not something retrying would fix.
+    loadState.value = isAxiosError(error) && error.response?.status === 403 ? 'locked' : 'error'
   }
 }
 onMounted(loadNews)
@@ -46,25 +51,28 @@ function onImageError(index: number) {
   <AppLayout title="News">
     <div class="flex flex-col gap-6">
       <div>
-        <h1 data-testid="news-title" class="text-2xl font-bold text-surface-900">Financial News</h1>
+        <h1 data-testid="news-title" class="font-display text-2xl font-semibold tracking-tight text-surface-900">Financial News</h1>
         <p class="text-sm text-surface-500 mt-1">Curated headlines to help you stay on top of your money</p>
       </div>
 
-      <!-- error state -->
-      <div
+      <ErrorState
         v-if="loadState === 'error'"
-        data-testid="news-error-state"
-        class="flex flex-col items-center justify-center gap-4 py-14 px-6 lg:py-20 lg:px-8 bg-white border border-surface-200 rounded-lg"
-      >
-        <div class="w-14 h-14 rounded-lg bg-red-50 flex items-center justify-center">
-          <i class="pi pi-exclamation-triangle text-red-600 text-2xl" />
-        </div>
-        <p class="text-base font-semibold text-surface-900">Couldn't load news</p>
-        <p class="text-sm text-surface-500 text-center max-w-sm">
-          Something went wrong while fetching the latest articles. Try again.
-        </p>
-        <Button data-testid="news-retry-button" label="Retry" icon="pi pi-refresh" @click="loadNews" />
-      </div>
+        testid="news-error-state"
+        retry-testid="news-retry-button"
+        title="Couldn't load news"
+        description="Something went wrong while fetching the latest articles. Try again."
+        class="bg-surface-0 border border-surface-200 rounded-xl"
+        @retry="loadNews"
+      />
+
+      <EmptyState
+        v-else-if="loadState === 'locked'"
+        testid="news-locked-state"
+        icon="pi-lock"
+        title="News isn't available on your account"
+        description="This feature isn't turned on for you right now. Contact an admin if you'd like it enabled."
+        class="bg-surface-0 border border-surface-200 rounded-xl"
+      />
 
       <!-- loading state -->
       <div
@@ -72,7 +80,7 @@ function onImageError(index: number) {
         data-testid="news-loading-skeleton"
         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
       >
-        <div v-for="n in 6" :key="n" class="bg-white border border-surface-200 rounded-lg overflow-hidden">
+        <div v-for="n in 6" :key="n" class="bg-surface-0 border border-surface-200 rounded-xl overflow-hidden">
           <div class="w-full h-[140px] bg-surface-200 animate-pulse" />
           <div class="p-4 flex flex-col gap-2">
             <div class="w-20 h-3 rounded bg-surface-200 animate-pulse" />
@@ -82,18 +90,14 @@ function onImageError(index: number) {
         </div>
       </div>
 
-      <!-- empty state -->
-      <div
+      <EmptyState
         v-else-if="articles.length === 0"
-        data-testid="news-empty-state"
-        class="flex flex-col items-center justify-center gap-4 py-14 px-6 lg:py-20 lg:px-8 bg-white border border-surface-200 rounded-lg"
-      >
-        <div class="w-14 h-14 rounded-lg bg-surface-100 flex items-center justify-center">
-          <i class="pi pi-inbox text-surface-400 text-2xl" />
-        </div>
-        <p class="text-base font-semibold text-surface-900">No articles right now</p>
-        <p class="text-sm text-surface-500 text-center max-w-sm">Check back later for new headlines.</p>
-      </div>
+        testid="news-empty-state"
+        icon="pi-inbox"
+        title="No articles right now"
+        description="Check back later for new headlines."
+        class="bg-surface-0 border border-surface-200 rounded-xl"
+      />
 
       <!-- ready state -->
       <div v-else data-testid="news-articles-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -101,7 +105,7 @@ function onImageError(index: number) {
           v-for="(article, index) in articles"
           :key="article.url + index"
           :data-testid="`news-article-card-${index}`"
-          class="bg-white border border-surface-200 rounded-lg overflow-hidden flex flex-col"
+          class="bg-surface-0 border border-surface-200 rounded-xl overflow-hidden flex flex-col hover:border-surface-300 transition-colors duration-fast ease-out-expo"
         >
           <img
             v-if="article.imageUrl && !brokenImages.has(index)"
@@ -129,7 +133,7 @@ function onImageError(index: number) {
               :href="article.url"
               target="_blank"
               rel="noopener noreferrer"
-              class="text-[13px] font-semibold text-primary-600 hover:text-primary-700 no-underline mt-1 inline-flex items-center gap-1"
+              class="text-[13px] font-semibold text-primary-300 hover:text-primary-200 no-underline mt-1 inline-flex items-center gap-1 transition-colors duration-fast ease-out-expo"
             >
               Read more
               <i class="pi pi-arrow-up-right text-[11px]" />

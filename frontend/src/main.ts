@@ -5,11 +5,13 @@ import App from './App.vue'
 import router from './router'
 import preset from './theme/preset'
 import { installAuthInterceptors } from './stores/auth'
+import vReveal from './lib/revealOnScroll'
 import './style.css'
 import 'primeicons/primeicons.css'
 
 const app = createApp(App)
 
+app.directive('reveal', vReveal)
 app.use(createPinia())
 app.use(PrimeVue, {
   theme: {
@@ -21,6 +23,10 @@ app.use(PrimeVue, {
       // Tailwind's base/reset and its utilities, so utility classes can
       // still override PrimeVue without needing `!` overrides.
       cssLayer: { name: 'primevue', order: 'tailwind-base, primevue, tailwind-components, tailwind-utilities' },
+      // One theme, no toggle: never resolve through a `.p-dark`/OS-preference
+      // branch — always the preset's `colorScheme.light` values (see
+      // theme/preset.ts for why that branch holds the dark palette).
+      darkModeSelector: false,
     },
   },
 })

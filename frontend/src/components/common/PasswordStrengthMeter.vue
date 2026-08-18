@@ -10,9 +10,9 @@ const strength = computed(() => {
   if (/[A-Z]/.test(props.password)) score++
   if (/[^A-Za-z0-9]/.test(props.password)) score++
 
-  if (score <= 1) return { label: 'Weak', colorClass: 'bg-red-600 text-red-600', pct: 33 }
-  if (score <= 2) return { label: 'Fair', colorClass: 'bg-amber-600 text-amber-600', pct: 66 }
-  return { label: 'Strong', colorClass: 'bg-green-700 text-green-700', pct: 100 }
+  if (score <= 1) return { label: 'Weak', colorClass: 'bg-danger text-danger', pct: 33 }
+  if (score <= 2) return { label: 'Fair', colorClass: 'bg-warning text-warning', pct: 66 }
+  return { label: 'Strong', colorClass: 'bg-success text-success', pct: 100 }
 })
 </script>
 
@@ -20,7 +20,7 @@ const strength = computed(() => {
   <div data-testid="password-strength-meter" class="mt-2">
     <div class="w-full h-1.5 rounded-full bg-surface-200 overflow-hidden">
       <div
-        class="h-full rounded-full transition-all"
+        class="h-full rounded-full transition-[width] duration-base ease-out-expo"
         :class="strength.colorClass.split(' ')[0]"
         :style="{ width: strength.pct + '%' }"
       />

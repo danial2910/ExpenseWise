@@ -7,6 +7,8 @@ import SelectButton from 'primevue/selectbutton'
 import Dialog from 'primevue/dialog'
 import AppLayout from '../layouts/AppLayout.vue'
 import FormError from '../components/common/FormError.vue'
+import EmptyState from '../components/common/EmptyState.vue'
+import ErrorState from '../components/common/ErrorState.vue'
 import { createCategory, deleteCategory, fetchCategories, updateCategory } from '../api/categories'
 import { categoryIconClass, ICON_PICKER_OPTIONS } from '../lib/categoryIcons'
 import type { CategoryResponse, CategoryType } from '../types/category'
@@ -47,7 +49,10 @@ function typeLabel(type: CategoryType) {
   return type === 'INCOME' ? 'Income' : 'Expense'
 }
 function typeColorClass(type: CategoryType) {
-  return type === 'INCOME' ? 'text-green-700' : 'text-red-600'
+  return type === 'INCOME' ? 'text-success' : 'text-danger'
+}
+function typePillClass(type: CategoryType) {
+  return type === 'INCOME' ? 'bg-success-bg text-success' : 'bg-danger-bg text-danger'
 }
 
 // --- add/edit editor ---
@@ -150,14 +155,14 @@ async function onDelete(category: CategoryResponse) {
     <div class="flex flex-col gap-6">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-bold text-surface-900">Categories</h1>
+          <h1 class="font-display text-2xl font-semibold tracking-tight text-surface-900">Categories</h1>
           <p class="text-sm text-surface-500 mt-1">Organize your income and expenses</p>
         </div>
         <Button
           data-testid="add-category-button"
           label="Add category"
           icon="pi pi-plus"
-          class="hidden md:inline-flex"
+          class="hidden md:inline-flex active:scale-[0.98] transition-transform duration-fast ease-out-expo"
           @click="openAdd"
         />
       </div>
@@ -171,25 +176,19 @@ async function onDelete(category: CategoryResponse) {
         :allow-empty="false"
       />
 
-      <!-- error state -->
-      <div
+      <ErrorState
         v-if="loadState === 'error'"
-        data-testid="categories-error-state"
-        class="flex flex-col items-center justify-center gap-4 py-12 px-5 md:py-16 md:px-8 bg-white border border-surface-200 rounded-lg"
-      >
-        <div class="w-14 h-14 rounded-lg bg-red-50 flex items-center justify-center">
-          <i class="pi pi-exclamation-triangle text-red-600 text-2xl" />
-        </div>
-        <p class="text-base font-semibold text-surface-900">Couldn't load categories</p>
-        <p class="text-sm text-surface-500 text-center max-w-sm">
-          Something went wrong while fetching your categories. Check your connection and try again.
-        </p>
-        <Button data-testid="categories-retry-button" label="Retry" icon="pi pi-refresh" @click="loadCategories" />
-      </div>
+        testid="categories-error-state"
+        retry-testid="categories-retry-button"
+        title="Couldn't load categories"
+        description="Something went wrong while fetching your categories. Check your connection and try again."
+        class="bg-surface-0 border border-surface-200 rounded-xl"
+        @retry="loadCategories"
+      />
 
       <!-- loading state -->
       <div v-else-if="loadState === 'loading'" data-testid="categories-loading-skeleton" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div v-for="n in 9" :key="n" class="bg-white border border-surface-200 rounded-lg p-4 flex items-center gap-3">
+        <div v-for="n in 9" :key="n" class="bg-surface-0 border border-surface-200 rounded-xl p-4 flex items-center gap-3">
           <div class="w-10 h-10 rounded-lg bg-surface-200 animate-pulse shrink-0" />
           <div class="flex-1 flex flex-col gap-1.5">
             <div class="w-2/3 h-3.5 rounded bg-surface-200 animate-pulse" />
@@ -207,15 +206,17 @@ async function onDelete(category: CategoryResponse) {
               v-for="category in systemCategories"
               :key="category.id"
               :data-testid="`system-category-card-${category.id}`"
-              class="bg-surface-50 border border-surface-200 rounded-lg p-3 md:p-4 flex items-center gap-3"
+              class="bg-surface-50 border border-surface-200 rounded-xl p-3 md:p-4 flex items-center gap-3"
             >
               <div class="w-9 h-9 md:w-10 md:h-10 rounded-lg bg-surface-100 text-surface-500 flex items-center justify-center shrink-0">
                 <i :class="['pi', categoryIconClass(category.icon)]" />
               </div>
               <div class="min-w-0 flex-1">
                 <p class="text-sm font-semibold text-surface-700 truncate">{{ category.name }}</p>
-                <div class="flex items-center gap-1.5 mt-1">
-                  <span class="text-xs font-medium" :class="typeColorClass(category.type)">{{ typeLabel(category.type) }}</span>
+                <div class="flex items-center gap-1.5 mt-1.5">
+                  <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold" :class="typePillClass(category.type)">
+                    {{ typeLabel(category.type) }}
+                  </span>
                   <span class="text-[10px] font-semibold text-surface-400 bg-surface-200 px-1.5 py-0.5 rounded-full">System</span>
                 </div>
               </div>
@@ -230,49 +231,53 @@ async function onDelete(category: CategoryResponse) {
             <FormError :message="deleteErrorMessage" testid="category-delete-error-banner" />
           </div>
 
-          <div
+          <EmptyState
             v-if="customCategories.length === 0"
-            data-testid="custom-categories-empty-state"
-            class="flex flex-col items-center justify-center gap-3 py-10 px-5 md:py-12 md:px-8 bg-white border border-dashed border-surface-300 rounded-lg"
+            testid="custom-categories-empty-state"
+            icon="pi-tags"
+            title="No custom categories yet"
+            description="Create your own categories to track spending exactly how you want."
+            class="bg-surface-0 border border-dashed border-surface-300 rounded-xl"
           >
-            <p class="text-sm font-semibold text-surface-900">No custom categories yet</p>
-            <p class="text-sm text-surface-500 text-center max-w-sm">
-              Create your own categories to track spending exactly how you want.
-            </p>
-            <Button
-              data-testid="add-first-category-button"
-              label="Add your first category"
-              icon="pi pi-plus"
-              size="small"
-              @click="openAdd"
-            />
-          </div>
+            <template #action>
+              <Button
+                data-testid="add-first-category-button"
+                label="Add your first category"
+                icon="pi pi-plus"
+                size="small"
+                class="active:scale-[0.98] transition-transform duration-fast ease-out-expo"
+                @click="openAdd"
+              />
+            </template>
+          </EmptyState>
 
           <div v-else data-testid="custom-categories-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4">
             <div
               v-for="category in customCategories"
               :key="category.id"
               :data-testid="`custom-category-card-${category.id}`"
-              class="bg-white border border-surface-200 rounded-lg p-3 md:p-4 flex items-center gap-3"
+              class="bg-surface-0 border border-surface-200 rounded-xl p-3 md:p-4 flex items-center gap-3"
             >
-              <div class="w-9 h-9 md:w-10 md:h-10 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center shrink-0">
+              <div class="w-9 h-9 md:w-10 md:h-10 rounded-lg bg-primary-50 text-primary-300 flex items-center justify-center shrink-0">
                 <i :class="['pi', categoryIconClass(category.icon)]" />
               </div>
               <div class="min-w-0 flex-1">
                 <p class="text-sm font-semibold text-surface-900 truncate">{{ category.name }}</p>
-                <span class="text-xs font-medium" :class="typeColorClass(category.type)">{{ typeLabel(category.type) }}</span>
+                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold mt-1" :class="typePillClass(category.type)">
+                  {{ typeLabel(category.type) }}
+                </span>
               </div>
               <div class="flex items-center gap-1 shrink-0">
                 <button
                   :data-testid="`category-edit-button-${category.id}`"
-                  class="w-11 h-11 md:w-7 md:h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-surface-100"
+                  class="w-11 h-11 md:w-7 md:h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-surface-50 hover:text-surface-800 transition-colors duration-fast ease-out-expo"
                   @click="openEdit(category)"
                 >
                   <i class="pi pi-pencil text-xs" />
                 </button>
                 <button
                   :data-testid="`category-delete-button-${category.id}`"
-                  class="w-11 h-11 md:w-7 md:h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-red-50 hover:text-red-600"
+                  class="w-11 h-11 md:w-7 md:h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-danger-bg hover:text-danger transition-colors duration-fast ease-out-expo"
                   @click="onDelete(category)"
                 >
                   <i class="pi pi-trash text-xs" />
@@ -306,7 +311,7 @@ async function onDelete(category: CategoryResponse) {
             :invalid="!!nameError"
             @blur="nameTouched = true"
           />
-          <p v-if="nameError" class="text-xs text-red-600 mt-1.5">{{ nameError }}</p>
+          <p v-if="nameError" class="text-xs text-danger mt-1.5">{{ nameError }}</p>
         </div>
 
         <div>
@@ -329,10 +334,10 @@ async function onDelete(category: CategoryResponse) {
               :key="icon"
               type="button"
               :data-testid="`icon-option-${icon}`"
-              class="w-10 h-10 rounded-lg flex items-center justify-center border"
+              class="w-10 h-10 rounded-lg flex items-center justify-center border transition-colors duration-fast ease-out-expo"
               :class="editIcon === icon
-                ? 'bg-primary-50 border-primary-600 text-primary-600'
-                : 'bg-surface-50 border-surface-200 text-surface-500'"
+                ? 'bg-primary-50 border-primary-500 text-primary-300'
+                : 'bg-surface-50 border-surface-200 text-surface-500 hover:border-surface-400'"
               @click="editIcon = icon"
             >
               <i :class="['pi', categoryIconClass(icon)]" />
@@ -353,6 +358,7 @@ async function onDelete(category: CategoryResponse) {
           data-testid="category-save-button"
           label="Save"
           :loading="saving"
+          class="active:scale-[0.98] transition-transform duration-fast ease-out-expo"
           @click="saveEditor"
         />
       </template>

@@ -109,11 +109,13 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
+      // A guest sees the public landing page. An authenticated visitor is
+      // sent to their dashboard by the shared `guestOnly` guard below (the
+      // same one every auth page uses) — no separate redirect needed here.
       path: '/',
-      redirect: () => {
-        const authStore = useAuthStore()
-        return authStore.isAdmin ? '/admin/dashboard' : '/dashboard'
-      },
+      name: 'landing',
+      component: () => import('../views/LandingView.vue'),
+      meta: { guestOnly: true },
     },
   ],
 })

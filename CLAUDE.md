@@ -288,20 +288,38 @@ Do not add these unless explicitly asked:
 
 ## Design system
 
-The design system originates in Claude Design and is imported into this
-repo. The imported tokens are the source of truth — do not invent values.
+**In-code tokens are the source of truth** (supersedes the earlier "imported
+from Claude Design" setup — see the 2026-08-18 DECISIONS.md entry). The app
+is dark-only: a Nexora-referenced dark aurora fintech language. There is no
+light mode and no theme toggle.
 
-- Claude Design MCP is connected. Use it to fetch designs and components
-  rather than guessing at layout or spacing.
-- Tokens live in [src/assets/main.css @theme block | tailwind.config.js]
-  — update this line to match the actual location after import.
-- PrimeVue preset in src/theme/preset.js via definePreset over Aura.
-  The preset and the Tailwind tokens must always hold the same values.
-  Changing one without the other is a bug.
+- Tokens live in `frontend/src/style.css`'s `@theme` block (Tailwind v4,
+  CSS-first config — there is no `tailwind.config.js` anymore). OKLCH color,
+  a neutral `surface` ramp, one disciplined cyan `primary`/accent ramp,
+  aurora gradient stops, semantic status colors, radius, soft-glow elevation,
+  and motion (duration/easing) tokens all live there. The `surface` ramp is
+  navy-blue (OKLCH hue 258°, not hueless gray) — every dark surface, border,
+  and muted-text shade should read blue-tinted, per the Nexora reference.
+- `frontend/src/theme/preset.ts` mirrors the exact same OKLCH values via
+  `definePreset` over PrimeVue's Aura, under `colorScheme.light` (the only
+  branch populated — `darkModeSelector: false` in `main.ts` makes PrimeVue
+  always resolve through it, regardless of OS theme). The preset and the
+  Tailwind tokens must always hold the same values. Changing one without the
+  other is a bug.
+- Fonts are self-hosted via `@fontsource-variable/*` (no external font
+  requests): Space Grotesk for display/headings (`font-display`), Inter for
+  body (`font-sans`, the default).
 - CSS layer order is configured so Tailwind can override PrimeVue.
   Never use `!` prefixes to force specificity.
 - PrimeVue owns component appearance. Tailwind owns layout only
   (flex, grid, gap, padding, margin, width).
+- Motion tokens (`duration-fast`/`base`/`slow`, `ease-out-expo`,
+  `ease-in-out-soft`) are Tailwind utilities — use them instead of ad-hoc
+  transition values. All motion is gated behind `prefers-reduced-motion`
+  globally (see `style.css`), so components never need their own guard.
+- The `.aurora-backdrop` utility class is the only sanctioned way to apply
+  the ambient aurora gradient (header, auth backdrop). Never recreate it
+  inline, and never let it bleed into a data-dense surface.
 
 ## Design fidelity rules
 
@@ -310,8 +328,20 @@ repo. The imported tokens are the source of truth — do not invent values.
 - All currency renders through <MoneyDisplay>. No inline toFixed, no
   manual "RM " prefixes anywhere.
 - Reuse components in src/components/common. Check there before building
-  anything new.
+  anything new — `MoneyDisplay`, `FormError`, `PasswordStrengthMeter`,
+  `EmptyState`, `LoadingState`, `ErrorState`, and `ChartTooltip` (paired
+  with `src/lib/chartTooltip.ts`'s `useExternalTooltip()` — the standard
+  way any Chart.js chart shows a money-formatted tooltip; never the
+  canvas-drawn default tooltip). `src/components/legal/` holds the shared
+  Terms/Privacy copy reused by the About page and the landing page footer.
 - Every screen needs designed empty, loading, and error states.
 - Every interactive element gets a data-testid.
+- Touch targets are ≥44px at any breakpoint a touch device could hit —
+  including one-off icon buttons (period/month navigators, etc.), not just
+  table row actions.
 - If a design needs something the tokens don't cover, stop and tell me.
   Do not invent a value.
+
+The UI redesign (dark navy-aurora, Nexora-referenced) is complete as of
+2026-08-19 — every surface, including the public landing page at `/`, has
+been rebuilt in this system. See DECISIONS.md for the phase-by-phase log.

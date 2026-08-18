@@ -66,8 +66,10 @@ test.describe('Dashboard', () => {
     await expect(page.getByTestId('summary-expense')).toContainText('75.00')
     await expect(page.getByTestId('summary-balance')).toContainText('2,425.00')
 
-    // Every chart actually renders a canvas.
-    await expect(page.getByTestId('dashboard-net-trend-chart').locator('canvas')).toBeVisible()
+    // Every chart actually renders a canvas. The old separate "net trend"
+    // bar chart was merged into this one Income vs Expense line/area chart
+    // (net is fully implied by the two series shown together) — see
+    // DECISIONS.md's Phase 3 entry.
     await expect(page.getByTestId('dashboard-income-expense-chart').locator('canvas')).toBeVisible()
     await expect(page.getByTestId('dashboard-category-donut').locator('canvas')).toBeVisible()
 

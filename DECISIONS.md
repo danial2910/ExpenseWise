@@ -2,6 +2,434 @@
 
 Non-obvious decisions and their rationale, logged as they're made.
 
+## 2026-08-19 — UI redesign Phase 7 (final): cross-app polish, audit & QA
+
+Whole-app sweep after all 8 build phases — no new features, fixed drift the
+per-phase work missed:
+
+- **Two remaining `!important` Tailwind prefixes removed** (`AppLayout.vue`'s
+  "More" sheet, `AiAssistantView.vue`'s history drawer) — both were forcing
+  a PrimeVue `Drawer`'s size past its own specificity. Replaced with the
+  `:style="{ height/width: ... }"` prop, the same mechanism already used
+  for `Dialog` sizing everywhere else in the app (PrimeVue components
+  accept it directly; no CSS specificity fight, no `!`).
+- **Touch-target gap found and fixed**: Reports' period-nav and Budgets'
+  month-nav chevron buttons had no breakpoint-based sizing at all (a flat
+  28px, or 36px for Budgets) despite being visible at every breakpoint,
+  unlike every other icon-button in the app (which are always either
+  desktop-only at that small size, with a separate ≥44px control in the
+  mobile card). Fixed to `w-11 h-11 lg:w-7 lg:h-7` — full touch size below
+  `lg`, compact from `lg` up, matching the rest of the app's convention.
+- **Keyboard-focus gap found and fixed**: the three raw money `<input>`s
+  (Transactions/Budgets/Recurring "Amount" field) sit inside a bordered
+  wrapper div with `outline-none` on the input itself — focusing the field
+  produced no visible focus indicator at all, since the global
+  `:focus-visible` outline was suppressed and nothing replaced it. Fixed
+  with `focus-within:ring-2 focus-within:ring-primary-500` on the wrapper,
+  so the ring appears on the *visible* bordered box instead of the
+  invisible bare input.
+- **`/health` (the plain API-status debug page, never part of any phase's
+  scope or nav) retoken'd** — it was the last file anywhere in `src/`
+  still using Tailwind's default light-mode palette (`bg-green-100
+  text-green-800`, `bg-blue-600`, etc.) and a light `bg-white`-implicit
+  page background, found via a full-codebase grep for stray non-token
+  color classes. Everything else in `src/` was already clean.
+- **One stray hardcoded hex found and fixed**: `CheckEmailView.vue`'s mail
+  icon used `stroke="#06070C"` (a literal copy of the `surface-100` base
+  color, predating the discovery in Phase 8 that CSS custom properties
+  resolve fine inside SVG presentation attributes in this app's target
+  browsers). Changed to `stroke="var(--color-surface-100)"`.
+- **Verified clean via full-codebase grep, no further changes needed**:
+  `@theme`/`preset.ts` token sync (still byte-identical), no stray
+  Tailwind default-palette color classes (`red-`/`green-`/`sky-`/etc.)
+  anywhere in `src/`, no `toFixed(`/manual `'RM '` string outside
+  `MoneyDisplay.vue` itself and the Phase 8 landing-preview mockup (both
+  intentional, documented exceptions), no non-token `duration-*`/`ease-*`
+  values, and no other `!important` usage.
+- **Reviewed but deliberately left as-is**: AI Assistant's small inline
+  loading/error/empty states (chat spinner, insights panel messages) don't
+  use the shared `EmptyState`/`ErrorState` components — those components
+  are sized for full-page/full-panel states; these are compact one-line
+  states nested inside an already-larger stateful page, a different
+  context the shared components aren't built for. Not a miss.
+- **Full suite + build, final confirmation**: `npm run build` (`vue-tsc -b
+  && vite build`) clean; `npx playwright test` at 39/45 — identical to
+  every prior phase's baseline. The 6 AI Assistant failures are the real
+  Groq API being unavailable in this environment (external dependency, not
+  app code — see the module's own DECISIONS.md/CLAUDE.md precedent for why
+  this test is allowed to hit the real API); the 1 Recurring failure is a
+  date-rollover-sensitive test that only fails when the suite happens to
+  run across a midnight boundary. Both pre-date this entire redesign and
+  are unrelated to any of the 8 phases' changes.
+
+## 2026-08-19 — Real logo mark replaces the placeholder SVG icon
+
+- **The user supplied a real logo image** (`logo expensewise.png`, a 3D wallet
+  icon + wordmark lockup). Cropped to just the icon (alpha bbox of the left
+  portion, confirmed genuinely transparent — `PIL` reported an RGBA image
+  with alpha range 0–255, not an opaque white background) and saved as
+  `frontend/src/assets/logo-icon.png`, replacing the placeholder gradient-
+  badge + folder-icon SVG in all four places it appeared: `AppLayout.vue`,
+  `AuthLayout.vue`, and `LandingView.vue`'s nav + footer.
+- **Used the icon only, not the full icon+wordmark lockup** — every one of
+  those four spots already renders "ExpenseWise" as live, token-styled text
+  next to the mark (`font-display`, tracked, theme-aware color), which is
+  more flexible and accessible than baking the same word into a raster
+  image a second time. Only the icon crop was needed.
+- **Dropped the gradient-badge wrapper entirely** (`bg-gradient-to-br
+  from-aurora-emerald...` div + `shadow-glow-accent`) rather than placing
+  the new icon inside it — the PNG is already a fully-rendered, self-shaded
+  app icon; layering it over another background/glow would fight the
+  image's own built-in shading instead of complementing it.
+- **Also set it as the browser favicon** (`public/favicon.png` +
+  `<link rel="icon">` in `index.html`) — the app had no favicon before this
+  (browser default), and the same asset was the obvious choice.
+
+## 2026-08-19 — UI redesign Phase 8: public landing page
+
+- **`/` is now a real route (`LandingView`, `meta: { guestOnly: true }`),
+  not a redirect.** The pre-existing `guestOnly` guard in
+  `router/index.ts` (already used by `/login`, `/register`, etc.) already
+  does exactly what was needed for authenticated visitors — redirect to
+  `/dashboard` or `/admin/dashboard` — with zero new guard logic. Guests
+  simply render the route's own component, same as any other `guestOnly`
+  page. This is the only router change this phase.
+- **The `// FEATURES` eyebrow label stayed in, despite impeccable's own
+  craft-floor rule banning eyebrows unconditionally** ("no brief earns it
+  back") — the skill's own routing rule is that a pinned reference/brief
+  wins over a general anti-pattern warning, and this phase's brief
+  explicitly asked to mirror Nexora's eyebrow. Kept as a deliberate,
+  reasoned exception, not an oversight.
+- **The "two-tone" features headline uses two solid colors across two
+  lines, never `background-clip: text` gradient text** — gradient text is
+  a hard, brief-proof ban (unlike the eyebrow, nothing in this phase's
+  brief asked for it specifically), so emphasis comes from color contrast
+  (`text-surface-900` / `text-primary-400`) instead.
+- **Terms of Service and Privacy Policy copy extracted into
+  `src/components/legal/TermsContent.vue` and `PrivacyContent.vue`**,
+  consumed by both the (pre-existing, authenticated) About page and the
+  new landing page's footer dialogs. Previously this ~150-line block of
+  static legal copy existed once, inside `AboutView.vue`; duplicating it
+  into the landing page verbatim would have meant every future wording
+  change had to happen in two places. `AboutView.vue`'s own dialogs,
+  testids, and behavior are unchanged — this was a pure extraction.
+- **The dashboard-preview card is 100% static markup — no `fetchDashboard`
+  call, no `<MoneyDisplay>`.** Sample figures (`RM 12,480.50`, etc.) are
+  plain hardcoded strings in `<script setup>`, and the "Income vs Expense"
+  curve is a hand-authored inline SVG `<path>`, not a Chart.js instance —
+  deliberately avoiding initializing a real chart component with fake
+  data, which could read as (or accidentally become) a live data binding
+  later. Colors still come from tokens (`var(--color-success)` etc. inside
+  the SVG, which resolves the same CSS custom properties Tailwind's
+  `@theme` block defines) — even fully decorative color needs to stay on
+  the token system.
+- **Dropped Nexora's pricing tiers and compliance badges (SOC 2/GDPR/SSO)
+  entirely**, per the brief's explicit instruction — this is a solo
+  academic project with no pricing model and no real compliance
+  certifications to claim. The one trust cue on the page ("Secure sign-in,
+  private by default") is honest and already true of the app (JWT +
+  httpOnly refresh cookies), not a fabricated claim.
+- **New `v-reveal` directive** (`src/lib/revealOnScroll.ts`, registered
+  globally in `main.ts`) drives the section scroll-reveal — a one-time
+  `IntersectionObserver` per element that adds a `.reveal-visible` class
+  and disconnects. The fade/translate transition itself lives in
+  `style.css`'s `.reveal`/`.reveal-visible` classes, so it collapses to
+  instant under `prefers-reduced-motion` through the same single global
+  media query every other transition in this app already uses — no
+  reduced-motion check needed inside the directive itself.
+- **New `e2e/landing.spec.ts`** (this module's one required journey per
+  CLAUDE.md): guest sees the landing page at `/` (not a redirect), the
+  hero CTA reaches `/register`, the nav "Sign in" link reaches `/login`,
+  the footer Terms/Privacy dialogs open in place, and a signed-in visitor
+  hitting `/` still lands on their dashboard. No existing spec needed
+  changing — nothing previously asserted on `/`'s behavior.
+
+## 2026-08-19 — UI redesign Phase 6: Admin views
+
+- **Admin Dashboard KPI cards gained icons and one mini-sparkline** ("New
+  this month" plots `signupsOverTime` raw, unaggregated — same "New this
+  Month" line already sourced from that series' last bucket per the
+  2026-08-03 entry below). "Total users" and "Active/Disabled" have no
+  per-month series in the API, so they stay icon-only rather than faking a
+  trend — same "omit, don't compute client-side" precedent as every prior
+  phase's KPI work.
+- **Both admin charts (signups, activity) now use the shared
+  `ChartTooltip`/`useExternalTooltip` mechanism** from Phase 3, replacing
+  Chart.js's default canvas tooltip — consistent with every other chart in
+  the app, and these two didn't have a money value to worry about, but the
+  mechanism is the same one already proven for Dashboard/Reports.
+- **Follow-up same day**: the two admin line charts were switched to the
+  exact same curve style as the user Dashboard's Income vs Expense chart
+  (`fill: true`, `tension: 0.35`, `pointRadius: 0`/`pointHoverRadius: 4`,
+  translucent area fill under the line) — initially shipped as a plain
+  pointed line (`tension: 0`, visible points, no fill), which read as a
+  different chart language from the rest of the app. Confirmed visually by
+  logging in as a real promoted-admin account.
+- **Activity chart's line color changed from `surface-700` (neutral gray) to
+  `primary-700` (a deeper cyan)** — keeps both admin trend charts in the
+  cyan family rather than one cyan + one gray, matching the "no rainbow,
+  tokens only" chart-palette rule more precisely than the original mixed
+  primary/slate pairing.
+- **User Management's role and status columns became pill badges** (was
+  plain colored text for status, a text-on-tint chip for role) — matches
+  the Type/Status pill pattern established for Transactions/Categories/
+  Recurring in Phase 4, extended here for consistency.
+- **No security or authorization code touched** — this phase is a pure
+  re-skin, confirmed by the full auth/admin/responsive-shell spec run:
+  disabled-user block, admin-only routing, and the mobile nav's admin/user
+  item split all still pass unchanged.
+- **No testid or flow changes.** Verified: build/type-check clean,
+  admin-dashboard/admin-users/responsive-shell/auth specs all green (14/14),
+  full suite holds at the same 38/45 baseline as every prior phase (7
+  pre-existing failures: Groq API + one date-rollover-sensitive recurring
+  test).
+
+## 2026-08-19 — UI redesign Phase 5: News, AI Assistant, Profile, About
+
+- **News gained a real "locked" state, not just generic error.** `NewsView`
+  now catches a 403 specifically (`isAxiosError(error) && status === 403`,
+  the exact response `FeatureEntitlementInterceptor` returns when an admin
+  has News turned off for a user) and shows a designed `EmptyState`
+  ("News isn't available on your account… contact an admin") instead of the
+  "couldn't load, retry" error panel — retrying a disabled entitlement would
+  never succeed, so it needed its own outcome rather than reusing the
+  network-failure one. New `news-locked-state` testid; no existing test
+  covers this path (the one News E2E test only exercises the enabled case),
+  so nothing needed updating.
+- **AI Assistant's message bubbles moved from `bg-surface-100` to
+  `bg-surface-50` for the assistant side.** `bg-surface-100` is this app's
+  page-background token (near-black) — nested inside the chat panel, which
+  is now `bg-surface-0` (Phase 4's lighter elevated navy), a `surface-100`
+  bubble would render *darker* than its own container, an inverted-looking
+  recess. `surface-50` (a translucent white wash) reads as a raised chip
+  against any parent instead.
+- **Message entrance uses `TransitionGroup` with `tag="div" class="contents"`**
+  — `contents` display makes the required wrapper element invisible to
+  layout, so it doesn't break the message list's `flex flex-col` stacking
+  (the naive `<TransitionGroup>` default `<span>` wrapper would have).
+- **Profile/About's bulk color-token replacement was done with a small
+  Python script** (`bg-white`→`bg-surface-0`, `text-red-600`→`text-danger`,
+  etc.) rather than one-by-one edits — the file had ~15 mechanically
+  identical hardcoded-color occurrences; scripted find/replace was safer
+  than manually retyping each one and risking a missed spot.
+- **No testid or flow changes** — News' new locked state is additive, and
+  everything else was restyled in place. Verified: build/type-check clean,
+  news/profile/about specs green; the AI Assistant spec shows the same 6
+  pre-existing Groq-API-unavailable failures as every prior phase (not
+  caused by this session); full suite holds at the identical 38/45 baseline
+  (7 pre-existing failures: Groq API + one date-rollover-sensitive recurring
+  test).
+
+## 2026-08-19 — UI redesign Phase 4: navy base correction + core CRUD
+
+- **Part A**: bumped the `surface` ramp's OKLCH chroma at hue 258° (e.g. base
+  9% L 0.02→0.035, elevated 13%/0.025→14%/0.045) so the app reads as
+  deliberately navy-blue rather than near-hueless dark gray, per the Nexora
+  reference. Mirrored in both `style.css` and `theme/preset.ts`; accents
+  (cyan/aurora/semantic) untouched. Cascades automatically to every page
+  already built in Phases 1–3 — verified visually (login, dashboard) and via
+  the full suite, no contrast regressions.
+- **Part B**: Transactions/Categories/Budgets/Recurring restyled to the same
+  language as Dashboard/Reports — `bg-surface-0` panels (was `bg-white`),
+  `success`/`danger`/`warning` tokens replacing hardcoded
+  red-600/green-700/amber-600, semantic pill badges for transaction Type,
+  category Type, and recurring rule Status (was plain colored text), shared
+  `EmptyState`/`ErrorState` components replacing each page's duplicated
+  inline markup, and press/hover micro-interactions on buttons.
+- **Budgets' on-track meter color changed from neutral (`surface-700`) to
+  `success`/green** — an earlier decision (see the reversed entry further
+  below) deliberately kept on-track neutral since "a budget with room left
+  isn't a positive event worth celebrating." This phase's brief explicitly
+  asks for "safe/warning/over using semantic colors," which supersedes that
+  call. Over/near-limit still use `danger`/`warning`.
+- **No testid or flow changes** — Part A is pure token values, and Part B was
+  restyled in place without touching any existing `data-testid`, so no E2E
+  spec needed updating this phase (confirmed: transactions/categories/
+  budgets/recurring specs all pass unchanged; full suite holds at the same
+  38/45 baseline as every prior phase, same 7 pre-existing unrelated
+  failures — Groq API + one date-rollover-sensitive recurring test).
+
+## 2026-08-19 — UI redesign Phase 3: Dashboard + Reports (Nexora dashboard reference)
+
+- **No delta ("+12% vs last month") appears anywhere on this page.** The
+  dashboard API (`DashboardSummary`) has no prior-period figures — only this
+  month's — and the phase brief explicitly forbids computing one client-side.
+  Biggest single deviation from the Nexora reference; every other KPI-card
+  element (icon, label, big number, mini-viz) is real.
+- **The old separate "Monthly Trend — Net" bar chart was removed and merged
+  into the Income vs Expense chart**, now one line/area chart with both
+  series (`dashboard-income-expense-chart` keeps its testid; the merged
+  chart replaces `dashboard-net-trend-chart`, which no longer exists) — net
+  is fully implied by income and expense shown together, so the second chart
+  was pure redundancy, and merging matches Nexora's single ROW2a chart
+  layout. **The one E2E assertion this changed**: `dashboard.spec.ts` no
+  longer asserts a `dashboard-net-trend-chart` canvas.
+- **The Nexora "3 summary stats beneath the ROW2a chart" and the "Last 7
+  days" range dropdown were both OMITTED, not faked.** A stats row would
+  need summing the 6-month `monthlyTrend` series client-side — exactly the
+  client-side aggregation the brief forbids — and the API has no daily
+  granularity to back a real range dropdown (only monthly points), so a
+  dropdown with one working option would be decorative, not functional.
+- **Donut and category-breakdown-bar palettes changed from a mixed
+  primary/sky/amber/violet/emerald/rose "rainbow" to one cyan → indigo
+  family** (`primary-300/500/700`, `aurora-teal`, `aurora-blue`,
+  `aurora-indigo`, `primary-400/600`) — the brief explicitly bans rainbow
+  chart palettes. `aurora-indigo` stands in for Nexora's violet ring stop;
+  this app has no dedicated purple token.
+- **Income/Expense series (KPI sparklines, the merged line chart, the
+  Reports trend chart) stay green/red (`success`/`danger` tokens), not
+  cyan/purple.** Deliberate deviation from Nexora's literal series palette:
+  this is a finance app where red=expense/green=income is an existing,
+  load-bearing convention throughout the whole codebase (transaction rows,
+  budget status) — switching just these charts to decorative cyan/purple
+  would read as a bug ("why is spending shown in the brand color?"), not a
+  style choice. The donut (categories, no inherent positive/negative) still
+  uses the cyan→indigo family as asked.
+- **New `ChartTooltip.vue` + `lib/chartTooltip.ts`** (shared by the Dashboard
+  trend/donut charts and the Reports trend chart): Chart.js's default
+  tooltip draws straight onto the `<canvas>` and can only show a plain
+  string, but CLAUDE.md requires every currency value through
+  `<MoneyDisplay>`. Solved by disabling the canvas tooltip
+  (`tooltip.enabled: false`) and using Chart.js's documented `external` hook
+  to drive a small reactive state object; each chart then renders its own
+  floating `<Teleport>` div with real `<MoneyDisplay>` instances — not a
+  fake formatted string standing in for it.
+- **"View detailed analytics →" (donut) and the top search bar were
+  OMITTED** — there is no detailed-analytics page or dashboard-wide search
+  feature to link either to, and the brief forbids building new flows this
+  phase.
+- **ROW 3b (Nexora "Recent Activity" feed) reuses the existing budget-
+  utilisation data** (the brief's own explicit fallback, since there's no
+  activity-log endpoint exposed to the dashboard) — restyled as a feed: a
+  status dot (success/warning/danger, same thresholds `BudgetsView` already
+  uses) + category name/spent-of-budget caption + percentage, instead of the
+  old two-column category grid. No relative timestamps ("2m", "5m") were
+  added — there's no timestamp on this data to derive them from, and
+  fabricating one would misrepresent when the budget was actually last
+  touched.
+- **Recent Transactions became an actual column table** (uppercase headers:
+  Description/Type/Amount/Date) with Type as a success/danger pill, plus a
+  new outline "+ New" header action (`dashboard-quick-add-link`, linking to
+  the already-existing `/transactions?add=1` deep link the FAB also uses —
+  no new flow, just a second entry point to one that already existed)
+  alongside the pre-existing "View all" link.
+- **`ErrorState.vue` gained a `retryTestid` prop** (defaulting to its
+  existing `error-state-retry`) — Dashboard/Reports each need their own
+  stable retry-button testid (`dashboard-retry-button`,
+  `reports-retry-button`) that predates this component, and both are
+  asserted by nothing in the current suite but are kept exact for parity
+  with the pre-redesign markup. Safe to widen this component's API now
+  since Phase 1 shipped it with no consumers yet.
+- **Report export buttons now show a real disabled state (the other two
+  buttons while one is exporting) and a 2.5s success flash** ("Downloaded" /
+  "Opened" + a checkmark icon) — the brief asked for loading/disabled/
+  success/error states on these controls; only loading and error existed
+  before. Export contents/generation are untouched.
+
+## 2026-08-19 — UI redesign Phase 2: auth surfaces (Nexora-referenced)
+
+- **Reset Password's success state changed from a silent auto-redirect to
+  `/login` to an explicit confirmation panel** (`reset-success-panel`, a
+  "Continue to sign in" button) — matches the brief's literal ask ("success:
+  confirmation + link to Login") and mirrors the Check-Email screen's own
+  confirmation-then-link pattern for design consistency between the two
+  forgot-password-adjacent screens. **The one E2E flow this required
+  changing**: `auth.spec.ts`'s reset-flow test now asserts the panel is
+  visible and clicks through, instead of asserting an immediate
+  `toHaveURL(/\/login$/)` — flagged per the brief's own allowance to update a
+  spec when a flow genuinely changes.
+- **The post-reset "password updated" message on the Login page is a
+  one-shot Pinia flash (`stores/app.ts`'s `flashMessage`), not a
+  `?message=` query param.** A query param would land as
+  `/login?resetSuccess=1`, which fails every other auth test's
+  `toHaveURL(/\/login$/)` regex (anchored, no query string) — those weren't
+  going to be touched for an unrelated cosmetic addition. The flash store
+  field is set right before `router.push('/login')` and consumed (read once,
+  cleared) in `LoginView`'s setup, so it never survives a hard reload and
+  never appears in the URL.
+- **Register now renders `PasswordStrengthMeter`** (Reset Password already
+  did; Register never had it, a pre-existing gap the brief called out
+  explicitly) — reused as-is, no changes to the component itself.
+- **Added `IconField`/`InputIcon` (leading pi-envelope/pi-lock/pi-user) to
+  every auth text input** — a PrimeVue-native pattern (confirmed against
+  their own docs: `IconField` wrapping a `Password` component is supported),
+  so this is still "PrimeVue owns component appearance," not a hand-rolled
+  input decoration.
+- **Check-Email got a "Resend email" action** (re-POSTs the same
+  `/auth/forgot-password` endpoint with the email from the query string,
+  local-only sent/sending state) — the brief asked for a "proper... success
+  state," and a bare static confirmation with no recovery path if the email
+  didn't arrive was the one auth screen without any affordance for the
+  unhappy path. No backend change; same fire-and-forget endpoint the initial
+  request already uses, so the no-enumeration guarantee is unaffected.
+- **All five views' entrance motion is inherited from Phase 1's shared
+  `<transition name="page">` in `App.vue`** — no per-view mount animation was
+  added on top of it, since that would double up the same fade/rise on
+  every route change (craft-floor: one authored moment, not scattered
+  effects). This phase's motion budget went into micro-interactions instead:
+  inline error/success reveals (`field-in` transition, new in
+  `style.css`) and button press feedback (`active:scale-[0.98]`).
+
+## 2026-08-18 — UI redesign Phase 1: dark aurora foundation (Nexora-referenced)
+
+- **Migrated Tailwind v3 → v4** (`tailwind.config.js`/`postcss.config.js` deleted,
+  `@tailwindcss/vite` plugin added) specifically so the brief's requested token
+  source of truth — a Tailwind `@theme` CSS block — could actually exist; v3 has
+  no such mechanism. Flagged to the project owner as a real ambiguity rather than
+  silently picking one; they chose the v4 migration over staying on v3.
+- **No light/dark toggle existed to remove.** `stores/app.ts` was already just
+  `{ appName }`; the earlier Settings-module dark-mode toggle was fully reverted
+  in the 2026-08-15 entry below. This phase is a straight dark reskin, not a
+  toggle removal.
+- **The `surface` and `primary` Tailwind color scales keep their existing 50–950
+  names but are re-authored (not inherited from Tailwind's slate/indigo) as a
+  single dark-only ramp**, chosen per-shade for its actual usage rather than a
+  mechanically inverted scale: `surface-100` is the near-black page base;
+  `surface-50`/`200`/`300` are translucent white washes (hover/border/divider)
+  so they read correctly nested over any background; `surface-400`/`500`/`600`/
+  `700`/`900` are solid, increasingly bright grays for disabled→heading text.
+  Because every existing view already styles itself purely through these class
+  names (`bg-surface-100`, `text-surface-900`, `bg-primary-600`, ...), this
+  re-authoring is what makes the dark theme cascade to every untouched
+  feature-page file for free — exactly the "foundation everything else
+  inherits" goal — at the cost of those pages still using `bg-white` literally
+  in places, which stays visibly wrong (a white card on a dark page) until each
+  page's own redesign phase touches it. Documented so it isn't mistaken for a
+  regression when demoed before later phases land.
+- **`primary` keeps Tailwind's normal light-to-dark shade direction** (50 =
+  lightest cyan tint, 950 = darkest) — unlike `surface`, its usage in the
+  codebase (badge tint at 50/100, solid fill at 600) doesn't conflict with that
+  convention, so no re-authoring trick was needed there.
+- **PrimeVue's preset only populates `colorScheme.light`**, deliberately — this
+  app has exactly one theme, and `darkModeSelector: false` (`main.ts`) makes
+  PrimeVue always resolve through that one branch regardless of the OS/browser
+  color scheme, rather than adding a `.p-dark` class the app never toggles.
+- **Fonts self-hosted via `@fontsource-variable/inter` and
+  `@fontsource-variable/space-grotesk`**, not a Google Fonts `<link>` — no
+  external network dependency for local dev, CI, or Playwright (which runs
+  fully offline against local Postgres per CLAUDE.md's testing rules).
+- **Added `EmptyState`/`LoadingState`/`ErrorState` to `src/components/common`**
+  even though no feature page consumes them yet (feature pages are out of
+  scope this phase) — CLAUDE.md's design-fidelity rule requires every screen to
+  have a designed empty/loading/error state, and "check `common/` before
+  building anything new" only works once these exist for later phases to
+  reuse instead of re-inventing ad hoc per view. `FormError` (inline form
+  validation banner) was restyled in place rather than folded into
+  `ErrorState` (full-block failure state) — different use cases.
+- **Global motion is one `<transition name="page">` around `router-view` in
+  `App.vue`** (opacity + 4px translate, `duration-base`/`ease-out-expo` in)
+  plus hover/press micro-transitions on the restyled shell and common
+  components — not per-view custom transitions. `prefers-reduced-motion` is
+  handled once, globally, in `style.css` (every `animation`/`transition`
+  duration collapses to ~0 under it) rather than per-component checks.
+- **Did not attempt to push these tokens into a Claude Design project via the
+  Claude Design MCP** — no existing linked Claude Design project was found for
+  this repo, and CLAUDE.md's old "imported from Claude Design" line was
+  already a stub with no real tokens ever pulled from it. The CLAUDE.md update
+  states the in-code tokens are now the literal source of truth; syncing them
+  outward to a design tool is a separate, explicit ask if the project owner
+  wants that.
+
 ## 2026-08-17 — Attach a receipt during transaction creation (frontend-only)
 
 - **Revisits the "save first" call from the receipt module phase** (see the

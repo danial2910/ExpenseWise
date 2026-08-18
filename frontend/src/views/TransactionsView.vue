@@ -4,12 +4,16 @@ import { useRoute, useRouter } from 'vue-router'
 import { isAxiosError } from 'axios'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
+import IconField from 'primevue/iconfield'
+import InputIcon from 'primevue/inputicon'
 import SelectButton from 'primevue/selectbutton'
 import Select from 'primevue/select'
 import Dialog from 'primevue/dialog'
 import AppLayout from '../layouts/AppLayout.vue'
 import FormError from '../components/common/FormError.vue'
 import MoneyDisplay from '../components/common/MoneyDisplay.vue'
+import EmptyState from '../components/common/EmptyState.vue'
+import ErrorState from '../components/common/ErrorState.vue'
 import {
   createTransaction,
   deleteTransaction,
@@ -154,7 +158,10 @@ function nextPage() {
 }
 
 function typeColorClass(type: TransactionType) {
-  return type === 'INCOME' ? 'text-green-700' : 'text-red-600'
+  return type === 'INCOME' ? 'text-success' : 'text-danger'
+}
+function typePillClass(type: TransactionType) {
+  return type === 'INCOME' ? 'bg-success-bg text-success' : 'bg-danger-bg text-danger'
 }
 function amountSign(type: TransactionType) {
   return type === 'INCOME' ? 1 : -1
@@ -386,10 +393,16 @@ async function onDelete(transaction: TransactionResponse) {
     <div class="flex flex-col gap-6">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-bold text-surface-900">Transactions</h1>
+          <h1 class="font-display text-2xl font-semibold tracking-tight text-surface-900">Transactions</h1>
           <p class="text-sm text-surface-500 mt-1">All your income and expenses in one place</p>
         </div>
-        <Button data-testid="add-transaction-button" label="Add transaction" icon="pi pi-plus" class="hidden md:inline-flex" @click="openAdd" />
+        <Button
+          data-testid="add-transaction-button"
+          label="Add transaction"
+          icon="pi pi-plus"
+          class="hidden md:inline-flex active:scale-[0.98] transition-transform duration-fast ease-out-expo"
+          @click="openAdd"
+        />
       </div>
 
       <!-- filters -->
@@ -415,22 +428,23 @@ async function onDelete(transaction: TransactionResponse) {
           v-model="dateFrom"
           type="date"
           data-testid="transaction-date-from-input"
-          class="border border-surface-200 rounded-lg px-3 py-2 text-sm text-surface-900"
+          class="border border-surface-200 rounded-lg px-3 py-2 text-sm text-surface-900 bg-surface-0"
         />
         <input
           v-model="dateTo"
           type="date"
           data-testid="transaction-date-to-input"
-          class="border border-surface-200 rounded-lg px-3 py-2 text-sm text-surface-900"
+          class="border border-surface-200 rounded-lg px-3 py-2 text-sm text-surface-900 bg-surface-0"
         />
-        <span class="p-input-icon-left flex-1 min-w-[220px] max-w-[320px]">
+        <IconField class="flex-1 min-w-[220px] max-w-[320px]">
+          <InputIcon class="pi pi-search" />
           <InputText
             v-model="search"
             data-testid="transaction-search-input"
             class="w-full"
             placeholder="Search description or category"
           />
-        </span>
+        </IconField>
         <Button
           data-testid="transaction-reset-filters-button"
           label="Reset filters"
@@ -444,26 +458,26 @@ async function onDelete(transaction: TransactionResponse) {
 
       <!-- summary strip -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="bg-white border border-surface-200 rounded-lg p-4">
+        <div class="bg-surface-0 border border-surface-200 rounded-xl p-4">
           <p class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Total income</p>
-          <p data-testid="summary-total-income" class="text-2xl font-bold text-green-700 mt-1 tabular-nums">
+          <p data-testid="summary-total-income" class="text-2xl font-bold text-success mt-1 tabular-nums font-display">
             <MoneyDisplay v-if="summary" :amount="summary.totalIncome" sign />
             <span v-else>&nbsp;</span>
           </p>
         </div>
-        <div class="bg-white border border-surface-200 rounded-lg p-4">
+        <div class="bg-surface-0 border border-surface-200 rounded-xl p-4">
           <p class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Total expenses</p>
-          <p data-testid="summary-total-expense" class="text-2xl font-bold text-red-600 mt-1 tabular-nums">
+          <p data-testid="summary-total-expense" class="text-2xl font-bold text-danger mt-1 tabular-nums font-display">
             <template v-if="summary">− <MoneyDisplay :amount="summary.totalExpense" /></template>
             <span v-else>&nbsp;</span>
           </p>
         </div>
-        <div class="bg-white border border-surface-200 rounded-lg p-4">
+        <div class="bg-surface-0 border border-surface-200 rounded-xl p-4">
           <p class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Balance</p>
           <p
             data-testid="summary-balance"
-            class="text-2xl font-bold mt-1 tabular-nums"
-            :class="summary && Number(summary.balance) < 0 ? 'text-red-600' : 'text-green-700'"
+            class="text-2xl font-bold mt-1 tabular-nums font-display"
+            :class="summary && Number(summary.balance) < 0 ? 'text-danger' : 'text-success'"
           >
             <MoneyDisplay v-if="summary" :amount="summary.balance" sign />
             <span v-else>&nbsp;</span>
@@ -471,25 +485,19 @@ async function onDelete(transaction: TransactionResponse) {
         </div>
       </div>
 
-      <!-- error state -->
-      <div
+      <ErrorState
         v-if="loadState === 'error'"
-        data-testid="transactions-error-state"
-        class="flex flex-col items-center justify-center gap-4 py-16 px-8 bg-white border border-surface-200 rounded-lg"
-      >
-        <div class="w-14 h-14 rounded-lg bg-red-50 flex items-center justify-center">
-          <i class="pi pi-exclamation-triangle text-red-600 text-2xl" />
-        </div>
-        <p class="text-base font-semibold text-surface-900">Couldn't load transactions</p>
-        <p class="text-sm text-surface-500 text-center max-w-sm">
-          Something went wrong while fetching your transactions. Check your connection and try again.
-        </p>
-        <Button data-testid="transactions-retry-button" label="Retry" icon="pi pi-refresh" @click="loadTransactions" />
-      </div>
+        testid="transactions-error-state"
+        retry-testid="transactions-retry-button"
+        title="Couldn't load transactions"
+        description="Something went wrong while fetching your transactions. Check your connection and try again."
+        class="bg-surface-0 border border-surface-200 rounded-xl"
+        @retry="loadTransactions"
+      />
 
       <!-- loading state -->
       <div v-else-if="loadState === 'loading'" data-testid="transactions-loading-skeleton" class="flex flex-col gap-2">
-        <div v-for="n in 8" :key="n" class="bg-white border border-surface-200 rounded-lg p-4 flex items-center gap-4">
+        <div v-for="n in 8" :key="n" class="bg-surface-0 border border-surface-200 rounded-xl p-4 flex items-center gap-4">
           <div class="w-16 h-3.5 rounded bg-surface-200 animate-pulse shrink-0" />
           <div class="flex-1 h-3.5 rounded bg-surface-200 animate-pulse" />
           <div class="w-24 h-5 rounded-full bg-surface-200 animate-pulse shrink-0" />
@@ -503,25 +511,27 @@ async function onDelete(transaction: TransactionResponse) {
           <FormError :message="deleteErrorMessage" testid="transaction-delete-error-banner" />
         </div>
 
-        <div
+        <EmptyState
           v-if="transactions.length === 0"
-          data-testid="transactions-empty-state"
-          class="flex flex-col items-center justify-center gap-3 py-16 px-8 bg-white border border-dashed border-surface-300 rounded-lg"
+          testid="transactions-empty-state"
+          icon="pi-list"
+          title="No transactions yet"
+          description="Add your first income or expense to start tracking your spending and see it show up here."
+          class="bg-surface-0 border border-dashed border-surface-300 rounded-xl"
         >
-          <p class="text-sm font-semibold text-surface-900">No transactions yet</p>
-          <p class="text-sm text-surface-500 text-center max-w-sm">
-            Add your first income or expense to start tracking your spending and see it show up here.
-          </p>
-          <Button
-            data-testid="add-first-transaction-button"
-            label="Add your first transaction"
-            icon="pi pi-plus"
-            size="small"
-            @click="openAdd"
-          />
-        </div>
+          <template #action>
+            <Button
+              data-testid="add-first-transaction-button"
+              label="Add your first transaction"
+              icon="pi pi-plus"
+              size="small"
+              class="active:scale-[0.98] transition-transform duration-fast ease-out-expo"
+              @click="openAdd"
+            />
+          </template>
+        </EmptyState>
 
-        <div v-else data-testid="transactions-table" class="bg-white border border-surface-200 rounded-lg overflow-hidden">
+        <div v-else data-testid="transactions-table" class="bg-surface-0 border border-surface-200 rounded-xl overflow-hidden">
           <div
             class="hidden md:grid grid-cols-[110px_1fr_140px_100px_140px_72px] px-5 py-3 border-b border-surface-200 bg-surface-50"
           >
@@ -550,7 +560,7 @@ async function onDelete(transaction: TransactionResponse) {
                   :href="transaction.receiptUrl"
                   target="_blank"
                   rel="noopener"
-                  class="text-surface-400 hover:text-primary-600 shrink-0"
+                  class="text-surface-400 hover:text-primary-300 shrink-0 transition-colors duration-fast ease-out-expo"
                   title="View receipt"
                   @click.stop
                 >
@@ -563,21 +573,25 @@ async function onDelete(transaction: TransactionResponse) {
                   {{ transaction.categoryName }}
                 </span>
               </span>
-              <span class="text-sm text-surface-500">{{ transaction.type === 'INCOME' ? 'Income' : 'Expense' }}</span>
+              <span>
+                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold" :class="typePillClass(transaction.type)">
+                  {{ transaction.type === 'INCOME' ? 'Income' : 'Expense' }}
+                </span>
+              </span>
               <span class="text-sm font-semibold text-right tabular-nums" :class="typeColorClass(transaction.type)">
                 <MoneyDisplay :amount="Number(transaction.amount) * amountSign(transaction.type)" sign />
               </span>
               <span class="flex items-center justify-end gap-1">
                 <button
                   :data-testid="`transaction-edit-button-${transaction.id}`"
-                  class="w-7 h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-surface-100"
+                  class="w-7 h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-surface-50 hover:text-surface-800 transition-colors duration-fast ease-out-expo"
                   @click="openEdit(transaction)"
                 >
                   <i class="pi pi-pencil text-xs" />
                 </button>
                 <button
                   :data-testid="`transaction-delete-button-${transaction.id}`"
-                  class="w-7 h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-red-50 hover:text-red-600"
+                  class="w-7 h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-danger-bg hover:text-danger transition-colors duration-fast ease-out-expo"
                   @click="onDelete(transaction)"
                 >
                   <i class="pi pi-trash text-xs" />
@@ -617,7 +631,7 @@ async function onDelete(transaction: TransactionResponse) {
                 </div>
                 <button
                   :data-testid="`mobile-transaction-delete-button-${transaction.id}`"
-                  class="w-7 h-7 rounded-md flex items-center justify-center text-surface-500 shrink-0"
+                  class="w-11 h-11 rounded-md flex items-center justify-center text-surface-500 shrink-0"
                   @click.stop="onDelete(transaction)"
                 >
                   <i class="pi pi-trash text-xs" />
@@ -631,7 +645,7 @@ async function onDelete(transaction: TransactionResponse) {
             <div class="flex items-center gap-1">
               <button
                 data-testid="transactions-prev-page-button"
-                class="w-7 h-7 rounded-md border border-surface-200 flex items-center justify-center disabled:opacity-40"
+                class="w-7 h-7 rounded-md border border-surface-200 flex items-center justify-center text-surface-600 hover:bg-surface-50 disabled:opacity-40 transition-colors duration-fast ease-out-expo"
                 :disabled="page === 0"
                 @click="prevPage"
               >
@@ -639,7 +653,7 @@ async function onDelete(transaction: TransactionResponse) {
               </button>
               <button
                 data-testid="transactions-next-page-button"
-                class="w-7 h-7 rounded-md border border-surface-200 flex items-center justify-center disabled:opacity-40"
+                class="w-7 h-7 rounded-md border border-surface-200 flex items-center justify-center text-surface-600 hover:bg-surface-50 disabled:opacity-40 transition-colors duration-fast ease-out-expo"
                 :disabled="page + 1 >= totalPages"
                 @click="nextPage"
               >
@@ -673,7 +687,7 @@ async function onDelete(transaction: TransactionResponse) {
 
         <div>
           <label for="transaction-amount-input" class="block text-xs font-semibold text-surface-600 mb-1.5">Amount</label>
-          <div class="flex items-baseline gap-2 px-4 py-3 border rounded-lg bg-surface-50" :class="amountError ? 'border-red-600' : 'border-surface-200'">
+          <div class="flex items-baseline gap-2 px-4 py-3 border rounded-lg bg-surface-50 focus-within:ring-2 focus-within:ring-primary-500 focus-within:ring-offset-2 focus-within:ring-offset-surface-100" :class="amountError ? 'border-danger' : 'border-surface-200'">
             <span class="text-sm font-semibold text-surface-500">RM</span>
             <input
               id="transaction-amount-input"
@@ -685,7 +699,7 @@ async function onDelete(transaction: TransactionResponse) {
               class="border-none outline-none bg-transparent text-2xl font-bold text-surface-900 w-full tabular-nums"
             />
           </div>
-          <p v-if="amountError" class="text-xs text-red-600 mt-1.5">{{ amountError }}</p>
+          <p v-if="amountError" class="text-xs text-danger mt-1.5">{{ amountError }}</p>
         </div>
 
         <div class="grid grid-cols-2 gap-4">
@@ -696,10 +710,10 @@ async function onDelete(transaction: TransactionResponse) {
               v-model="editDate"
               data-testid="transaction-date-input"
               type="date"
-              class="w-full border rounded-lg px-3 py-2 text-sm text-surface-900"
-              :class="dateError ? 'border-red-600' : 'border-surface-200'"
+              class="w-full border rounded-lg px-3 py-2 text-sm text-surface-900 bg-surface-0"
+              :class="dateError ? 'border-danger' : 'border-surface-200'"
             />
-            <p v-if="dateError" class="text-xs text-red-600 mt-1.5">{{ dateError }}</p>
+            <p v-if="dateError" class="text-xs text-danger mt-1.5">{{ dateError }}</p>
           </div>
           <div>
             <label for="transaction-category-select" class="block text-xs font-semibold text-surface-600 mb-1.5">Category</label>
@@ -714,7 +728,7 @@ async function onDelete(transaction: TransactionResponse) {
               class="w-full"
               :invalid="!!categoryError"
             />
-            <p v-if="categoryError" class="text-xs text-red-600 mt-1.5">{{ categoryError }}</p>
+            <p v-if="categoryError" class="text-xs text-danger mt-1.5">{{ categoryError }}</p>
           </div>
         </div>
 
@@ -758,7 +772,7 @@ async function onDelete(transaction: TransactionResponse) {
             <button
               type="button"
               data-testid="receipt-upload-button"
-              class="w-full flex flex-col items-center gap-2 px-6 py-6 border-[1.5px] border-dashed border-surface-300 rounded-lg bg-surface-50 hover:bg-surface-100 hover:border-surface-400 disabled:opacity-60 disabled:cursor-not-allowed"
+              class="w-full flex flex-col items-center gap-2 px-6 py-6 border-[1.5px] border-dashed border-surface-300 rounded-lg bg-surface-50 hover:bg-surface-100 hover:border-primary-300 disabled:opacity-60 disabled:cursor-not-allowed transition-colors duration-fast ease-out-expo"
               :disabled="receiptUploading"
               @click="triggerReceiptPicker"
             >
@@ -809,7 +823,13 @@ async function onDelete(transaction: TransactionResponse) {
 
       <template #footer>
         <Button data-testid="transaction-cancel-button" label="Cancel" severity="secondary" text @click="closeEditor" />
-        <Button data-testid="transaction-save-button" label="Save transaction" :loading="saving" @click="saveEditor" />
+        <Button
+          data-testid="transaction-save-button"
+          label="Save transaction"
+          :loading="saving"
+          class="active:scale-[0.98] transition-transform duration-fast ease-out-expo"
+          @click="saveEditor"
+        />
       </template>
     </Dialog>
   </AppLayout>

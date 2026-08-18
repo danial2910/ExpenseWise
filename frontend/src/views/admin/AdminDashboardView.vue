@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import Button from 'primevue/button'
 import Chart from 'primevue/chart'
 import AppLayout from '../../layouts/AppLayout.vue'
+import ErrorState from '../../components/common/ErrorState.vue'
+import EmptyState from '../../components/common/EmptyState.vue'
+import ChartTooltip from '../../components/common/ChartTooltip.vue'
+import { useExternalTooltip } from '../../lib/chartTooltip'
 import { fetchAdminDashboard } from '../../api/admin'
 import { FEATURE_LABELS } from '../../types/admin'
 import type { AdminDashboardResponse } from '../../types/admin'
@@ -15,21 +18,20 @@ const loadState = ref<LoadState>('loading')
 const dashboard = ref<AdminDashboardResponse | null>(null)
 
 // Chart.js draws to a <canvas>, so it needs literal color strings — these
-// two zero-size elements exist only so we can read the *resolved* value of
-// design tokens (Tailwind's primary-600 / surface-700 utility classes)
-// rather than hardcoding hex codes here.
+// hidden elements exist only so we can read the *resolved* value of design
+// tokens (Tailwind's primary-400/500 utility classes) rather than
+// hardcoding hex here.
 const primaryColorRef = ref<HTMLElement | null>(null)
-const slateColorRef = ref<HTMLElement | null>(null)
+const primaryMutedRef = ref<HTMLElement | null>(null)
 const primaryColor = ref('')
-const slateColor = ref('')
+const primaryMutedColor = ref('')
+
+const { tooltipState: signupsTooltip, externalTooltipHandler: signupsTooltipHandler } = useExternalTooltip()
+const { tooltipState: activityTooltip, externalTooltipHandler: activityTooltipHandler } = useExternalTooltip()
 
 onMounted(() => {
-  if (primaryColorRef.value) {
-    primaryColor.value = getComputedStyle(primaryColorRef.value).color
-  }
-  if (slateColorRef.value) {
-    slateColor.value = getComputedStyle(slateColorRef.value).color
-  }
+  if (primaryColorRef.value) primaryColor.value = getComputedStyle(primaryColorRef.value).color
+  if (primaryMutedRef.value) primaryMutedColor.value = getComputedStyle(primaryMutedRef.value).color
   loadDashboard()
 })
 
@@ -45,22 +47,42 @@ async function loadDashboard() {
 
 const isEmpty = computed(() => loadState.value === 'ready' && (dashboard.value?.summary.totalUsers ?? 0) <= 1)
 
+const sparklineOptions = {
+  plugins: { legend: { display: false }, tooltip: { enabled: false } },
+  scales: { x: { display: false }, y: { display: false } },
+  elements: { point: { radius: 0 }, line: { borderWidth: 2, tension: 0.35 } },
+  responsive: true,
+  maintainAspectRatio: false,
+}
+
+const newSignupsSparkline = computed(() => {
+  const points = dashboard.value?.signupsOverTime ?? []
+  if (points.length < 2) return null
+  return {
+    labels: points.map((p) => p.month),
+    datasets: [{ data: points.map((p) => p.count), borderColor: primaryColor.value, fill: false }],
+  }
+})
+
 const summaryCards = computed(() => {
   const summary = dashboard.value?.summary
   if (!summary) return []
   return [
-    { testid: 'summary-total-users', label: 'Total users', value: summary.totalUsers.toLocaleString(), colorClass: 'text-surface-900' },
+    { testid: 'summary-total-users', label: 'Total users', icon: 'pi-users', value: summary.totalUsers.toLocaleString(), tone: 'text-surface-900' },
     {
       testid: 'summary-active-disabled',
       label: 'Active / Disabled',
+      icon: 'pi-shield',
       value: `${summary.activeUsers.toLocaleString()} / ${summary.disabledUsers.toLocaleString()}`,
-      colorClass: 'text-surface-900',
+      tone: 'text-surface-900',
     },
     {
       testid: 'summary-new-this-month',
       label: 'New this month',
+      icon: 'pi-user-plus',
       value: `+${summary.newUsersThisMonth.toLocaleString()}`,
-      colorClass: 'text-green-700',
+      tone: 'text-success',
+      sparkline: newSignupsSparkline.value,
     },
   ]
 })
@@ -69,37 +91,44 @@ function monthLabel(month: string): string {
   return new Date(`${month}T00:00:00`).toLocaleDateString('en-GB', { month: 'short' })
 }
 
+// Same filled-area line style as the user Dashboard's Income vs Expense
+// chart (DashboardView.vue's trendChartData) — smooth curve, soft fill
+// under the line, points only appear on hover.
 function lineChartData(points: { month: string; count: number }[], color: string) {
   return {
     labels: points.map((p) => monthLabel(p.month)),
     datasets: [
       {
+        label: 'Count',
         data: points.map((p) => p.count),
         borderColor: color,
-        backgroundColor: color,
-        borderWidth: 2.5,
-        pointRadius: 3.5,
-        tension: 0,
+        backgroundColor: color.replace('rgb', 'rgba').replace(')', ', 0.12)'),
+        fill: true,
+        tension: 0.35,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        borderWidth: 2,
       },
     ],
   }
 }
 
-const chartOptions = {
-  plugins: { legend: { display: false } },
-  scales: {
-    x: { grid: { display: false } },
-    y: { display: false },
-  },
-  responsive: true,
-  maintainAspectRatio: false,
+function chartOptions(externalTooltipHandler: (context: unknown) => void) {
+  return {
+    plugins: { legend: { display: false }, tooltip: { enabled: false, external: externalTooltipHandler } },
+    scales: { x: { grid: { display: false } }, y: { display: false } },
+    responsive: true,
+    maintainAspectRatio: false,
+  }
 }
+const signupsChartOptions = chartOptions(signupsTooltipHandler)
+const activityChartOptions = chartOptions(activityTooltipHandler)
 
 const signupsChartData = computed(() =>
   dashboard.value ? lineChartData(dashboard.value.signupsOverTime, primaryColor.value) : null,
 )
 const activityChartData = computed(() =>
-  dashboard.value ? lineChartData(dashboard.value.activityOverTime, slateColor.value) : null,
+  dashboard.value ? lineChartData(dashboard.value.activityOverTime, primaryMutedColor.value) : null,
 )
 
 const signupsTotal = computed(() =>
@@ -125,57 +154,50 @@ function joinedDisplay(iso: string): string {
 
 <template>
   <AppLayout title="Admin · Dashboard">
-    <span ref="primaryColorRef" class="text-primary-600 hidden" aria-hidden="true"></span>
-    <span ref="slateColorRef" class="text-surface-700 hidden" aria-hidden="true"></span>
+    <span ref="primaryColorRef" class="text-primary-400 hidden" aria-hidden="true"></span>
+    <span ref="primaryMutedRef" class="text-primary-700 hidden" aria-hidden="true"></span>
+
+    <ChartTooltip :state="signupsTooltip" />
+    <ChartTooltip :state="activityTooltip" />
 
     <div class="flex flex-col gap-6">
       <div>
-        <h1 class="text-2xl font-bold text-surface-900">Admin Dashboard</h1>
+        <h1 class="font-display text-2xl font-semibold tracking-tight text-surface-900">Admin Dashboard</h1>
         <p class="text-sm text-surface-500 mt-1">System-wide usage across all accounts</p>
       </div>
 
-      <!-- error state -->
-      <div
+      <ErrorState
         v-if="loadState === 'error'"
-        data-testid="admin-dashboard-error-state"
-        class="flex flex-col items-center justify-center gap-4 py-14 px-6 lg:py-20 lg:px-8 bg-white border border-surface-200 rounded-lg"
-      >
-        <div class="w-14 h-14 rounded-lg bg-red-50 flex items-center justify-center">
-          <i class="pi pi-exclamation-triangle text-red-600 text-2xl" />
-        </div>
-        <p class="text-base font-semibold text-surface-900">Couldn't load admin analytics</p>
-        <p class="text-sm text-surface-500 text-center max-w-sm">Something went wrong while fetching usage data. Try again.</p>
-        <Button data-testid="admin-dashboard-retry-button" label="Retry" icon="pi pi-refresh" @click="loadDashboard" />
-      </div>
+        testid="admin-dashboard-error-state"
+        retry-testid="admin-dashboard-retry-button"
+        title="Couldn't load admin analytics"
+        description="Something went wrong while fetching usage data. Try again."
+        class="bg-surface-0 border border-surface-200 rounded-xl"
+        @retry="loadDashboard"
+      />
 
       <!-- loading state -->
       <div v-else-if="loadState === 'loading'" data-testid="admin-dashboard-loading-skeleton" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div v-for="n in 3" :key="n" class="lg:col-span-4 bg-white border border-surface-200 rounded-lg p-5 flex flex-col gap-2">
+        <div v-for="n in 3" :key="n" class="lg:col-span-4 bg-surface-0 border border-surface-200 rounded-xl p-5 flex flex-col gap-2">
           <div class="w-24 h-3 rounded bg-surface-200 animate-pulse" />
           <div class="w-28 h-7 rounded bg-surface-200 animate-pulse" />
         </div>
-        <div class="lg:col-span-6 bg-white border border-surface-200 rounded-lg p-6">
+        <div class="lg:col-span-6 bg-surface-0 border border-surface-200 rounded-xl p-6">
           <div class="w-full h-48 rounded bg-surface-200 animate-pulse" />
         </div>
-        <div class="lg:col-span-6 bg-white border border-surface-200 rounded-lg p-6">
+        <div class="lg:col-span-6 bg-surface-0 border border-surface-200 rounded-xl p-6">
           <div class="w-full h-48 rounded bg-surface-200 animate-pulse" />
         </div>
       </div>
 
-      <!-- empty state -->
-      <div
+      <EmptyState
         v-else-if="isEmpty"
-        data-testid="admin-dashboard-empty-state"
-        class="flex flex-col items-center justify-center gap-4 py-14 px-6 lg:py-20 lg:px-8 bg-white border border-surface-200 rounded-lg"
-      >
-        <div class="w-14 h-14 rounded-lg bg-surface-100 flex items-center justify-center">
-          <i class="pi pi-chart-bar text-surface-400 text-2xl" />
-        </div>
-        <p class="text-base font-semibold text-surface-900">No usage data yet</p>
-        <p class="text-sm text-surface-500 text-center max-w-sm">
-          Once users sign up and start recording transactions, system-wide analytics will appear here.
-        </p>
-      </div>
+        testid="admin-dashboard-empty-state"
+        icon="pi-chart-bar"
+        title="No usage data yet"
+        description="Once users sign up and start recording transactions, system-wide analytics will appear here."
+        class="bg-surface-0 border border-surface-200 rounded-xl"
+      />
 
       <!-- ready state -->
       <div v-else data-testid="admin-dashboard-content" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -183,21 +205,23 @@ function joinedDisplay(iso: string): string {
           v-for="card in summaryCards"
           :key="card.testid"
           :data-testid="card.testid"
-          class="lg:col-span-4 bg-white border border-surface-200 rounded-lg p-4 md:p-5"
+          class="lg:col-span-4 bg-surface-0 border border-surface-200 rounded-xl p-4 md:p-5 flex flex-col gap-3"
         >
-          <!-- desktop/tablet: label above value -->
-          <div class="hidden md:flex flex-col gap-2">
-            <span class="text-xs font-semibold text-surface-500 uppercase tracking-wide">{{ card.label }}</span>
-            <span class="text-2xl font-bold tabular-nums" :class="card.colorClass">{{ card.value }}</span>
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-surface-50 flex items-center justify-center text-surface-600 shrink-0">
+              <i :class="['pi', card.icon]" class="text-xs" />
+            </div>
+            <span class="text-xs font-semibold text-surface-500 uppercase tracking-wide truncate">{{ card.label }}</span>
           </div>
-          <!-- mobile: label and value side by side -->
-          <div class="md:hidden flex items-center justify-between">
-            <span class="text-xs font-semibold text-surface-500 uppercase tracking-wide">{{ card.label }}</span>
-            <span class="text-lg font-bold tabular-nums" :class="card.colorClass">{{ card.value }}</span>
+          <div class="flex items-end justify-between gap-3">
+            <span class="text-2xl font-bold tabular-nums font-display" :class="card.tone">{{ card.value }}</span>
+            <div v-if="'sparkline' in card && card.sparkline" class="w-16 h-8 shrink-0">
+              <Chart type="line" :data="card.sparkline" :options="sparklineOptions" class="w-full h-full" />
+            </div>
           </div>
         </div>
 
-        <div class="lg:col-span-6 bg-white border border-surface-200 rounded-lg p-4 lg:p-6">
+        <div class="lg:col-span-6 bg-surface-0 border border-surface-200 rounded-xl p-4 lg:p-6">
           <div class="flex items-baseline justify-between mb-5">
             <span class="text-sm font-semibold text-surface-900">User Signups — last {{ MONTHS }} months</span>
             <span class="text-sm text-surface-500">
@@ -205,11 +229,11 @@ function joinedDisplay(iso: string): string {
             </span>
           </div>
           <div data-testid="signups-chart" class="h-36 md:h-40 lg:h-52">
-            <Chart v-if="signupsChartData" type="line" :data="signupsChartData" :options="chartOptions" class="h-full" />
+            <Chart v-if="signupsChartData" type="line" :data="signupsChartData" :options="signupsChartOptions" class="h-full" />
           </div>
         </div>
 
-        <div class="lg:col-span-6 bg-white border border-surface-200 rounded-lg p-4 lg:p-6">
+        <div class="lg:col-span-6 bg-surface-0 border border-surface-200 rounded-xl p-4 lg:p-6">
           <div class="flex items-baseline justify-between mb-5">
             <span class="text-sm font-semibold text-surface-900">Transactions Recorded — last {{ MONTHS }} months</span>
             <span class="text-sm text-surface-500">
@@ -217,11 +241,11 @@ function joinedDisplay(iso: string): string {
             </span>
           </div>
           <div data-testid="activity-chart" class="h-36 md:h-40 lg:h-52">
-            <Chart v-if="activityChartData" type="line" :data="activityChartData" :options="chartOptions" class="h-full" />
+            <Chart v-if="activityChartData" type="line" :data="activityChartData" :options="activityChartOptions" class="h-full" />
           </div>
         </div>
 
-        <div class="lg:col-span-6 bg-white border border-surface-200 rounded-lg p-4 lg:p-6">
+        <div class="lg:col-span-6 bg-surface-0 border border-surface-200 rounded-xl p-4 lg:p-6">
           <span class="text-sm font-semibold text-surface-900 block mb-5">Feature Usage — % of users active</span>
           <div data-testid="feature-usage-list" class="flex flex-col gap-4">
             <div v-for="usage in dashboard?.featureUsage" :key="usage.feature" :data-testid="`feature-usage-${usage.feature}`">
@@ -229,14 +253,14 @@ function joinedDisplay(iso: string): string {
                 <span class="text-sm font-medium text-surface-700">{{ FEATURE_LABELS[usage.feature] }}</span>
                 <span class="text-sm font-semibold text-surface-900 tabular-nums">{{ usage.percentage }}%</span>
               </div>
-              <div class="w-full h-2 rounded bg-surface-200 overflow-hidden">
-                <div class="h-full rounded bg-primary-600" :style="{ width: `${usage.percentage}%` }" />
+              <div class="w-full h-2 rounded-full bg-surface-200 overflow-hidden">
+                <div class="h-full rounded-full bg-primary-500" :style="{ width: `${usage.percentage}%` }" />
               </div>
             </div>
           </div>
         </div>
 
-        <div class="lg:col-span-6 bg-white border border-surface-200 rounded-lg overflow-hidden">
+        <div class="lg:col-span-6 bg-surface-0 border border-surface-200 rounded-xl overflow-hidden">
           <div class="px-4 md:px-6 py-3 md:py-4 border-b border-surface-200 text-sm font-semibold text-surface-900">Recent Signups</div>
           <div data-testid="recent-signups-list">
             <div
@@ -245,7 +269,7 @@ function joinedDisplay(iso: string): string {
               :data-testid="`recent-signup-${signup.id}`"
               class="flex items-center gap-3 px-4 md:px-6 py-3 border-b border-surface-100 last:border-b-0"
             >
-              <div class="w-8 h-8 rounded-lg bg-primary-50 text-primary-600 text-xs font-semibold flex items-center justify-center shrink-0">
+              <div class="w-8 h-8 rounded-lg bg-primary-50 text-primary-300 text-xs font-semibold flex items-center justify-center shrink-0">
                 {{ initials(signup.fullName) }}
               </div>
               <div class="flex-1 min-w-0">

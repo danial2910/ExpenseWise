@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import IconField from 'primevue/iconfield'
+import InputIcon from 'primevue/inputicon'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
 import AuthLayout from '../../layouts/AuthLayout.vue'
+import PasswordStrengthMeter from '../../components/common/PasswordStrengthMeter.vue'
 import { useAuthStore } from '../../stores/auth'
 import type { ApiErrorResponse } from '../../types/auth'
 import { isAxiosError } from 'axios'
@@ -59,72 +62,91 @@ async function onSubmit() {
     <form class="flex flex-col gap-4" @submit.prevent="onSubmit">
       <div>
         <label for="register-name" class="block text-xs font-semibold text-surface-600 mb-1.5">Full name</label>
-        <InputText id="register-name" v-model="fullName" data-testid="register-fullname-input" class="w-full" required />
+        <IconField class="w-full">
+          <InputIcon class="pi pi-user" />
+          <InputText id="register-name" v-model="fullName" data-testid="register-fullname-input" class="w-full" required />
+        </IconField>
       </div>
 
       <div>
         <label for="register-email" class="block text-xs font-semibold text-surface-600 mb-1.5">Email</label>
-        <InputText
-          id="register-email"
-          v-model="email"
-          type="email"
-          data-testid="register-email-input"
-          class="w-full"
-          :invalid="!!emailError"
-          required
-        />
-        <p v-if="emailError" data-testid="register-email-error" class="text-xs text-red-600 mt-1.5">
-          {{ emailError }}
-        </p>
+        <IconField class="w-full">
+          <InputIcon class="pi pi-envelope" />
+          <InputText
+            id="register-email"
+            v-model="email"
+            type="email"
+            data-testid="register-email-input"
+            class="w-full"
+            :invalid="!!emailError"
+            required
+          />
+        </IconField>
+        <Transition name="field-in">
+          <p v-if="emailError" data-testid="register-email-error" class="text-xs text-danger mt-1.5">
+            {{ emailError }}
+          </p>
+        </Transition>
       </div>
 
       <div>
         <label for="register-password" class="block text-xs font-semibold text-surface-600 mb-1.5">Password</label>
-        <Password
-          id="register-password"
-          v-model="password"
-          data-testid="register-password-input"
-          input-class="w-full"
-          class="w-full"
-          :feedback="false"
-          toggle-mask
-          :invalid="!!passwordError"
-          required
-        />
-        <p v-if="passwordError" data-testid="register-password-error" class="text-xs text-red-600 mt-1.5">
-          {{ passwordError }}
-        </p>
+        <IconField class="w-full">
+          <InputIcon class="pi pi-lock" />
+          <Password
+            id="register-password"
+            v-model="password"
+            data-testid="register-password-input"
+            input-class="w-full"
+            class="w-full"
+            :feedback="false"
+            toggle-mask
+            :invalid="!!passwordError"
+            required
+          />
+        </IconField>
+        <PasswordStrengthMeter v-if="password" :password="password" />
+        <Transition name="field-in">
+          <p v-if="passwordError" data-testid="register-password-error" class="text-xs text-danger mt-1.5">
+            {{ passwordError }}
+          </p>
+        </Transition>
       </div>
 
       <div>
         <label for="register-confirm" class="block text-xs font-semibold text-surface-600 mb-1.5">Confirm password</label>
-        <Password
-          id="register-confirm"
-          v-model="confirmPassword"
-          data-testid="register-confirm-password-input"
-          input-class="w-full"
-          class="w-full"
-          :feedback="false"
-          toggle-mask
-          :invalid="!!confirmError"
-          required
-        />
-        <p v-if="confirmError" data-testid="register-confirm-error" class="text-xs text-red-600 mt-1.5">
-          {{ confirmError }}
-        </p>
+        <IconField class="w-full">
+          <InputIcon class="pi pi-lock" />
+          <Password
+            id="register-confirm"
+            v-model="confirmPassword"
+            data-testid="register-confirm-password-input"
+            input-class="w-full"
+            class="w-full"
+            :feedback="false"
+            toggle-mask
+            :invalid="!!confirmError"
+            required
+          />
+        </IconField>
+        <Transition name="field-in">
+          <p v-if="confirmError" data-testid="register-confirm-error" class="text-xs text-danger mt-1.5">
+            {{ confirmError }}
+          </p>
+        </Transition>
       </div>
 
       <Button
         type="submit"
         label="Create account"
         data-testid="register-submit-button"
-        class="w-full"
+        class="w-full active:scale-[0.98] transition-transform duration-fast ease-out-expo"
         :loading="submitting"
       />
 
       <p class="text-sm text-surface-500 text-center">
         Already have an account?
-        <router-link data-testid="register-login-link" to="/login" class="text-primary-600 font-semibold">
+        <router-link data-testid="register-login-link" to="/login" class="text-primary-300 hover:text-primary-200 font-semibold transition-colors duration-fast ease-out-expo">
           Sign in
         </router-link>
       </p>

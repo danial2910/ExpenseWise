@@ -5,8 +5,9 @@ defineProps<{ message: string; testid?: string }>()
 <template>
   <div
     :data-testid="testid ?? 'form-error-banner'"
-    class="bg-red-50 border border-red-300 text-red-600 text-sm rounded-lg px-3 py-2.5 mb-4"
+    class="flex items-start gap-2.5 bg-danger-bg border border-danger/30 text-danger text-sm rounded-lg px-3 py-2.5 mb-4"
   >
-    {{ message }}
+    <i class="pi pi-exclamation-circle mt-0.5 text-[13px]" />
+    <span>{{ message }}</span>
   </div>
 </template>

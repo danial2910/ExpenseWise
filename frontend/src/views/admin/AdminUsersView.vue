@@ -10,6 +10,10 @@ import Drawer from 'primevue/drawer'
 import Paginator from 'primevue/paginator'
 import AppLayout from '../../layouts/AppLayout.vue'
 import FormError from '../../components/common/FormError.vue'
+import ErrorState from '../../components/common/ErrorState.vue'
+import EmptyState from '../../components/common/EmptyState.vue'
+import IconField from 'primevue/iconfield'
+import InputIcon from 'primevue/inputicon'
 import {
   createAdminUser,
   deleteAdminUser,
@@ -259,27 +263,28 @@ async function runConfirm() {
     <div class="flex flex-col gap-6">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-bold text-surface-900">User Management</h1>
+          <h1 class="font-display text-2xl font-semibold tracking-tight text-surface-900">User Management</h1>
           <p class="text-sm text-surface-500 mt-1">Manage accounts, roles, and feature access</p>
         </div>
         <Button
           data-testid="create-user-button"
           label="Create user"
           icon="pi pi-plus"
-          class="hidden md:inline-flex"
+          class="hidden md:inline-flex active:scale-[0.98] transition-transform duration-fast ease-out-expo"
           @click="openCreate"
         />
       </div>
 
       <div class="flex items-center gap-3 flex-wrap">
-        <span class="p-input-icon-left flex-1 min-w-[220px] max-w-xs">
+        <IconField class="flex-1 min-w-[220px] max-w-xs">
+          <InputIcon class="pi pi-search" />
           <InputText
             v-model="search"
             data-testid="user-search-input"
             class="w-full"
             placeholder="Search name or email"
           />
-        </span>
+        </IconField>
         <Select
           v-model="roleFilter"
           data-testid="user-role-filter"
@@ -296,22 +301,18 @@ async function runConfirm() {
         />
       </div>
 
-      <!-- error state -->
-      <div
+      <ErrorState
         v-if="loadState === 'error'"
-        data-testid="admin-users-error-state"
-        class="flex flex-col items-center justify-center gap-4 py-14 px-6 lg:py-16 lg:px-8 bg-white border border-surface-200 rounded-lg"
-      >
-        <div class="w-14 h-14 rounded-lg bg-red-50 flex items-center justify-center">
-          <i class="pi pi-exclamation-triangle text-red-600 text-2xl" />
-        </div>
-        <p class="text-base font-semibold text-surface-900">Couldn't load users</p>
-        <p class="text-sm text-surface-500 text-center max-w-sm">Something went wrong while fetching user accounts. Try again.</p>
-        <Button data-testid="admin-users-retry-button" label="Retry" icon="pi pi-refresh" @click="loadUsers" />
-      </div>
+        testid="admin-users-error-state"
+        retry-testid="admin-users-retry-button"
+        title="Couldn't load users"
+        description="Something went wrong while fetching user accounts. Try again."
+        class="bg-surface-0 border border-surface-200 rounded-xl"
+        @retry="loadUsers"
+      />
 
       <!-- loading state -->
-      <div v-else-if="loadState === 'loading'" data-testid="admin-users-loading-skeleton" class="bg-white border border-surface-200 rounded-lg overflow-hidden">
+      <div v-else-if="loadState === 'loading'" data-testid="admin-users-loading-skeleton" class="bg-surface-0 border border-surface-200 rounded-xl overflow-hidden">
         <div v-for="n in 8" :key="n" class="flex items-center gap-4 px-5 py-3.5 border-b border-surface-100">
           <div class="w-8 h-8 rounded-lg bg-surface-200 animate-pulse shrink-0" />
           <div class="flex-1 h-3.5 rounded bg-surface-200 animate-pulse" />
@@ -321,16 +322,25 @@ async function runConfirm() {
       </div>
 
       <!-- ready state -->
-      <div v-else class="bg-white border border-surface-200 rounded-lg overflow-hidden">
-        <div
+      <div v-else class="bg-surface-0 border border-surface-200 rounded-xl overflow-hidden">
+        <EmptyState
           v-if="users.length === 0"
-          data-testid="admin-users-empty-state"
-          class="flex flex-col items-center justify-center gap-3 py-14 px-6 lg:py-16 lg:px-8"
+          testid="admin-users-empty-state"
+          icon="pi-users"
+          title="No users found"
+          description="No accounts match your filters, or none have been created yet."
+          class="py-8"
         >
-          <p class="text-sm font-semibold text-surface-900">No users found</p>
-          <p class="text-sm text-surface-500 text-center max-w-sm">No accounts match your filters, or none have been created yet.</p>
-          <Button data-testid="admin-users-empty-create-button" label="Create user" size="small" @click="openCreate" />
-        </div>
+          <template #action>
+            <Button
+              data-testid="admin-users-empty-create-button"
+              label="Create user"
+              size="small"
+              class="active:scale-[0.98] transition-transform duration-fast ease-out-expo"
+              @click="openCreate"
+            />
+          </template>
+        </EmptyState>
 
         <template v-else>
           <div class="hidden lg:grid grid-cols-[1fr_220px_100px_100px_120px_180px] px-5 py-3 border-b border-surface-200 bg-surface-50">
@@ -351,7 +361,7 @@ async function runConfirm() {
             <!-- desktop row -->
             <div class="hidden lg:grid grid-cols-[1fr_220px_100px_100px_120px_180px] items-center px-5 py-3.5">
               <div class="flex items-center gap-2.5 min-w-0">
-                <div class="w-8 h-8 rounded-lg bg-primary-50 text-primary-600 text-xs font-semibold flex items-center justify-center shrink-0">
+                <div class="w-8 h-8 rounded-lg bg-primary-50 text-primary-300 text-xs font-semibold flex items-center justify-center shrink-0">
                   {{ initials(user.fullName) }}
                 </div>
                 <span class="text-sm font-medium text-surface-900 truncate">{{ user.fullName }}</span>
@@ -359,15 +369,18 @@ async function runConfirm() {
               <span class="text-sm text-surface-500 truncate pr-2">{{ user.email }}</span>
               <span>
                 <span
-                  class="text-xs font-medium px-2.5 py-1 rounded-lg"
-                  :class="user.role === 'ADMIN' ? 'text-primary-600 bg-primary-50' : 'text-surface-600 bg-surface-100'"
+                  class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                  :class="user.role === 'ADMIN' ? 'text-primary-300 bg-primary-50' : 'text-surface-600 bg-surface-100'"
                 >
                   {{ user.role === 'ADMIN' ? 'Admin' : 'User' }}
                 </span>
               </span>
-              <span class="flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full" :class="user.active ? 'bg-green-700' : 'bg-surface-300'" />
-                <span class="text-sm" :class="user.active ? 'text-green-700' : 'text-surface-400'">
+              <span>
+                <span
+                  class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                  :class="user.active ? 'bg-success-bg text-success' : 'bg-surface-100 text-surface-500'"
+                >
+                  <span class="w-1.5 h-1.5 rounded-full" :class="user.active ? 'bg-success' : 'bg-surface-400'" />
                   {{ user.active ? 'Active' : 'Disabled' }}
                 </span>
               </span>
@@ -375,21 +388,21 @@ async function runConfirm() {
               <span class="flex items-center justify-end gap-1">
                 <button
                   :data-testid="`admin-user-edit-${user.id}`"
-                  class="w-7 h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-surface-100"
+                  class="w-7 h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-surface-50 hover:text-surface-800 transition-colors duration-fast ease-out-expo"
                   @click="openEdit(user)"
                 >
                   <i class="pi pi-pencil text-xs" />
                 </button>
                 <button
                   :data-testid="`admin-user-deactivate-${user.id}`"
-                  class="w-7 h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-surface-100"
+                  class="w-7 h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-surface-50 hover:text-surface-800 transition-colors duration-fast ease-out-expo"
                   @click="openConfirm(user, user.active ? 'deactivate' : 'activate')"
                 >
                   <i :class="['pi text-xs', user.active ? 'pi-ban' : 'pi-check']" />
                 </button>
                 <button
                   :data-testid="`admin-user-delete-${user.id}`"
-                  class="w-7 h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-red-50 hover:text-red-600"
+                  class="w-7 h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-danger-bg hover:text-danger transition-colors duration-fast ease-out-expo"
                   @click="openConfirm(user, 'delete')"
                 >
                   <i class="pi pi-trash text-xs" />
@@ -400,7 +413,7 @@ async function runConfirm() {
             <!-- tablet/mobile card -->
             <div class="lg:hidden flex flex-col gap-2.5 px-4 py-3.5">
               <div class="flex items-center gap-2.5 min-w-0">
-                <div class="w-8 h-8 rounded-lg bg-primary-50 text-primary-600 text-xs font-semibold flex items-center justify-center shrink-0">
+                <div class="w-8 h-8 rounded-lg bg-primary-50 text-primary-300 text-xs font-semibold flex items-center justify-center shrink-0">
                   {{ initials(user.fullName) }}
                 </div>
                 <div class="flex-1 min-w-0">
@@ -411,16 +424,17 @@ async function runConfirm() {
               <div class="flex items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
                   <span
-                    class="text-xs font-medium px-2.5 py-1 rounded-lg"
-                    :class="user.role === 'ADMIN' ? 'text-primary-600 bg-primary-50' : 'text-surface-600 bg-surface-100'"
+                    class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                    :class="user.role === 'ADMIN' ? 'text-primary-300 bg-primary-50' : 'text-surface-600 bg-surface-100'"
                   >
                     {{ user.role === 'ADMIN' ? 'Admin' : 'User' }}
                   </span>
-                  <span class="flex items-center gap-1.5">
-                    <span class="w-1.5 h-1.5 rounded-full" :class="user.active ? 'bg-green-700' : 'bg-surface-300'" />
-                    <span class="text-xs" :class="user.active ? 'text-green-700' : 'text-surface-400'">
-                      {{ user.active ? 'Active' : 'Disabled' }}
-                    </span>
+                  <span
+                    class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                    :class="user.active ? 'bg-success-bg text-success' : 'bg-surface-100 text-surface-500'"
+                  >
+                    <span class="w-1.5 h-1.5 rounded-full" :class="user.active ? 'bg-success' : 'bg-surface-400'" />
+                    {{ user.active ? 'Active' : 'Disabled' }}
                   </span>
                 </div>
                 <span class="text-xs text-surface-400 shrink-0">{{ formatDate(user.createdAt) }}</span>
@@ -428,14 +442,14 @@ async function runConfirm() {
               <div class="flex items-center gap-1 border-t border-surface-100 pt-2">
                 <button
                   :data-testid="`mobile-admin-user-edit-${user.id}`"
-                  class="flex-1 h-9 rounded-md flex items-center justify-center gap-1.5 text-sm text-surface-600 hover:bg-surface-100"
+                  class="flex-1 min-h-11 rounded-md flex items-center justify-center gap-1.5 text-sm text-surface-600 hover:bg-surface-50 transition-colors duration-fast ease-out-expo"
                   @click="openEdit(user)"
                 >
                   <i class="pi pi-pencil text-xs" /> Edit
                 </button>
                 <button
                   :data-testid="`mobile-admin-user-deactivate-${user.id}`"
-                  class="flex-1 h-9 rounded-md flex items-center justify-center gap-1.5 text-sm text-surface-600 hover:bg-surface-100"
+                  class="flex-1 min-h-11 rounded-md flex items-center justify-center gap-1.5 text-sm text-surface-600 hover:bg-surface-50 transition-colors duration-fast ease-out-expo"
                   @click="openConfirm(user, user.active ? 'deactivate' : 'activate')"
                 >
                   <i :class="['pi text-xs', user.active ? 'pi-ban' : 'pi-check']" />
@@ -443,7 +457,7 @@ async function runConfirm() {
                 </button>
                 <button
                   :data-testid="`mobile-admin-user-delete-${user.id}`"
-                  class="flex-1 h-9 rounded-md flex items-center justify-center gap-1.5 text-sm text-surface-600 hover:bg-red-50 hover:text-red-600"
+                  class="flex-1 min-h-11 rounded-md flex items-center justify-center gap-1.5 text-sm text-surface-600 hover:bg-danger-bg hover:text-danger transition-colors duration-fast ease-out-expo"
                   @click="openConfirm(user, 'delete')"
                 >
                   <i class="pi pi-trash text-xs" /> Delete
@@ -481,7 +495,7 @@ async function runConfirm() {
         <FormError v-if="saveError" :message="saveError" testid="user-panel-error-banner" />
 
         <div v-if="panelMode === 'edit' && editingUser" class="flex items-center gap-3 pb-4 border-b border-surface-100">
-          <div class="w-11 h-11 rounded-lg bg-primary-50 text-primary-600 text-sm font-semibold flex items-center justify-center">
+          <div class="w-11 h-11 rounded-lg bg-primary-50 text-primary-300 text-sm font-semibold flex items-center justify-center">
             {{ initials(editingUser.fullName) }}
           </div>
           <div>
@@ -501,7 +515,7 @@ async function runConfirm() {
               :invalid="!!nameError"
               @blur="formNameTouched = true"
             />
-            <p v-if="nameError" class="text-xs text-red-600 mt-1.5">{{ nameError }}</p>
+            <p v-if="nameError" class="text-xs text-danger mt-1.5">{{ nameError }}</p>
           </div>
           <div>
             <label for="user-email-input" class="block text-xs font-semibold text-surface-600 mb-1.5">Email</label>
@@ -514,7 +528,7 @@ async function runConfirm() {
               :invalid="!!emailError"
               @blur="formEmailTouched = true"
             />
-            <p v-if="emailError" class="text-xs text-red-600 mt-1.5">{{ emailError }}</p>
+            <p v-if="emailError" class="text-xs text-danger mt-1.5">{{ emailError }}</p>
           </div>
         </template>
 
@@ -524,8 +538,8 @@ async function runConfirm() {
             <button
               data-testid="user-role-user-button"
               type="button"
-              class="px-5 py-2 rounded-md text-sm font-semibold"
-              :class="formRole === 'USER' ? 'bg-white text-surface-900 shadow-sm' : 'text-surface-500'"
+              class="px-5 py-2 rounded-md text-sm font-semibold transition-colors duration-fast ease-out-expo"
+              :class="formRole === 'USER' ? 'bg-surface-0 text-primary-300 shadow-soft-sm' : 'text-surface-500'"
               @click="formRole = 'USER'"
             >
               User
@@ -533,8 +547,8 @@ async function runConfirm() {
             <button
               data-testid="user-role-admin-button"
               type="button"
-              class="px-5 py-2 rounded-md text-sm font-semibold"
-              :class="formRole === 'ADMIN' ? 'bg-white text-surface-900 shadow-sm' : 'text-surface-500'"
+              class="px-5 py-2 rounded-md text-sm font-semibold transition-colors duration-fast ease-out-expo"
+              :class="formRole === 'ADMIN' ? 'bg-surface-0 text-primary-300 shadow-soft-sm' : 'text-surface-500'"
               @click="formRole = 'ADMIN'"
             >
               Admin
@@ -576,6 +590,7 @@ async function runConfirm() {
             data-testid="user-panel-save-button"
             :label="panelMode === 'edit' ? 'Save changes' : 'Create user'"
             :loading="saving"
+            class="active:scale-[0.98] transition-transform duration-fast ease-out-expo"
             @click="savePanel"
           />
         </div>

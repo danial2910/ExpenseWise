@@ -6,6 +6,11 @@ import Chart from 'primevue/chart'
 import AppLayout from '../layouts/AppLayout.vue'
 import FormError from '../components/common/FormError.vue'
 import MoneyDisplay from '../components/common/MoneyDisplay.vue'
+import EmptyState from '../components/common/EmptyState.vue'
+import ErrorState from '../components/common/ErrorState.vue'
+import LoadingState from '../components/common/LoadingState.vue'
+import ChartTooltip from '../components/common/ChartTooltip.vue'
+import { useExternalTooltip } from '../lib/chartTooltip'
 import { fetchReport, downloadReport, openReportPdfForPrint } from '../api/reports'
 import type { ApiErrorResponse } from '../types/auth'
 import type { ReportFormat, ReportResponse, ReportType } from '../types/report'
@@ -15,33 +20,34 @@ type ExportAction = 'pdf' | 'excel' | 'print' | null
 
 const MONTHS = 6
 
-// Design-token-only category palette — indigo (primary) fading to slate
-// (surface), matching "ExpenseWise Reports"'s own bar-color progression.
-// Chart.js draws to a <canvas> and needs literal color strings, so these
-// hidden elements exist purely so the *resolved* value of each Tailwind
-// utility class can be read at mount, same technique as Dashboard/Admin
-// Dashboard — the class name is still the single source of truth.
+// Design-token-only category palette — same cyan → indigo family as the
+// Dashboard donut (Phase 3), not the old mixed primary/surface ramp. Chart.js
+// draws to a <canvas> and needs literal color strings, so these hidden
+// elements exist purely so the *resolved* value of each Tailwind utility
+// class can be read at mount — the class name is still the single source of
+// truth, never a hardcoded hex.
 const PALETTE_CLASSES = [
-  'text-primary-600',
-  'text-primary-500',
-  'text-surface-700',
-  'text-surface-500',
-  'text-primary-400',
-  'text-surface-400',
-  'text-primary-200',
   'text-primary-300',
-  'text-surface-300',
+  'text-primary-500',
+  'text-primary-700',
+  'text-aurora-teal',
+  'text-aurora-blue',
+  'text-aurora-indigo',
+  'text-primary-400',
+  'text-primary-600',
 ]
 const paletteRefs = ref<(Element | null)[]>([])
 const paletteColors = ref<string[]>([])
-const greenRef = ref<HTMLElement | null>(null)
-const redRef = ref<HTMLElement | null>(null)
-const greenColor = ref('')
-const redColor = ref('')
+const successRef = ref<HTMLElement | null>(null)
+const dangerRef = ref<HTMLElement | null>(null)
+const successColor = ref('')
+const dangerColor = ref('')
 
 function setPaletteRef(el: Element | null, index: number) {
   paletteRefs.value[index] = el
 }
+
+const { tooltipState: trendTooltip, externalTooltipHandler: trendTooltipHandler } = useExternalTooltip()
 
 const now = new Date()
 const reportType = ref<ReportType>('MONTHLY')
@@ -52,11 +58,13 @@ const loadState = ref<LoadState>('loading')
 const report = ref<ReportResponse | null>(null)
 const exporting = ref<ExportAction>(null)
 const exportError = ref('')
+const exportSuccess = ref<ExportAction>(null)
+let exportSuccessTimeout: ReturnType<typeof setTimeout> | undefined
 
 onMounted(() => {
-  paletteColors.value = paletteRefs.value.map((el) => (el ? getComputedStyle(el).color : '#94A3B8'))
-  if (greenRef.value) greenColor.value = getComputedStyle(greenRef.value).color
-  if (redRef.value) redColor.value = getComputedStyle(redRef.value).color
+  paletteColors.value = paletteRefs.value.map((el) => (el ? getComputedStyle(el).color : '#5B6472'))
+  if (successRef.value) successColor.value = getComputedStyle(successRef.value).color
+  if (dangerRef.value) dangerColor.value = getComputedStyle(dangerRef.value).color
   loadReport()
 })
 
@@ -133,7 +141,7 @@ function toNumber(value: number | string): number {
 }
 
 const netBalance = computed(() => (report.value ? toNumber(report.value.netBalance) : 0))
-const netColorClass = computed(() => (netBalance.value >= 0 ? 'text-green-700' : 'text-red-600'))
+const netColorClass = computed(() => (netBalance.value >= 0 ? 'text-success' : 'text-danger'))
 const netPrefix = computed(() => (netBalance.value >= 0 ? '+' : '−'))
 
 const categoryLegend = computed(() => {
@@ -160,14 +168,35 @@ const trendChartData = computed(() => {
   return {
     labels: points.map((p) => monthLabel(p.month)),
     datasets: [
-      { label: 'Income', data: points.map((p) => toNumber(p.income)), backgroundColor: greenColor.value, borderRadius: 3 },
-      { label: 'Expense', data: points.map((p) => toNumber(p.expense)), backgroundColor: redColor.value, borderRadius: 3 },
+      {
+        label: 'Income',
+        data: points.map((p) => toNumber(p.income)),
+        borderColor: successColor.value,
+        backgroundColor: successColor.value.replace('rgb', 'rgba').replace(')', ', 0.12)'),
+        fill: true,
+        tension: 0.35,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        borderWidth: 2,
+      },
+      {
+        label: 'Expense',
+        data: points.map((p) => toNumber(p.expense)),
+        borderColor: dangerColor.value,
+        backgroundColor: dangerColor.value.replace('rgb', 'rgba').replace(')', ', 0.12)'),
+        fill: true,
+        tension: 0.35,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        borderWidth: 2,
+      },
     ],
   }
 })
 
 const trendChartOptions = {
-  plugins: { legend: { display: false } },
+  plugins: { legend: { display: false }, tooltip: { enabled: false, external: trendTooltipHandler } },
+  interaction: { mode: 'index', intersect: false },
   scales: { x: { grid: { display: false } }, y: { display: false } },
   responsive: true,
   maintainAspectRatio: false,
@@ -182,11 +211,20 @@ function reportParams(format?: ReportFormat) {
   }
 }
 
+function flashExportSuccess(action: ExportAction) {
+  exportSuccess.value = action
+  clearTimeout(exportSuccessTimeout)
+  exportSuccessTimeout = setTimeout(() => {
+    exportSuccess.value = null
+  }, 2500)
+}
+
 async function onExport(format: ReportFormat) {
   exportError.value = ''
   exporting.value = format
   try {
     await downloadReport(reportParams(format) as Parameters<typeof downloadReport>[0])
+    flashExportSuccess(format)
   } catch (error) {
     exportError.value = extractErrorMessage(error, 'Could not generate the report. Please try again.')
   } finally {
@@ -199,6 +237,7 @@ async function onPrint() {
   exporting.value = 'print'
   try {
     await openReportPdfForPrint(reportParams())
+    flashExportSuccess('print')
   } catch (error) {
     exportError.value = extractErrorMessage(error, 'Could not open the report for printing.')
   } finally {
@@ -224,39 +263,41 @@ function extractErrorMessage(error: unknown, fallback: string): string {
       class="hidden"
       aria-hidden="true"
     ></span>
-    <span ref="greenRef" class="text-green-700 hidden" aria-hidden="true"></span>
-    <span ref="redRef" class="text-red-600 hidden" aria-hidden="true"></span>
+    <span ref="successRef" class="text-success hidden" aria-hidden="true"></span>
+    <span ref="dangerRef" class="text-danger hidden" aria-hidden="true"></span>
+
+    <ChartTooltip :state="trendTooltip" />
 
     <div class="flex flex-col gap-6">
       <div>
-        <h1 class="text-2xl font-bold text-surface-900">Reports</h1>
+        <h1 class="font-display text-2xl font-semibold tracking-tight text-surface-900">Reports</h1>
         <p class="text-sm text-surface-500 mt-1">Generate and export spending reports</p>
       </div>
 
       <div class="flex items-center gap-3 flex-wrap">
-        <div data-testid="report-type-toggle" class="flex items-center gap-0.5 bg-surface-100 rounded-lg p-0.5">
+        <div data-testid="report-type-toggle" class="flex items-center gap-0.5 bg-surface-50 rounded-lg p-0.5">
           <button
             data-testid="report-type-monthly"
-            class="px-4 py-2 rounded-md text-sm font-semibold"
-            :class="reportType === 'MONTHLY' ? 'bg-white text-surface-900 shadow-sm' : 'text-surface-500'"
+            class="px-4 py-2 rounded-md text-sm font-semibold transition-colors duration-fast ease-out-expo"
+            :class="reportType === 'MONTHLY' ? 'bg-surface-0 text-surface-900 shadow-soft-sm' : 'text-surface-500'"
             @click="setReportType('MONTHLY')"
           >
             Monthly
           </button>
           <button
             data-testid="report-type-yearly"
-            class="px-4 py-2 rounded-md text-sm font-semibold"
-            :class="reportType === 'YEARLY' ? 'bg-white text-surface-900 shadow-sm' : 'text-surface-500'"
+            class="px-4 py-2 rounded-md text-sm font-semibold transition-colors duration-fast ease-out-expo"
+            :class="reportType === 'YEARLY' ? 'bg-surface-0 text-surface-900 shadow-soft-sm' : 'text-surface-500'"
             @click="setReportType('YEARLY')"
           >
             Yearly
           </button>
         </div>
 
-        <div class="flex items-center gap-1.5 bg-white border border-surface-200 rounded-lg px-2 py-1.5">
+        <div class="flex items-center gap-1.5 bg-surface-0 border border-surface-200 rounded-lg px-2 py-1.5">
           <button
             data-testid="report-prev-period-button"
-            class="w-7 h-7 rounded-md flex items-center justify-center text-surface-600 hover:bg-surface-100"
+            class="w-11 h-11 lg:w-7 lg:h-7 rounded-md flex items-center justify-center text-surface-600 hover:bg-surface-50 transition-colors duration-fast ease-out-expo"
             @click="prevPeriod"
           >
             <i class="pi pi-chevron-left text-xs" />
@@ -266,8 +307,8 @@ function extractErrorMessage(error: unknown, fallback: string): string {
           </span>
           <button
             data-testid="report-next-period-button"
-            class="w-7 h-7 rounded-md flex items-center justify-center"
-            :class="isCurrentPeriod ? 'text-surface-300 cursor-not-allowed' : 'text-surface-600 hover:bg-surface-100'"
+            class="w-11 h-11 lg:w-7 lg:h-7 rounded-md flex items-center justify-center transition-colors duration-fast ease-out-expo"
+            :class="isCurrentPeriod ? 'text-surface-400 cursor-not-allowed' : 'text-surface-600 hover:bg-surface-50'"
             :disabled="isCurrentPeriod"
             @click="nextPeriod"
           >
@@ -280,29 +321,35 @@ function extractErrorMessage(error: unknown, fallback: string): string {
         <div v-if="loadState === 'ready' && !isEmpty" class="flex items-center gap-2 flex-wrap">
           <Button
             data-testid="report-export-pdf-button"
-            label="PDF"
-            icon="pi pi-file-pdf"
+            :label="exportSuccess === 'pdf' ? 'Downloaded' : 'PDF'"
+            :icon="exportSuccess === 'pdf' ? 'pi pi-check' : 'pi pi-file-pdf'"
             severity="secondary"
             outlined
             :loading="exporting === 'pdf'"
+            :disabled="exporting !== null && exporting !== 'pdf'"
+            class="transition-transform duration-fast ease-out-expo active:scale-[0.97]"
             @click="onExport('pdf')"
           />
           <Button
             data-testid="report-export-excel-button"
-            label="Excel"
-            icon="pi pi-file-excel"
+            :label="exportSuccess === 'excel' ? 'Downloaded' : 'Excel'"
+            :icon="exportSuccess === 'excel' ? 'pi pi-check' : 'pi pi-file-excel'"
             severity="secondary"
             outlined
             :loading="exporting === 'excel'"
+            :disabled="exporting !== null && exporting !== 'excel'"
+            class="transition-transform duration-fast ease-out-expo active:scale-[0.97]"
             @click="onExport('excel')"
           />
           <Button
             data-testid="report-print-button"
-            label="Print"
-            icon="pi pi-print"
+            :label="exportSuccess === 'print' ? 'Opened' : 'Print'"
+            :icon="exportSuccess === 'print' ? 'pi pi-check' : 'pi pi-print'"
             severity="secondary"
             outlined
             :loading="exporting === 'print'"
+            :disabled="exporting !== null && exporting !== 'print'"
+            class="transition-transform duration-fast ease-out-expo active:scale-[0.97]"
             @click="onPrint"
           />
         </div>
@@ -310,66 +357,50 @@ function extractErrorMessage(error: unknown, fallback: string): string {
 
       <FormError v-if="exportError" :message="exportError" testid="report-export-error-banner" />
 
-      <!-- error state -->
-      <div
+      <ErrorState
         v-if="loadState === 'error'"
-        data-testid="reports-error-state"
-        class="flex flex-col items-center justify-center gap-4 py-14 px-6 lg:py-20 lg:px-8 bg-white border border-surface-200 rounded-lg"
-      >
-        <div class="w-14 h-14 rounded-lg bg-red-50 flex items-center justify-center">
-          <i class="pi pi-exclamation-triangle text-red-600 text-2xl" />
-        </div>
-        <p class="text-base font-semibold text-surface-900">Couldn't generate this report</p>
-        <p class="text-sm text-surface-500 text-center max-w-sm">
-          Something went wrong while fetching your data. Check your connection and try again.
-        </p>
-        <Button data-testid="reports-retry-button" label="Retry" icon="pi pi-refresh" @click="loadReport" />
-      </div>
+        testid="reports-error-state"
+        retry-testid="reports-retry-button"
+        title="Couldn't generate this report"
+        description="Something went wrong while fetching your data. Check your connection and try again."
+        class="bg-surface-0 border border-surface-200 rounded-xl"
+        @retry="loadReport"
+      />
 
-      <!-- loading state -->
-      <div
+      <LoadingState
         v-else-if="loadState === 'loading'"
-        data-testid="reports-loading-skeleton"
-        class="flex flex-col items-center justify-center gap-4 py-14 px-6 lg:py-20 lg:px-8 bg-white border border-surface-200 rounded-lg"
-      >
-        <div class="w-9 h-9 border-[3px] border-surface-200 border-t-primary-600 rounded-full animate-spin" />
-        <p class="text-base font-semibold text-surface-900">Generating your report</p>
-        <p class="text-xs text-surface-500">This can take up to 10 seconds</p>
-      </div>
+        testid="reports-loading-skeleton"
+        label="Generating your report — this can take up to 10 seconds"
+        class="bg-surface-0 border border-surface-200 rounded-xl"
+      />
 
-      <!-- empty state -->
-      <div
+      <EmptyState
         v-else-if="isEmpty"
-        data-testid="reports-empty-state"
-        class="flex flex-col items-center justify-center gap-4 py-14 px-6 lg:py-20 lg:px-8 bg-white border border-surface-200 rounded-lg"
-      >
-        <div class="w-14 h-14 rounded-lg bg-surface-100 flex items-center justify-center">
-          <i class="pi pi-chart-bar text-surface-400 text-2xl" />
-        </div>
-        <p class="text-base font-semibold text-surface-900">No data for {{ periodLabel }}</p>
-        <p class="text-sm text-surface-500 text-center max-w-sm">
-          There are no transactions recorded for this period yet. Try a different period or add a transaction.
-        </p>
-      </div>
+        testid="reports-empty-state"
+        icon="pi-chart-bar"
+        :title="`No data for ${periodLabel}`"
+        description="There are no transactions recorded for this period yet. Try a different period or add a transaction."
+        class="bg-surface-0 border border-surface-200 rounded-xl"
+      />
 
       <!-- ready state -->
       <div v-else data-testid="reports-content" class="flex flex-col gap-6">
         <div class="grid grid-cols-3 gap-3 sm:gap-4">
-          <div data-testid="summary-income" class="bg-white border border-surface-200 rounded-lg p-4 sm:p-5">
+          <div data-testid="summary-income" class="bg-surface-0 border border-surface-200 rounded-xl p-4 sm:p-5">
             <p class="text-[10px] sm:text-xs font-semibold text-surface-500 uppercase tracking-wide">Total Income</p>
-            <p class="text-base sm:text-lg lg:text-[22px] font-bold text-green-700 mt-1.5 tabular-nums">
+            <p class="text-base sm:text-lg lg:text-[22px] font-bold text-success mt-1.5 tabular-nums font-display">
               + <MoneyDisplay :amount="report!.totalIncome" />
             </p>
           </div>
-          <div data-testid="summary-expense" class="bg-white border border-surface-200 rounded-lg p-4 sm:p-5">
+          <div data-testid="summary-expense" class="bg-surface-0 border border-surface-200 rounded-xl p-4 sm:p-5">
             <p class="text-[10px] sm:text-xs font-semibold text-surface-500 uppercase tracking-wide">Total Expenses</p>
-            <p class="text-base sm:text-lg lg:text-[22px] font-bold text-red-600 mt-1.5 tabular-nums">
+            <p class="text-base sm:text-lg lg:text-[22px] font-bold text-danger mt-1.5 tabular-nums font-display">
               &minus; <MoneyDisplay :amount="report!.totalExpense" />
             </p>
           </div>
-          <div data-testid="summary-net" class="bg-white border border-surface-200 rounded-lg p-4 sm:p-5">
+          <div data-testid="summary-net" class="bg-surface-0 border border-surface-200 rounded-xl p-4 sm:p-5">
             <p class="text-[10px] sm:text-xs font-semibold text-surface-500 uppercase tracking-wide">Net Savings</p>
-            <p class="text-base sm:text-lg lg:text-[22px] font-bold mt-1.5 tabular-nums" :class="netColorClass">
+            <p class="text-base sm:text-lg lg:text-[22px] font-bold mt-1.5 tabular-nums font-display" :class="netColorClass">
               {{ netPrefix }} <MoneyDisplay :amount="Math.abs(netBalance)" />
             </p>
           </div>
@@ -378,7 +409,7 @@ function extractErrorMessage(error: unknown, fallback: string): string {
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div
             data-testid="report-category-breakdown"
-            class="order-2 lg:order-1 lg:col-span-7 bg-white border border-surface-200 rounded-lg overflow-hidden"
+            class="order-2 lg:order-1 lg:col-span-7 bg-surface-0 border border-surface-200 rounded-xl overflow-hidden"
           >
             <div class="px-5 py-4 border-b border-surface-200 text-sm font-semibold text-surface-900">Category Breakdown</div>
             <div class="hidden lg:grid grid-cols-[1fr_120px_100px_140px] px-5 py-2.5 bg-surface-50 border-b border-surface-200">
@@ -422,17 +453,17 @@ function extractErrorMessage(error: unknown, fallback: string): string {
             </div>
           </div>
 
-          <div class="order-1 lg:order-2 lg:col-span-5 bg-white border border-surface-200 rounded-lg p-4 lg:p-6">
+          <div class="order-1 lg:order-2 lg:col-span-5 bg-surface-0 border border-surface-200 rounded-xl p-4 lg:p-6">
             <p class="text-sm font-semibold text-surface-900 mb-5">{{ chartTitle }}</p>
             <div data-testid="report-trend-chart" class="h-40 lg:h-52">
-              <Chart type="bar" :data="trendChartData" :options="trendChartOptions" class="h-full" />
+              <Chart type="line" :data="trendChartData" :options="trendChartOptions" class="h-full" />
             </div>
             <div class="flex items-center gap-4 mt-4">
               <span class="flex items-center gap-1.5 text-xs text-surface-500">
-                <span class="w-2 h-2 rounded-sm bg-green-700" />Income
+                <span class="w-2 h-2 rounded-full bg-success" />Income
               </span>
               <span class="flex items-center gap-1.5 text-xs text-surface-500">
-                <span class="w-2 h-2 rounded-sm bg-red-600" />Expense
+                <span class="w-2 h-2 rounded-full bg-danger" />Expense
               </span>
             </div>
           </div>

@@ -5,6 +5,7 @@ import Button from 'primevue/button'
 import AppLayout from '../layouts/AppLayout.vue'
 import FormError from '../components/common/FormError.vue'
 import PasswordStrengthMeter from '../components/common/PasswordStrengthMeter.vue'
+import ErrorState from '../components/common/ErrorState.vue'
 import { useAuthStore } from '../stores/auth'
 import {
   changePassword,
@@ -259,29 +260,23 @@ onMounted(() => {
   <AppLayout title="Profile">
     <div class="flex flex-col gap-6 max-w-3xl">
       <div>
-        <h1 class="text-2xl font-bold text-surface-900">Profile</h1>
+        <h1 class="font-display text-2xl font-semibold tracking-tight text-surface-900">Profile</h1>
         <p class="text-sm text-surface-500 mt-1">Manage your personal information and account security</p>
       </div>
 
-      <!-- error state -->
-      <div
+      <ErrorState
         v-if="loadState === 'error'"
-        data-testid="profile-error-state"
-        class="flex flex-col items-center justify-center gap-4 py-16 px-8 bg-white border border-surface-200 rounded-lg"
-      >
-        <div class="w-14 h-14 rounded-lg bg-red-50 flex items-center justify-center">
-          <i class="pi pi-exclamation-triangle text-red-600 text-2xl" />
-        </div>
-        <p class="text-base font-semibold text-surface-900">Couldn't load your profile</p>
-        <p class="text-sm text-surface-500 text-center max-w-sm">
-          Something went wrong. Check your connection and try again.
-        </p>
-        <Button data-testid="profile-retry-button" label="Retry" icon="pi pi-refresh" @click="load" />
-      </div>
+        testid="profile-error-state"
+        retry-testid="profile-retry-button"
+        title="Couldn't load your profile"
+        description="Something went wrong. Check your connection and try again."
+        class="bg-surface-0 border border-surface-200 rounded-xl"
+        @retry="load"
+      />
 
       <!-- loading state -->
       <div v-else-if="loadState === 'loading'" data-testid="profile-loading-skeleton" class="flex flex-col gap-4">
-        <div class="bg-white border border-surface-200 rounded-lg p-6 flex flex-col gap-4">
+        <div class="bg-surface-0 border border-surface-200 rounded-xl p-6 flex flex-col gap-4">
           <div class="w-18 h-18 rounded-lg bg-surface-200 animate-pulse" style="width: 72px; height: 72px" />
           <div class="w-36 h-4 rounded bg-surface-200 animate-pulse" />
           <div class="w-full h-11 rounded-lg bg-surface-200 animate-pulse" />
@@ -294,16 +289,16 @@ onMounted(() => {
         <div class="flex items-center gap-0.5 bg-surface-100 rounded-lg p-0.5 w-fit">
           <button
             data-testid="profile-tab-personal"
-            class="px-5 py-2 rounded-md text-[13px] font-semibold"
-            :class="activeTab === 'personal' ? 'bg-white text-primary-600 shadow-sm' : 'text-surface-500'"
+            class="px-5 py-2 rounded-md text-[13px] font-semibold transition-colors duration-fast ease-out-expo"
+            :class="activeTab === 'personal' ? 'bg-surface-0 text-primary-300 shadow-soft-sm' : 'text-surface-500'"
             @click="activeTab = 'personal'"
           >
             Personal Information
           </button>
           <button
             data-testid="profile-tab-security"
-            class="px-5 py-2 rounded-md text-[13px] font-semibold"
-            :class="activeTab === 'security' ? 'bg-white text-primary-600 shadow-sm' : 'text-surface-500'"
+            class="px-5 py-2 rounded-md text-[13px] font-semibold transition-colors duration-fast ease-out-expo"
+            :class="activeTab === 'security' ? 'bg-surface-0 text-primary-300 shadow-soft-sm' : 'text-surface-500'"
             @click="activeTab = 'security'"
           >
             Security
@@ -311,10 +306,12 @@ onMounted(() => {
         </div>
 
         <!-- PERSONAL INFORMATION -->
-        <div v-if="activeTab === 'personal'" class="bg-white border border-surface-200 rounded-lg p-6">
-          <div v-if="profileSuccess" class="bg-green-50 border border-green-200 text-green-700 text-[13px] rounded-lg px-3 py-2.5 mb-4">
-            Profile updated.
-          </div>
+        <div v-if="activeTab === 'personal'" class="bg-surface-0 border border-surface-200 rounded-xl p-6">
+          <Transition name="field-in">
+            <div v-if="profileSuccess" class="bg-success-bg border border-success/30 text-success text-[13px] rounded-lg px-3 py-2.5 mb-4">
+              Profile updated.
+            </div>
+          </Transition>
           <FormError v-if="profileSaveError" :message="profileSaveError" testid="profile-save-error-banner" />
           <FormError v-if="avatarError" :message="avatarError" testid="avatar-error-banner" />
 
@@ -329,7 +326,7 @@ onMounted(() => {
             <div
               v-else
               data-testid="profile-avatar-placeholder"
-              class="w-16 h-16 rounded-lg bg-primary-100 text-primary-600 text-xl font-semibold flex items-center justify-center shrink-0"
+              class="w-16 h-16 rounded-lg bg-primary-50 text-primary-300 text-xl font-semibold flex items-center justify-center shrink-0"
             >
               <span v-if="initials">{{ initials }}</span>
               <i v-else class="pi pi-user text-surface-400 text-2xl" />
@@ -338,16 +335,17 @@ onMounted(() => {
               <div class="flex items-center gap-2.5">
                 <button
                   data-testid="avatar-upload-button"
-                  class="min-h-9 flex items-center px-3.5 border border-surface-200 rounded-lg text-[13px] font-semibold text-surface-700 disabled:opacity-60"
+                  class="min-h-9 flex items-center px-3.5 border border-surface-200 rounded-lg text-[13px] font-semibold text-surface-700 hover:border-primary-300 hover:text-primary-300 disabled:opacity-60 transition-colors duration-fast ease-out-expo"
                   :disabled="avatarUploading"
                   @click="triggerAvatarPicker"
                 >
+                  <i v-if="avatarUploading" class="pi pi-spin pi-spinner mr-1.5 text-xs" />
                   {{ avatarUploading ? 'Uploading…' : avatarUrl ? 'Change photo' : 'Upload photo' }}
                 </button>
                 <button
                   v-if="avatarUrl"
                   data-testid="avatar-remove-button"
-                  class="min-h-9 flex items-center px-3.5 text-[13px] font-semibold text-red-600 disabled:opacity-60"
+                  class="min-h-9 flex items-center px-3.5 text-[13px] font-semibold text-danger hover:text-danger/80 disabled:opacity-60 transition-colors duration-fast ease-out-expo"
                   :disabled="avatarUploading"
                   @click="onRemoveAvatar"
                 >
@@ -374,10 +372,10 @@ onMounted(() => {
                 v-model="fullName"
                 data-testid="profile-fullname-input"
                 type="text"
-                class="w-full min-h-11 px-3 py-2 rounded-lg text-sm border"
-                :class="fullNameError ? 'border-red-600' : 'border-surface-200'"
+                class="w-full min-h-11 px-3 py-2 rounded-lg text-sm border bg-surface-0"
+                :class="fullNameError ? 'border-danger' : 'border-surface-200'"
               />
-              <p v-if="fullNameError" class="text-xs text-red-600 mt-1.5">{{ fullNameError }}</p>
+              <p v-if="fullNameError" class="text-xs text-danger mt-1.5">{{ fullNameError }}</p>
             </div>
             <div>
               <div class="flex items-center gap-2 mb-1.5">
@@ -407,9 +405,9 @@ onMounted(() => {
                 type="tel"
                 placeholder="+60 12-345 6789"
                 class="w-full min-h-11 px-3 py-2 rounded-lg text-sm border"
-                :class="phoneError ? 'border-red-600' : 'border-surface-200'"
+                :class="phoneError ? 'border-danger' : 'border-surface-200'"
               />
-              <p v-if="phoneError" class="text-xs text-red-600 mt-1.5">{{ phoneError }}</p>
+              <p v-if="phoneError" class="text-xs text-danger mt-1.5">{{ phoneError }}</p>
             </div>
             <div>
               <label for="profile-dob-input" class="block text-xs font-semibold text-surface-600 mb-1.5">
@@ -421,9 +419,9 @@ onMounted(() => {
                 data-testid="profile-dob-input"
                 type="date"
                 class="w-full min-h-11 px-3 py-2 rounded-lg text-sm border"
-                :class="dobError ? 'border-red-600' : 'border-surface-200'"
+                :class="dobError ? 'border-danger' : 'border-surface-200'"
               />
-              <p v-if="dobError" class="text-xs text-red-600 mt-1.5">{{ dobError }}</p>
+              <p v-if="dobError" class="text-xs text-danger mt-1.5">{{ dobError }}</p>
             </div>
           </div>
 
@@ -435,8 +433,8 @@ onMounted(() => {
               id="profile-gender-select"
               v-model="gender"
               data-testid="profile-gender-select"
-              class="w-full min-h-11 px-3 rounded-lg text-sm border bg-white"
-              :class="genderError ? 'border-red-600' : 'border-surface-200'"
+              class="w-full min-h-11 px-3 rounded-lg text-sm border bg-surface-0"
+              :class="genderError ? 'border-danger' : 'border-surface-200'"
             >
               <option value="">Select…</option>
               <option value="FEMALE">Female</option>
@@ -445,7 +443,7 @@ onMounted(() => {
               <option value="SELF_DESCRIBED">Prefer to self-describe</option>
               <option value="NOT_SPECIFIED">Prefer not to say</option>
             </select>
-            <p v-if="genderError" class="text-xs text-red-600 mt-1.5">{{ genderError }}</p>
+            <p v-if="genderError" class="text-xs text-danger mt-1.5">{{ genderError }}</p>
           </div>
 
           <div class="mb-5">
@@ -459,23 +457,31 @@ onMounted(() => {
               rows="3"
               placeholder="Street, city, postcode, state"
               class="w-full px-3 py-2 rounded-lg text-sm border resize-none"
-              :class="addressError ? 'border-red-600' : 'border-surface-200'"
+              :class="addressError ? 'border-danger' : 'border-surface-200'"
             />
-            <p v-if="addressError" class="text-xs text-red-600 mt-1.5">{{ addressError }}</p>
+            <p v-if="addressError" class="text-xs text-danger mt-1.5">{{ addressError }}</p>
           </div>
 
-          <Button data-testid="profile-save-button" label="Save changes" :loading="profileSaving" @click="saveProfile" />
+          <Button
+            data-testid="profile-save-button"
+            label="Save changes"
+            :loading="profileSaving"
+            class="active:scale-[0.98] transition-transform duration-fast ease-out-expo"
+            @click="saveProfile"
+          />
         </div>
 
         <!-- SECURITY -->
         <div v-else class="flex flex-col gap-4">
-          <div class="bg-white border border-surface-200 rounded-lg p-6">
+          <div class="bg-surface-0 border border-surface-200 rounded-xl p-6">
             <p class="text-sm font-semibold text-surface-900 mb-1.5">Change password</p>
             <p class="text-[13px] text-surface-500 mb-5">Changing your password will sign you out of all other sessions.</p>
 
-            <div v-if="passwordSuccess" class="bg-green-50 border border-green-200 text-green-700 text-[13px] rounded-lg px-3 py-2.5 mb-4">
-              Password changed. Other sessions have been signed out.
-            </div>
+            <Transition name="field-in">
+              <div v-if="passwordSuccess" class="bg-success-bg border border-success/30 text-success text-[13px] rounded-lg px-3 py-2.5 mb-4">
+                Password changed. Other sessions have been signed out.
+              </div>
+            </Transition>
             <FormError v-if="passwordError" :message="passwordError" testid="change-password-error-banner" />
 
             <div class="mb-4">
@@ -486,9 +492,9 @@ onMounted(() => {
                 data-testid="change-password-current-input"
                 type="password"
                 class="w-full min-h-11 px-3 py-2 rounded-lg text-sm border"
-                :class="currentPasswordFieldError ? 'border-red-600' : 'border-surface-200'"
+                :class="currentPasswordFieldError ? 'border-danger' : 'border-surface-200'"
               />
-              <p v-if="currentPasswordFieldError" class="text-xs text-red-600 mt-1.5">{{ currentPasswordFieldError }}</p>
+              <p v-if="currentPasswordFieldError" class="text-xs text-danger mt-1.5">{{ currentPasswordFieldError }}</p>
             </div>
 
             <div class="mb-2">
@@ -499,9 +505,9 @@ onMounted(() => {
                 data-testid="change-password-new-input"
                 type="password"
                 class="w-full min-h-11 px-3 py-2 rounded-lg text-sm border"
-                :class="newPasswordFieldError ? 'border-red-600' : 'border-surface-200'"
+                :class="newPasswordFieldError ? 'border-danger' : 'border-surface-200'"
               />
-              <p v-if="newPasswordFieldError" class="text-xs text-red-600 mt-1.5">{{ newPasswordFieldError }}</p>
+              <p v-if="newPasswordFieldError" class="text-xs text-danger mt-1.5">{{ newPasswordFieldError }}</p>
             </div>
             <PasswordStrengthMeter v-if="newPassword" :password="newPassword" />
 
@@ -513,15 +519,21 @@ onMounted(() => {
                 data-testid="change-password-confirm-input"
                 type="password"
                 class="w-full min-h-11 px-3 py-2 rounded-lg text-sm border"
-                :class="confirmPasswordFieldError ? 'border-red-600' : 'border-surface-200'"
+                :class="confirmPasswordFieldError ? 'border-danger' : 'border-surface-200'"
               />
-              <p v-if="confirmPasswordFieldError" class="text-xs text-red-600 mt-1.5">{{ confirmPasswordFieldError }}</p>
+              <p v-if="confirmPasswordFieldError" class="text-xs text-danger mt-1.5">{{ confirmPasswordFieldError }}</p>
             </div>
 
-            <Button data-testid="change-password-submit-button" label="Update password" :loading="passwordSaving" @click="savePassword" />
+            <Button
+              data-testid="change-password-submit-button"
+              label="Update password"
+              :loading="passwordSaving"
+              class="active:scale-[0.98] transition-transform duration-fast ease-out-expo"
+              @click="savePassword"
+            />
           </div>
 
-          <div class="bg-white border border-surface-200 rounded-lg p-6">
+          <div class="bg-surface-0 border border-surface-200 rounded-xl p-6">
             <p class="text-sm font-semibold text-surface-900 mb-4">Login history</p>
             <div v-if="loginHistory.length === 0" data-testid="login-history-empty" class="py-4 text-sm text-surface-400">
               No login activity yet.
@@ -546,7 +558,7 @@ onMounted(() => {
                   <span class="text-[13px] text-surface-500 tabular-nums">{{ entry.ipAddress ?? '—' }}</span>
                   <span
                     class="text-xs font-medium text-right"
-                    :class="entry.status === 'Success' ? 'text-green-700' : 'text-red-600'"
+                    :class="entry.status === 'Success' ? 'text-success' : 'text-danger'"
                   >
                     {{ entry.status }}
                   </span>
@@ -560,7 +572,7 @@ onMounted(() => {
                     <span class="text-[13px] text-surface-700">{{ formatDateTime(entry.occurredAt) }}</span>
                     <span
                       class="text-xs font-medium shrink-0"
-                      :class="entry.status === 'Success' ? 'text-green-700' : 'text-red-600'"
+                      :class="entry.status === 'Success' ? 'text-success' : 'text-danger'"
                     >
                       {{ entry.status }}
                     </span>
@@ -571,7 +583,7 @@ onMounted(() => {
             </template>
           </div>
 
-          <div class="bg-white border border-surface-200 rounded-lg p-6">
+          <div class="bg-surface-0 border border-surface-200 rounded-xl p-6">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div>
                 <p class="text-sm font-semibold text-surface-900">Active sessions</p>
@@ -580,7 +592,7 @@ onMounted(() => {
               <button
                 v-if="!signOutConfirmOpen"
                 data-testid="logout-others-button"
-                class="min-h-11 flex items-center justify-center px-4 border border-red-300 text-red-600 text-[13px] font-semibold rounded-lg"
+                class="min-h-11 flex items-center justify-center px-4 border border-danger/30 text-danger text-[13px] font-semibold rounded-lg hover:bg-danger-bg transition-colors duration-fast ease-out-expo"
                 @click="openSignOutConfirm"
               >
                 Log out of all other sessions
@@ -592,13 +604,13 @@ onMounted(() => {
             <div
               v-if="signOutConfirmOpen"
               data-testid="logout-others-confirm-panel"
-              class="mt-4 p-4 bg-red-50 border border-red-300 rounded-lg flex flex-col gap-3"
+              class="mt-4 p-4 bg-danger-bg border border-danger/30 rounded-lg flex flex-col gap-3"
             >
-              <p class="text-[13px] text-red-900">This will immediately sign out every other device using your account. Continue?</p>
+              <p class="text-[13px] text-surface-800">This will immediately sign out every other device using your account. Continue?</p>
               <div class="flex items-center gap-3">
                 <button
                   data-testid="logout-others-confirm-button"
-                  class="min-h-9 flex-1 md:flex-none flex items-center justify-center px-3.5 bg-red-600 text-white text-[13px] font-semibold rounded-lg disabled:opacity-60"
+                  class="min-h-9 flex-1 md:flex-none flex items-center justify-center px-3.5 bg-danger text-surface-100 text-[13px] font-semibold rounded-lg disabled:opacity-60 active:scale-[0.98] transition-transform duration-fast ease-out-expo"
                   :disabled="signOutSaving"
                   @click="confirmSignOut"
                 >
@@ -616,7 +628,7 @@ onMounted(() => {
             <div
               v-if="signOutSuccess"
               data-testid="logout-others-success-banner"
-              class="mt-4 bg-green-50 border border-green-200 text-green-700 text-[13px] rounded-lg px-3 py-2.5"
+              class="mt-4 bg-success-bg border border-success/30 text-success text-[13px] rounded-lg px-3 py-2.5"
             >
               All other sessions have been signed out.
             </div>

@@ -128,7 +128,13 @@ test.describe('Authentication', () => {
     await page.locator('[data-testid=reset-password-input] input').fill(newPassword)
     await page.locator('[data-testid=reset-confirm-password-input] input').fill(newPassword)
     await page.getByTestId('reset-submit-button').click()
+
+    // Reset success is a confirmation panel (not a silent redirect) — the
+    // user continues to /login explicitly.
+    await expect(page.getByTestId('reset-success-panel')).toBeVisible()
+    await page.getByTestId('reset-success-login-link').click()
     await expect(page).toHaveURL(/\/login$/)
+    await expect(page.getByTestId('login-flash-banner')).toContainText('Password updated')
 
     await page.getByTestId('login-email-input').fill(email)
     await page.locator('[data-testid=login-password-input] input').fill(newPassword)

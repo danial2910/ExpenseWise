@@ -10,6 +10,8 @@ import Popover from 'primevue/popover'
 import AppLayout from '../layouts/AppLayout.vue'
 import FormError from '../components/common/FormError.vue'
 import MoneyDisplay from '../components/common/MoneyDisplay.vue'
+import EmptyState from '../components/common/EmptyState.vue'
+import ErrorState from '../components/common/ErrorState.vue'
 import {
   createRecurringRule,
   deleteRecurringRule,
@@ -75,7 +77,7 @@ function rangeDisplay(rule: RecurringRuleResponse) {
   return formatShort(rule.startDate) + (rule.endDate ? ` – ${formatShort(rule.endDate)}` : ' – ongoing')
 }
 function typeColorClass(type: TransactionType) {
-  return type === 'INCOME' ? 'text-green-700' : 'text-red-600'
+  return type === 'INCOME' ? 'text-success' : 'text-danger'
 }
 function amountSign(type: TransactionType) {
   return type === 'INCOME' ? 1 : -1
@@ -285,7 +287,7 @@ async function confirmDelete() {
     <div class="flex flex-col gap-6">
       <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 class="text-2xl font-bold text-surface-900">Recurring</h1>
+          <h1 class="font-display text-2xl font-semibold tracking-tight text-surface-900">Recurring</h1>
           <p class="text-sm text-surface-500 mt-1">Automate income and expenses that repeat on a schedule</p>
         </div>
         <div class="flex items-center gap-3">
@@ -295,11 +297,17 @@ async function confirmDelete() {
             icon="pi pi-play"
             severity="secondary"
             outlined
-            class="hidden lg:inline-flex"
+            class="hidden lg:inline-flex active:scale-[0.98] transition-transform duration-fast ease-out-expo"
             :loading="generating"
             @click.stop="onGenerateDue"
           />
-          <Button data-testid="add-recurring-button" label="Add recurring" icon="pi pi-plus" class="hidden md:inline-flex" @click.stop="openAdd" />
+          <Button
+            data-testid="add-recurring-button"
+            label="Add recurring"
+            icon="pi pi-plus"
+            class="hidden md:inline-flex active:scale-[0.98] transition-transform duration-fast ease-out-expo"
+            @click.stop="openAdd"
+          />
         </div>
       </div>
 
@@ -307,25 +315,19 @@ async function confirmDelete() {
         {{ generateMessage }}
       </div>
 
-      <!-- error state -->
-      <div
+      <ErrorState
         v-if="loadState === 'error'"
-        data-testid="recurring-error-state"
-        class="flex flex-col items-center justify-center gap-4 py-12 px-5 md:py-16 md:px-8 bg-white border border-surface-200 rounded-lg"
-      >
-        <div class="w-14 h-14 rounded-lg bg-red-50 flex items-center justify-center">
-          <i class="pi pi-exclamation-triangle text-red-600 text-2xl" />
-        </div>
-        <p class="text-base font-semibold text-surface-900">Couldn't load recurring rules</p>
-        <p class="text-sm text-surface-500 text-center max-w-sm">
-          Something went wrong. Check your connection and try again.
-        </p>
-        <Button data-testid="recurring-retry-button" label="Retry" icon="pi pi-refresh" @click="loadRules" />
-      </div>
+        testid="recurring-error-state"
+        retry-testid="recurring-retry-button"
+        title="Couldn't load recurring rules"
+        description="Something went wrong. Check your connection and try again."
+        class="bg-surface-0 border border-surface-200 rounded-xl"
+        @retry="loadRules"
+      />
 
       <!-- loading state -->
       <div v-else-if="loadState === 'loading'" data-testid="recurring-loading-skeleton" class="flex flex-col gap-3">
-        <div class="bg-white border border-surface-200 rounded-lg p-6 flex flex-col gap-3">
+        <div class="bg-surface-0 border border-surface-200 rounded-xl p-6 flex flex-col gap-3">
           <div v-for="n in 6" :key="n" class="w-full h-[52px] rounded-lg bg-surface-200 animate-pulse" />
         </div>
       </div>
@@ -334,31 +336,29 @@ async function confirmDelete() {
       <div v-else class="flex flex-col gap-6">
         <FormError v-if="listErrorMessage" :message="listErrorMessage" testid="recurring-list-error-banner" />
 
-        <!-- empty state -->
-        <div
+        <EmptyState
           v-if="rules.length === 0"
-          data-testid="recurring-empty-state"
-          class="flex flex-col items-center justify-center gap-4 py-12 px-5 md:py-16 md:px-8 bg-white border border-surface-200 rounded-lg"
+          testid="recurring-empty-state"
+          icon="pi-sync"
+          title="No recurring rules yet"
+          description="Set up rent, salary, or subscriptions to auto-generate transactions on schedule."
+          class="bg-surface-0 border border-surface-200 rounded-xl"
         >
-          <div class="w-14 h-14 rounded-lg bg-surface-100 flex items-center justify-center">
-            <i class="pi pi-sync text-surface-400 text-2xl" />
-          </div>
-          <p class="text-base font-semibold text-surface-900">No recurring rules yet</p>
-          <p class="text-sm text-surface-500 text-center max-w-sm">
-            Set up rent, salary, or subscriptions to auto-generate transactions on schedule.
-          </p>
-          <Button
-            data-testid="add-first-recurring-button"
-            label="Add your first recurring rule"
-            icon="pi pi-plus"
-            size="small"
-            @click.stop="openAdd"
-          />
-        </div>
+          <template #action>
+            <Button
+              data-testid="add-first-recurring-button"
+              label="Add your first recurring rule"
+              icon="pi pi-plus"
+              size="small"
+              class="active:scale-[0.98] transition-transform duration-fast ease-out-expo"
+              @click.stop="openAdd"
+            />
+          </template>
+        </EmptyState>
 
         <template v-else>
           <!-- due soon -->
-          <div v-if="upcoming.length > 0" data-testid="recurring-due-soon" class="bg-white border border-surface-200 rounded-lg p-4 sm:px-6 sm:py-5">
+          <div v-if="upcoming.length > 0" data-testid="recurring-due-soon" class="bg-surface-0 border border-surface-200 rounded-xl p-4 sm:px-6 sm:py-5">
             <p class="text-sm font-semibold text-surface-900 mb-3.5">Due soon</p>
             <div class="flex gap-4 flex-wrap">
               <div
@@ -368,7 +368,7 @@ async function confirmDelete() {
               >
                 <div
                   class="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                  :class="rule.type === 'INCOME' ? 'bg-green-50 text-green-700' : 'bg-primary-50 text-primary-600'"
+                  :class="rule.type === 'INCOME' ? 'bg-success-bg text-success' : 'bg-primary-50 text-primary-300'"
                 >
                   <i :class="['pi', categoryIconClass(rule.categoryIcon)]" />
                 </div>
@@ -384,7 +384,7 @@ async function confirmDelete() {
           </div>
 
           <!-- table -->
-          <div data-testid="recurring-table" class="bg-white border border-surface-200 rounded-lg overflow-hidden">
+          <div data-testid="recurring-table" class="bg-surface-0 border border-surface-200 rounded-xl overflow-hidden">
             <div
               class="hidden md:grid grid-cols-[1fr_70px_90px_70px_80px_80px_70px_40px] lg:grid-cols-[1fr_100px_130px_100px_110px_110px_90px_60px] gap-2 lg:gap-3 px-3 lg:px-5 py-3 border-b border-surface-200 bg-surface-50"
             >
@@ -421,16 +421,19 @@ async function confirmDelete() {
                 <span class="text-sm text-surface-500">{{ frequencyLabel(rule.frequency) }}</span>
                 <span class="text-sm text-surface-700">{{ formatShort(rule.nextDueDate) }}</span>
                 <span class="text-xs text-surface-500">{{ rangeDisplay(rule) }}</span>
-                <span class="flex items-center gap-1.5">
-                  <span class="w-1.5 h-1.5 rounded-full" :class="rule.isActive ? 'bg-green-700' : 'bg-surface-300'" />
-                  <span class="text-xs" :class="rule.isActive ? 'text-green-700' : 'text-surface-400'">
+                <span>
+                  <span
+                    class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                    :class="rule.isActive ? 'bg-success-bg text-success' : 'bg-surface-100 text-surface-500'"
+                  >
+                    <span class="w-1.5 h-1.5 rounded-full" :class="rule.isActive ? 'bg-success' : 'bg-surface-400'" />
                     {{ rule.isActive ? 'Active' : 'Paused' }}
                   </span>
                 </span>
                 <span class="flex justify-end">
                   <button
                     :data-testid="`recurring-menu-button-${rule.id}`"
-                    class="w-7 h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-surface-100"
+                    class="w-7 h-7 rounded-md flex items-center justify-center text-surface-500 hover:bg-surface-50 hover:text-surface-800 transition-colors duration-fast ease-out-expo"
                     @click="toggleMenu($event, rule)"
                   >
                     <i class="pi pi-ellipsis-v text-xs" />
@@ -452,11 +455,12 @@ async function confirmDelete() {
                     {{ rule.categoryName }}
                   </span>
                   <span class="text-xs text-surface-500">{{ frequencyLabel(rule.frequency) }}</span>
-                  <span class="flex items-center gap-1.5">
-                    <span class="w-1.5 h-1.5 rounded-full" :class="rule.isActive ? 'bg-green-700' : 'bg-surface-300'" />
-                    <span class="text-xs" :class="rule.isActive ? 'text-green-700' : 'text-surface-400'">
-                      {{ rule.isActive ? 'Active' : 'Paused' }}
-                    </span>
+                  <span
+                    class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                    :class="rule.isActive ? 'bg-success-bg text-success' : 'bg-surface-100 text-surface-500'"
+                  >
+                    <span class="w-1.5 h-1.5 rounded-full" :class="rule.isActive ? 'bg-success' : 'bg-surface-400'" />
+                    {{ rule.isActive ? 'Active' : 'Paused' }}
                   </span>
                 </div>
                 <p class="text-xs text-surface-400">Next due {{ formatShort(rule.nextDueDate) }} · {{ rangeDisplay(rule) }}</p>
@@ -477,7 +481,7 @@ async function confirmDelete() {
                   </button>
                   <button
                     :data-testid="`recurring-delete-button-mobile-${rule.id}`"
-                    class="flex-1 min-h-11 flex items-center justify-center text-xs font-semibold text-red-600"
+                    class="flex-1 min-h-11 flex items-center justify-center text-xs font-semibold text-danger"
                     @click="openConfirm(rule)"
                   >
                     Delete
@@ -497,21 +501,21 @@ async function confirmDelete() {
       <div v-if="menuTarget" class="w-36 -m-3 py-1 overflow-hidden rounded-lg">
         <button
           :data-testid="`recurring-edit-button-${menuTarget.id}`"
-          class="w-full text-left px-3.5 py-2.5 text-sm text-surface-700 hover:bg-surface-50"
+          class="w-full text-left px-3.5 py-2.5 text-sm text-surface-700 hover:bg-surface-50 transition-colors duration-fast ease-out-expo"
           @click="openEdit(menuTarget)"
         >
           Edit
         </button>
         <button
           :data-testid="`recurring-pause-button-${menuTarget.id}`"
-          class="w-full text-left px-3.5 py-2.5 text-sm text-surface-700 hover:bg-surface-50"
+          class="w-full text-left px-3.5 py-2.5 text-sm text-surface-700 hover:bg-surface-50 transition-colors duration-fast ease-out-expo"
           @click="onTogglePause(menuTarget)"
         >
           {{ menuTarget.isActive ? 'Pause' : 'Resume' }}
         </button>
         <button
           :data-testid="`recurring-delete-button-${menuTarget.id}`"
-          class="w-full text-left px-3.5 py-2.5 text-sm text-red-600 hover:bg-red-50 border-t border-surface-100"
+          class="w-full text-left px-3.5 py-2.5 text-sm text-danger hover:bg-danger-bg border-t border-surface-100 transition-colors duration-fast ease-out-expo"
           @click="openConfirm(menuTarget)"
         >
           Delete
@@ -541,7 +545,7 @@ async function confirmDelete() {
 
         <div>
           <label for="recurring-amount-input" class="block text-xs font-semibold text-surface-600 mb-1.5">Amount</label>
-          <div class="flex items-baseline gap-2 px-4 py-3 border rounded-lg bg-surface-50" :class="amountError ? 'border-red-600' : 'border-surface-200'">
+          <div class="flex items-baseline gap-2 px-4 py-3 border rounded-lg bg-surface-50 focus-within:ring-2 focus-within:ring-primary-500 focus-within:ring-offset-2 focus-within:ring-offset-surface-100" :class="amountError ? 'border-danger' : 'border-surface-200'">
             <span class="text-sm font-semibold text-surface-500">RM</span>
             <input
               id="recurring-amount-input"
@@ -553,7 +557,7 @@ async function confirmDelete() {
               class="border-none outline-none bg-transparent text-2xl font-bold text-surface-900 w-full tabular-nums"
             />
           </div>
-          <p v-if="amountError" class="text-xs text-red-600 mt-1.5">{{ amountError }}</p>
+          <p v-if="amountError" class="text-xs text-danger mt-1.5">{{ amountError }}</p>
         </div>
 
         <div class="grid grid-cols-2 gap-4">
@@ -564,10 +568,10 @@ async function confirmDelete() {
               v-model="editStartDate"
               data-testid="recurring-start-date-input"
               type="date"
-              class="w-full border rounded-lg px-3 py-2 text-sm text-surface-900"
-              :class="startDateError ? 'border-red-600' : 'border-surface-200'"
+              class="w-full border rounded-lg px-3 py-2 text-sm text-surface-900 bg-surface-0"
+              :class="startDateError ? 'border-danger' : 'border-surface-200'"
             />
-            <p v-if="startDateError" class="text-xs text-red-600 mt-1.5">{{ startDateError }}</p>
+            <p v-if="startDateError" class="text-xs text-danger mt-1.5">{{ startDateError }}</p>
           </div>
           <div>
             <label for="recurring-category-select" class="block text-xs font-semibold text-surface-600 mb-1.5">Category</label>
@@ -582,7 +586,7 @@ async function confirmDelete() {
               class="w-full"
               :invalid="!!categoryError"
             />
-            <p v-if="categoryError" class="text-xs text-red-600 mt-1.5">{{ categoryError }}</p>
+            <p v-if="categoryError" class="text-xs text-danger mt-1.5">{{ categoryError }}</p>
           </div>
         </div>
 
@@ -618,16 +622,22 @@ async function confirmDelete() {
             v-model="editEndDate"
             data-testid="recurring-end-date-input"
             type="date"
-            class="w-full border rounded-lg px-3 py-2 text-sm text-surface-900"
-            :class="endDateError ? 'border-red-600' : 'border-surface-200'"
+            class="w-full border rounded-lg px-3 py-2 text-sm text-surface-900 bg-surface-0"
+            :class="endDateError ? 'border-danger' : 'border-surface-200'"
           />
-          <p v-if="endDateError" class="text-xs text-red-600 mt-1.5">{{ endDateError }}</p>
+          <p v-if="endDateError" class="text-xs text-danger mt-1.5">{{ endDateError }}</p>
         </div>
       </div>
 
       <template #footer>
         <Button data-testid="recurring-cancel-button" label="Cancel" severity="secondary" text @click="closeEditor" />
-        <Button data-testid="recurring-save-button" label="Save" :loading="saving" @click="saveEditor" />
+        <Button
+          data-testid="recurring-save-button"
+          label="Save"
+          :loading="saving"
+          class="active:scale-[0.98] transition-transform duration-fast ease-out-expo"
+          @click="saveEditor"
+        />
       </template>
     </Dialog>
 
@@ -641,7 +651,7 @@ async function confirmDelete() {
     >
       <div class="flex flex-col gap-4 pt-2">
         <div class="flex items-center gap-2.5">
-          <i class="pi pi-exclamation-triangle text-red-600" />
+          <i class="pi pi-exclamation-triangle text-danger" />
           <span class="text-base font-semibold text-surface-900">Delete this rule?</span>
         </div>
         <p class="text-sm text-surface-500">

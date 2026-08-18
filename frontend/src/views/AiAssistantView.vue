@@ -50,9 +50,9 @@ function formatDate(isoDate: string) {
 }
 
 function severityColorClass(severity: InsightSeverity) {
-  if (severity === 'CRITICAL') return 'text-red-600'
-  if (severity === 'WARNING') return 'text-amber-600'
-  return 'text-green-700'
+  if (severity === 'CRITICAL') return 'text-danger'
+  if (severity === 'WARNING') return 'text-warning'
+  return 'text-success'
 }
 
 async function scrollToBottom() {
@@ -176,7 +176,7 @@ onMounted(async () => {
   <AppLayout title="AI Assistant">
     <div class="flex gap-4 lg:gap-6 h-[calc(100vh-200px)] md:h-[calc(100vh-176px)] lg:h-[calc(100vh-160px)]">
       <!-- conversation rail — persistent sidebar from lg up, a drawer below lg -->
-      <div class="hidden lg:flex w-64 shrink-0 bg-white border border-surface-200 rounded-lg flex-col overflow-hidden">
+      <div class="hidden lg:flex w-64 shrink-0 bg-surface-0 border border-surface-200 rounded-xl flex-col overflow-hidden">
         <div class="p-4 border-b border-surface-100">
           <Button
             data-testid="ai-new-chat-button"
@@ -184,7 +184,7 @@ onMounted(async () => {
             icon="pi pi-plus"
             severity="secondary"
             outlined
-            class="w-full"
+            class="w-full active:scale-[0.98] transition-transform duration-fast ease-out-expo"
             @click="startNewChat"
           />
         </div>
@@ -196,7 +196,7 @@ onMounted(async () => {
             v-for="conv in conversations"
             :key="conv.id"
             :data-testid="`ai-conversation-item-${conv.id}`"
-            class="group flex items-center gap-1 px-3 py-2.5 rounded-lg mb-1 cursor-pointer"
+            class="group flex items-center gap-1 px-3 py-2.5 rounded-lg mb-1 cursor-pointer transition-colors duration-fast ease-out-expo"
             :class="conv.id === activeConversationId ? 'bg-primary-50' : 'hover:bg-surface-50'"
             @click="openConversation(conv.id)"
           >
@@ -206,7 +206,7 @@ onMounted(async () => {
             </div>
             <button
               :data-testid="`ai-delete-conversation-${conv.id}`"
-              class="w-6 h-6 rounded-md flex items-center justify-center text-surface-400 opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-600 shrink-0"
+              class="w-6 h-6 rounded-md flex items-center justify-center text-surface-400 opacity-0 group-hover:opacity-100 hover:bg-danger-bg hover:text-danger shrink-0 transition-colors duration-fast ease-out-expo"
               @click.stop="onDeleteConversation(conv.id)"
             >
               <i class="pi pi-trash text-xs" />
@@ -216,7 +216,7 @@ onMounted(async () => {
       </div>
 
       <!-- chat -->
-      <div class="flex-1 bg-white border border-surface-200 rounded-lg flex flex-col min-w-0">
+      <div class="flex-1 bg-surface-0 border border-surface-200 rounded-xl flex flex-col min-w-0">
         <div class="h-14 lg:h-16 shrink-0 flex items-center justify-between px-4 lg:px-6 border-b border-surface-200">
           <button
             data-testid="ai-history-toggle-button"
@@ -236,8 +236,8 @@ onMounted(async () => {
           <button
             data-testid="ai-tab-chat"
             type="button"
-            class="flex-1 min-h-11 flex items-center justify-center text-sm font-semibold border-b-2"
-            :class="mobileTab === 'chat' ? 'text-primary-600 border-primary-600' : 'text-surface-500 border-transparent'"
+            class="flex-1 min-h-11 flex items-center justify-center text-sm font-semibold border-b-2 transition-colors duration-fast ease-out-expo"
+            :class="mobileTab === 'chat' ? 'text-primary-300 border-primary-500' : 'text-surface-500 border-transparent'"
             @click="mobileTab = 'chat'"
           >
             Chat
@@ -245,20 +245,22 @@ onMounted(async () => {
           <button
             data-testid="ai-tab-insights"
             type="button"
-            class="flex-1 min-h-11 flex items-center justify-center text-sm font-semibold border-b-2"
-            :class="mobileTab === 'insights' ? 'text-primary-600 border-primary-600' : 'text-surface-500 border-transparent'"
+            class="flex-1 min-h-11 flex items-center justify-center text-sm font-semibold border-b-2 transition-colors duration-fast ease-out-expo"
+            :class="mobileTab === 'insights' ? 'text-primary-300 border-primary-500' : 'text-surface-500 border-transparent'"
             @click="mobileTab = 'insights'"
           >
             Insights
           </button>
         </div>
 
-        <div v-if="isError" data-testid="ai-error-banner" class="mx-4 lg:mx-6 mt-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2.5">
-          <i class="pi pi-exclamation-triangle text-amber-600" />
-          <span class="text-sm text-amber-800">
-            AI assistant is temporarily unavailable. Your data and the rest of the app are unaffected — try again shortly.
-          </span>
-        </div>
+        <Transition name="field-in">
+          <div v-if="isError" data-testid="ai-error-banner" class="mx-4 lg:mx-6 mt-4 px-4 py-3 bg-warning-bg border border-warning/30 rounded-lg flex items-center gap-2.5">
+            <i class="pi pi-exclamation-triangle text-warning" />
+            <span class="text-sm text-surface-800">
+              AI assistant is temporarily unavailable. Your data and the rest of the app are unaffected — try again shortly.
+            </span>
+          </div>
+        </Transition>
 
         <!-- tablet-only horizontal insight strip (desktop uses the side panel, mobile uses the Insights tab) -->
         <div
@@ -290,7 +292,10 @@ onMounted(async () => {
             :class="mobileTab === 'chat' ? 'flex' : 'hidden md:flex'"
           >
             <div v-if="messages.length === 0" data-testid="ai-empty-state" class="flex-1 flex flex-col items-center justify-center gap-4 text-center">
-              <p class="text-base font-semibold text-surface-900">Ask about your spending</p>
+              <div class="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center">
+                <i class="pi pi-sparkles text-primary-300" />
+              </div>
+              <p class="font-display text-base font-semibold text-surface-900">Ask about your spending</p>
               <p class="text-sm text-surface-500 max-w-sm">
                 The assistant answers using your transaction and budget data. Try one of these:
               </p>
@@ -299,7 +304,7 @@ onMounted(async () => {
                   v-for="(prompt, i) in SUGGESTED_PROMPTS"
                   :key="i"
                   :data-testid="`ai-suggested-prompt-${i}`"
-                  class="text-left px-3.5 py-3 border border-surface-200 rounded-lg text-sm text-surface-700 hover:bg-surface-50"
+                  class="text-left px-3.5 py-3 border border-surface-200 rounded-lg text-sm text-surface-700 hover:bg-surface-50 hover:border-surface-300 transition-colors duration-fast ease-out-expo"
                   @click="sendMessage(prompt)"
                 >
                   {{ prompt }}
@@ -308,30 +313,32 @@ onMounted(async () => {
             </div>
 
             <template v-else>
-              <div
-                v-for="message in messages"
-                :key="message.id"
-                class="flex"
-                :class="message.role === 'user' ? 'justify-end' : 'justify-start'"
-              >
-                <div class="max-w-[85%] lg:max-w-[75%] flex flex-col gap-1">
-                  <span v-if="message.role === 'assistant'" class="text-[11px] font-semibold text-surface-400 uppercase tracking-wide">
-                    Assistant
-                  </span>
-                  <div
-                    :data-testid="`ai-message-${message.id}`"
-                    class="px-4 py-3 rounded-lg text-sm leading-relaxed whitespace-pre-wrap"
-                    :class="message.role === 'user' ? 'bg-primary-50 text-surface-900' : 'bg-surface-100 text-surface-900'"
-                  >
-                    {{ message.content }}
+              <TransitionGroup name="field-in" tag="div" class="contents">
+                <div
+                  v-for="message in messages"
+                  :key="message.id"
+                  class="flex"
+                  :class="message.role === 'user' ? 'justify-end' : 'justify-start'"
+                >
+                  <div class="max-w-[85%] lg:max-w-[75%] flex flex-col gap-1">
+                    <span v-if="message.role === 'assistant'" class="text-[11px] font-semibold text-surface-400 uppercase tracking-wide">
+                      Assistant
+                    </span>
+                    <div
+                      :data-testid="`ai-message-${message.id}`"
+                      class="px-4 py-3 rounded-lg text-sm leading-relaxed whitespace-pre-wrap"
+                      :class="message.role === 'user' ? 'bg-primary-50 text-surface-900' : 'bg-surface-50 text-surface-900'"
+                    >
+                      {{ message.content }}
+                    </div>
                   </div>
                 </div>
-              </div>
+              </TransitionGroup>
 
               <div v-if="sending" data-testid="ai-loading-indicator" class="flex justify-start">
                 <div class="max-w-[85%] lg:max-w-[75%] flex flex-col gap-1.5">
                   <span class="text-[11px] font-semibold text-surface-400 uppercase tracking-wide">Assistant</span>
-                  <div class="px-4 py-3 rounded-lg bg-surface-100 flex items-center gap-2.5">
+                  <div class="px-4 py-3 rounded-lg bg-surface-50 flex items-center gap-2.5">
                     <span class="flex gap-1">
                       <span class="w-1.5 h-1.5 rounded-full bg-surface-500 animate-bounce" style="animation-delay: 0ms" />
                       <span class="w-1.5 h-1.5 rounded-full bg-surface-500 animate-bounce" style="animation-delay: 150ms" />
@@ -354,17 +361,17 @@ onMounted(async () => {
                 data-testid="ai-message-input"
                 type="text"
                 placeholder="Ask about your spending, budgets, or savings…"
-                class="flex-1 min-h-[44px] px-3.5 border border-surface-200 rounded-lg text-sm text-surface-900"
+                class="flex-1 min-h-[44px] px-3.5 border border-surface-200 rounded-lg text-sm text-surface-900 bg-surface-0"
                 :disabled="sending"
                 @keydown.enter="onSubmit"
               />
               <button
                 data-testid="ai-send-button"
-                class="w-11 h-11 rounded-lg bg-primary-600 flex items-center justify-center shrink-0 disabled:opacity-50"
+                class="w-11 h-11 rounded-lg bg-primary-500 flex items-center justify-center shrink-0 disabled:opacity-50 active:scale-[0.95] transition-transform duration-fast ease-out-expo"
                 :disabled="sending || !inputText.trim()"
                 @click="onSubmit"
               >
-                <i class="pi pi-send text-white text-sm" />
+                <i class="pi pi-send text-surface-100 text-sm" />
               </button>
             </div>
             <p data-testid="ai-disclaimer" class="text-xs text-surface-400">
@@ -399,7 +406,7 @@ onMounted(async () => {
       </div>
 
       <!-- insights panel — desktop only; tablet uses the horizontal strip above, mobile uses the Insights tab -->
-      <div class="hidden lg:flex w-80 shrink-0 bg-white border border-surface-200 rounded-lg overflow-y-auto p-5 flex-col gap-4">
+      <div class="hidden lg:flex w-80 shrink-0 bg-surface-0 border border-surface-200 rounded-xl overflow-y-auto p-5 flex-col gap-4">
         <span class="text-sm font-semibold text-surface-900">Spending Analysis</span>
         <div v-if="insightsLoadState === 'loading'" data-testid="ai-insights-loading" class="flex flex-col gap-3">
           <div v-for="n in 3" :key="n" class="h-20 rounded-lg bg-surface-100 animate-pulse" />
@@ -422,7 +429,7 @@ onMounted(async () => {
     </div>
 
     <!-- conversation history drawer — tablet/mobile only, mirrors the desktop rail -->
-    <Drawer v-model:visible="historyDrawerOpen" position="left" data-testid="ai-history-drawer" class="lg:hidden !w-72">
+    <Drawer v-model:visible="historyDrawerOpen" position="left" data-testid="ai-history-drawer" class="lg:hidden" :style="{ width: '18rem' }">
       <template #header>
         <span class="text-sm font-semibold text-surface-900">Conversations</span>
       </template>
@@ -453,7 +460,7 @@ onMounted(async () => {
           </div>
           <button
             :data-testid="`mobile-ai-delete-conversation-${conv.id}`"
-            class="w-8 h-8 rounded-md flex items-center justify-center text-surface-400 hover:bg-red-50 hover:text-red-600 shrink-0"
+            class="w-8 h-8 rounded-md flex items-center justify-center text-surface-400 hover:bg-danger-bg hover:text-danger shrink-0 transition-colors duration-fast ease-out-expo"
             @click.stop="onDeleteConversation(conv.id)"
           >
             <i class="pi pi-trash text-xs" />
