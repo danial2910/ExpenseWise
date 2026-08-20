@@ -2,6 +2,39 @@
 
 Non-obvious decisions and their rationale, logged as they're made.
 
+## 2026-08-20 — MoneyDisplay never drops a minus sign
+
+`MoneyDisplay` applied `Math.abs()` unconditionally and only emitted a sign
+when its `sign` prop was true. Every caller that rendered a
+possibly-negative amount without `sign` therefore printed an overspend as a
+credit: the Dashboard's "Budget Remaining" tile showed `RM 184.07` while the
+user was RM 184.07 **over** budget, distinguished only by being red.
+
+Fixed at the component, not the call sites: a negative amount now always
+renders its `−`, with or without `sign`. The flag's meaning narrows to "also
+mark positives with a `+`". Rationale for putting it there — silently
+turning a deficit into a surplus is a money-correctness bug, and a
+formatting component should not offer that as an opt-out a caller can
+forget. Fixing the two known call sites would have left the trap armed for
+the next one.
+
+`BudgetsView` was separately pre-stripping the sign with `Math.abs()` on
+both the overall and per-category "Remaining" figures, leaning on red text
+alone to mean "over". Those wrappers are removed so the sign actually
+renders — colour was the sole carrier of that meaning, which is also an
+accessibility failure.
+
+Checked for double signs: the three call sites that prepend their own
+`−`/`+` glyph (Reports' total-expense and net-savings, Transactions'
+total-expense) all pass either an always-positive figure or an explicit
+`Math.abs()`, so none of them can now render two signs.
+
+Verified: `npm run build` clean; budgets/dashboard/transactions/reports
+specs **13 passed**; Dashboard and Budgets confirmed in-browser showing
+`− RM 184.07` for the overall remainder and `− RM 53.76` for the over-budget
+Food row, while under-budget rows stay unsigned. No E2E asserts on rendered
+money strings, so the format change was test-safe.
+
 ## 2026-08-20 — Nexora re-authoring, part 2: app surfaces verified against a live backend
 
 Follow-up to the token rewrite earlier the same day, once Docker/backend/DB

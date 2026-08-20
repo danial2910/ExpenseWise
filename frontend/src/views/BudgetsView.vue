@@ -326,7 +326,7 @@ async function onClear(budgetId: number) {
                   >
                     <MoneyDisplay
                       v-if="monthData!.overall.remaining !== null"
-                      :amount="Math.abs(Number(monthData!.overall.remaining))"
+                      :amount="Number(monthData!.overall.remaining)"
                     />
                     <span v-else class="text-surface-400 text-base font-semibold">—</span>
                   </p>
@@ -420,7 +420,7 @@ async function onClear(budgetId: number) {
                     class="text-sm text-right tabular-nums"
                     :class="Number(category.remaining) < 0 ? 'text-danger' : 'text-surface-700'"
                   >
-                    <MoneyDisplay :amount="Math.abs(Number(category.remaining))" />
+                    <MoneyDisplay :amount="Number(category.remaining)" />
                   </span>
                   <span class="text-sm font-semibold text-right" :class="statusColorClass(numberOrNull(category.progressPercent))">
                     {{ Math.round(Number(category.progressPercent)) }}%

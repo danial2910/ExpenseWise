@@ -10,11 +10,14 @@ import { computed } from 'vue'
 const props = withDefaults(
   defineProps<{
     amount: number | string
-    // When true, prefixes a '+' for income-style positive amounts and a
-    // '−' for negative ones. Color is intentionally NOT decided here — the
-    // caller wraps this component in its own text-success/text-danger
-    // class, since "income vs expense" is a domain decision, not a
-    // formatting one.
+    // When true, prefixes a '+' for income-style positive amounts. A
+    // negative amount ALWAYS renders its '−', with or without this flag —
+    // so this flag means "also mark positives", not "show signs at all".
+    // Dropping a minus sign silently turns an overspend into a credit, so
+    // it is not something a caller is allowed to opt out of. Color is
+    // intentionally NOT decided here — the caller wraps this component in
+    // its own text-success/text-danger class, since "income vs expense" is
+    // a domain decision, not a formatting one.
     sign?: boolean
   }>(),
   { sign: false },
@@ -29,11 +32,11 @@ const display = computed(() => {
   const numericAmount = typeof props.amount === 'number' ? props.amount : Number(props.amount)
   const safeAmount = Number.isFinite(numericAmount) ? numericAmount : 0
   const formatted = formatter.format(Math.abs(safeAmount))
+  const isNegative = safeAmount < 0
   if (!props.sign) {
-    return `RM ${formatted}`
+    return isNegative ? `− RM ${formatted}` : `RM ${formatted}`
   }
-  const prefix = safeAmount < 0 ? '−' : '+'
-  return `${prefix} RM ${formatted}`
+  return `${isNegative ? '−' : '+'} RM ${formatted}`
 })
 </script>
 
