@@ -17,7 +17,6 @@
 @import 'tailwindcss/utilities' layer(tailwind-utilities);
 
 @import '@fontsource-variable/inter';
-@import '@fontsource-variable/space-grotesk';
 
 /*
  * DESIGN TOKENS — the single source of truth for color, type, radius,
@@ -25,76 +24,107 @@
  * hardcoded values in components). Mirrored 1:1 into src/theme/preset.ts
  * so PrimeVue components and Tailwind utilities read as one system.
  *
- * Dark-only Nexora-referenced aurora palette. The `surface` and `primary`
- * ramps keep Tailwind's familiar 50–950 *names* so every existing class in
- * the codebase (bg-surface-100, text-surface-900, bg-primary-600, ...)
- * keeps working untouched, but the ramps are re-authored for this one dark
- * scheme rather than reusing Tailwind's light-first slate/indigo — see
- * DECISIONS.md for the shade-by-shade rationale.
+ * Re-authored 2026-08-20 directly from measured values off the Nexora
+ * reference template (nexora-ai-workflow.aura.build), replacing the
+ * previous navy-ramp interpretation. The four substantive changes:
  *
- * Phase 4 correction: the neutral ramp carries a stronger, deliberate navy
- * hue (258°) at higher chroma than Phase 1's near-hueless dark gray — every
- * surface, border, and muted-text shade should read as blue-tinted navy,
- * matching the Nexora dashboard reference, not flat charcoal.
+ *   1. The base is near-black with a faint blue cast (#030711), not a
+ *      navy ramp. Depth comes from white-alpha overlays stacked on that
+ *      one base, not from a sequence of opaque navy steps.
+ *   2. Borders are white/10 almost everywhere (the single most-used
+ *      value on the reference, by a wide margin), with white/5 for
+ *      subtle dividers and white/15 for section rules.
+ *   3. Two accents, not one: cyan and emerald are used as a pair
+ *      throughout the reference, so emerald is promoted to a first-class
+ *      `accent` ramp instead of living only inside the aurora gradient.
+ *   4. Inter alone, including display. The reference sets its 72px
+ *      headline in Inter at weight 400 with -0.025em tracking — a light,
+ *      wide headline, not a bold geometric one. Space Grotesk is gone.
+ *
+ * The token *names* are unchanged, so every existing utility class in the
+ * codebase (bg-surface-100, text-surface-500, border-surface-300, ...)
+ * keeps working and re-skins to the new system automatically.
  */
 @theme {
   --font-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --font-display: 'Space Grotesk Variable', 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, sans-serif;
 
-  /* Neutral / surface ramp — dark navy-blue base, near-white text ceiling */
-  --color-surface-0: oklch(14% 0.045 258);
-  --color-surface-50: oklch(100% 0 0 / 5%);
-  --color-surface-100: oklch(9% 0.035 258);
-  --color-surface-200: oklch(100% 0 0 / 7%);
-  --color-surface-300: oklch(100% 0 0 / 14%);
-  --color-surface-400: oklch(42% 0.03 258);
-  --color-surface-500: oklch(68% 0.035 258);
-  --color-surface-600: oklch(76% 0.03 258);
-  --color-surface-700: oklch(85% 0.022 258);
-  --color-surface-800: oklch(91% 0.016 258);
-  --color-surface-900: oklch(97% 0.012 258);
-  --color-surface-950: oklch(4% 0.03 258);
+  /*
+   * Surface ramp. Two opaque anchors (the page base and the card fill);
+   * everything between them is a white-alpha overlay so panels compose
+   * over the base and over each other without a new opaque value each
+   * time. 400-900 are the text ramp, at the reference's measured alphas.
+   */
+  --color-surface-950: #010308;   /* deepest well, behind everything */
+  --color-surface-100: #030711;   /* page base                       */
+  --color-surface-0:   #0a0e18;   /* card / elevated panel fill      */
+  --color-surface-50:  oklch(100% 0 0 / 5%);   /* subtle fill, hover  */
+  --color-surface-200: oklch(100% 0 0 / 8%);   /* stronger fill       */
+  --color-surface-300: oklch(100% 0 0 / 10%);  /* DEFAULT border      */
+  --color-surface-400: oklch(100% 0 0 / 30%);  /* dimmest label text  */
+  --color-surface-500: oklch(100% 0 0 / 45%);  /* muted body text     */
+  --color-surface-600: oklch(100% 0 0 / 65%);  /* secondary / nav     */
+  --color-surface-700: oklch(100% 0 0 / 80%);
+  --color-surface-800: oklch(100% 0 0 / 90%);
+  --color-surface-900: #ffffff;   /* primary text                    */
 
-  /* Accent — one disciplined cyan */
-  --color-primary-50: oklch(78% 0.14 200 / 14%);
-  --color-primary-100: oklch(78% 0.14 200 / 22%);
-  --color-primary-200: oklch(80% 0.12 200 / 36%);
-  --color-primary-300: oklch(85% 0.11 200);
-  --color-primary-400: oklch(80% 0.13 200);
-  --color-primary-500: oklch(75% 0.145 200);
-  --color-primary-600: oklch(72% 0.15 200);
-  --color-primary-700: oklch(62% 0.15 200);
-  --color-primary-800: oklch(50% 0.13 200);
-  --color-primary-900: oklch(38% 0.1 200);
-  --color-primary-950: oklch(24% 0.06 200);
+  /* Accent 1 — cyan. 400/500 are the reference's measured anchors. */
+  --color-primary-50:  oklch(85% 0.12 195 / 10%);
+  --color-primary-100: oklch(85% 0.12 195 / 16%);
+  --color-primary-200: oklch(85% 0.12 195 / 30%);
+  --color-primary-300: #a5f3fc;
+  --color-primary-400: #67e8f9;
+  --color-primary-500: #22d3ee;
+  --color-primary-600: #06b6d4;
+  --color-primary-700: #0891b2;
+  --color-primary-800: #0e7490;
+  --color-primary-900: #155e75;
+  --color-primary-950: #083344;
 
-  /* Aurora gradient stops — ambient accent only, never a data color */
-  --color-aurora-emerald: oklch(78% 0.16 155);
-  --color-aurora-teal: oklch(78% 0.13 195);
-  --color-aurora-blue: oklch(64% 0.19 254);
-  --color-aurora-indigo: oklch(52% 0.19 290);
+  /* Accent 2 — emerald. Paired with cyan throughout the reference. */
+  --color-accent-50:  oklch(85% 0.13 165 / 10%);
+  --color-accent-100: oklch(85% 0.13 165 / 16%);
+  --color-accent-200: oklch(85% 0.13 165 / 30%);
+  --color-accent-300: #6ee7b7;
+  --color-accent-400: #34d399;
+  --color-accent-500: #10b981;
+  --color-accent-600: #059669;
 
-  /* Semantic — legible on near-black, reserved for status not decoration */
-  --color-success: oklch(75% 0.17 155);
-  --color-success-bg: oklch(75% 0.17 155 / 14%);
-  --color-warning: oklch(81% 0.15 85);
-  --color-warning-bg: oklch(81% 0.15 85 / 14%);
-  --color-danger: oklch(68% 0.2 25);
-  --color-danger-bg: oklch(68% 0.2 25 / 14%);
+  /* Aurora gradient stops — ambient decoration only, never a data color */
+  --color-aurora-emerald: #34d399;
+  --color-aurora-teal: #22d3ee;
+  --color-aurora-blue: #3b82f6;
+  --color-aurora-indigo: #6366f1;
+
+  /* Semantic — reserved for status, not decoration */
+  --color-success: #6ee7b7;
+  --color-success-bg: oklch(85% 0.13 165 / 10%);
+  --color-warning: #fbbf24;
+  --color-warning-bg: oklch(83% 0.15 85 / 10%);
+  --color-danger: #fb7185;
+  --color-danger-bg: oklch(70% 0.18 15 / 12%);
   --color-info: var(--color-primary-500);
   --color-info-bg: var(--color-primary-50);
 
-  /* Radius */
-  --radius-sm: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.5rem;
+  /* Radius — the reference's measured set (pill-heavy, 8/12/16/28/32) */
+  --radius-sm: 0.5rem;    /* 8px  */
+  --radius-md: 0.75rem;   /* 12px */
+  --radius-lg: 1rem;      /* 16px */
+  --radius-xl: 1.75rem;   /* 28px */
+  --radius-2xl: 2rem;     /* 32px */
 
-  /* Elevation — soft outer glow over hard shadow */
+  /*
+   * Elevation. The reference's dominant card treatment is not a drop
+   * shadow at all — it is a 1px white/4 edge highlight, which is why its
+   * panels read as etched rather than floating. Drop shadows are deep and
+   * cyan-tinted (measured rgba(8,51,68,...)), never neutral black.
+   */
+  --shadow-edge: 0 1px 0 0 oklch(100% 0 0 / 4%);
   --shadow-soft-sm: 0 1px 2px 0 oklch(0% 0 0 / 40%);
-  --shadow-soft-md: 0 8px 24px -8px oklch(0% 0 0 / 55%);
-  --shadow-soft-lg: 0 16px 48px -12px oklch(0% 0 0 / 60%);
-  --shadow-glow-accent: 0 0 0 1px oklch(72% 0.15 200 / 30%), 0 0 20px -2px oklch(72% 0.15 200 / 45%);
+  --shadow-soft-md: 0 10px 15px -3px oklch(0% 0 0 / 20%), 0 1px 0 0 oklch(100% 0 0 / 4%);
+  --shadow-soft-lg: 0 25px 50px -12px oklch(30% 0.06 220 / 45%);
+  --shadow-glow-accent: 0 0 14px 0 oklch(78% 0.14 195 / 16%);
+  --shadow-glow-lg: 0 0 24px 0 oklch(78% 0.14 195 / 12%);
 
   /* Motion — sub-300ms, one shared easing family */
   --duration-fast: 120ms;
@@ -115,9 +145,20 @@
     font-family: var(--font-sans);
   }
 
+  /*
+   * Headline treatment lifted from the reference: Inter at weight 400 with
+   * -0.025em tracking and a 1.0 line-height at display sizes. The light
+   * weight is the point — the reference's 72px headline is not bold, and
+   * setting it bold is the single fastest way to lose its character.
+   */
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
-    letter-spacing: -0.02em;
+    font-weight: 400;
+    letter-spacing: -0.025em;
+  }
+
+  h1, h2 {
+    line-height: 1.05;
   }
 
   /* Browser surfaces theming (impeccable craft floor: these ship with the
@@ -179,11 +220,150 @@
      it must stay a plain background-image, never `pointer-events: none`
      (that's an inherited property — it would silently disable every click
      and input inside the container, not just the decoration). */
+  /*
+   * Ambient aurora. The reference's hero is a set of near-vertical light
+   * curtains rising off a bright horizon line, not a corner-lit radial
+   * wash — so this is authored as steep elliptical curtains plus a wide,
+   * flat horizon glow. Used behind the app shell header, the auth
+   * backdrop, and the landing hero only; never behind data-dense content.
+   *
+   * Applied to the same container that holds real interactive content, so
+   * it must stay a plain background-image, never `pointer-events: none`
+   * (an inherited property — it would disable every click inside).
+   */
+  /*
+   * Ambient aurora — the reference's hero signature. Two pseudo-element
+   * layers over a near-black ground:
+   *
+   *   ::before  the curtains. A single continuous hue field swept across
+   *             the width (emerald → teal → blue → indigo), then faded in
+   *             and out vertically with a mask. Authoring it as one masked
+   *             field rather than four separate radial blobs is what makes
+   *             it read as continuous light instead of coloured eggs.
+   *   ::after   the horizon: a bright shallow core plus a wider glow, the
+   *             line the curtains appear to stand on.
+   *
+   * No `filter: blur()` — the softness comes from the gradient stops
+   * themselves, so the layers need no overflow clipping on the host and
+   * can't clip a popup rendered inside it.
+   *
+   * Used behind the landing hero, the app shell header, and the auth
+   * backdrop only; never behind data-dense content. Both layers sit at
+   * z-index -1 inside an isolated stacking context, so they paint above
+   * the host's own background but below all of its content — and they are
+   * decoration with no pointer-events concerns of their own.
+   */
+  .aurora-backdrop,
+  .aurora-backdrop-subtle {
+    position: relative;
+    isolation: isolate;
+  }
+
   .aurora-backdrop {
+    background-color: var(--color-surface-950);
+  }
+
+  .aurora-backdrop::before,
+  .aurora-backdrop-subtle::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: 0.42;
+    background: linear-gradient(
+      101deg,
+      transparent 0%,
+      var(--color-aurora-emerald) 13%,
+      var(--color-aurora-teal) 29%,
+      transparent 40%,
+      var(--color-aurora-teal) 48%,
+      var(--color-aurora-blue) 62%,
+      transparent 72%,
+      var(--color-aurora-indigo) 85%,
+      transparent 97%
+    );
+    -webkit-mask-image: linear-gradient(to bottom, transparent 4%, black 52%, black 72%, transparent 92%);
+    mask-image: linear-gradient(to bottom, transparent 4%, black 52%, black 72%, transparent 92%);
+  }
+
+  .aurora-backdrop::after,
+  .aurora-backdrop-subtle::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 60%;
+    height: 30%;
+    z-index: -1;
     background:
-      radial-gradient(60% 80% at 15% 0%, oklch(78% 0.16 155 / 16%), transparent 60%),
-      radial-gradient(50% 70% at 85% 0%, oklch(64% 0.19 254 / 16%), transparent 60%),
-      radial-gradient(40% 60% at 50% 100%, oklch(52% 0.19 290 / 10%), transparent 65%);
+      radial-gradient(ellipse 50% 30% at 50% 50%, var(--color-primary-200) 0%, transparent 70%),
+      radial-gradient(ellipse 85% 100% at 50% 50%, var(--color-primary-700) 0%, transparent 72%);
+  }
+
+  /* Chrome (app header, auth panel) wants a hint of the same light, not the
+     hero treatment — same gradients, dialled down, rather than a redefined
+     set of stops that would drift out of sync. */
+  .aurora-backdrop-subtle::before {
+    opacity: 0.16;
+  }
+
+  .aurora-backdrop-subtle::after {
+    opacity: 0.3;
+  }
+
+  /*
+   * Gradient headline word. The reference tints the second line of every
+   * section headline rather than the whole thing — one accented phrase per
+   * heading, applied with this class on a <span>.
+   */
+  .text-aurora {
+    background: linear-gradient(100deg, var(--color-primary-300), var(--color-primary-500) 45%, var(--color-aurora-blue));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /*
+   * The cyan glow on the primary button. Its colours come from the preset
+   * (theme/preset.ts, components.button); only the shadow lives here,
+   * because PrimeVue exposes no shadow token for the button root. The
+   * long :not() chain is deliberate — PrimeVue v4 emits a severity class
+   * only for non-primary severities, so "primary" is the absence of all
+   * of them, and there is no positive class to hook. Sits in
+   * tailwind-components, which the layer order puts above primevue, so
+   * this needs no `!important` to win.
+   */
+  .p-button:not(.p-button-secondary):not(.p-button-success):not(.p-button-info):not(.p-button-warn):not(.p-button-help):not(.p-button-danger):not(.p-button-contrast):not(.p-button-text):not(.p-button-outlined):not(.p-button-link) {
+    box-shadow: var(--shadow-glow-accent);
+  }
+
+  /*
+   * Non-PrimeVue calls to action (landing page router-links) carry the
+   * same treatment through this class rather than repeating the recipe.
+   */
+  .cta-pill {
+    background: var(--color-surface-0);
+    border: 1px solid var(--color-primary-200);
+    color: var(--color-surface-900);
+    box-shadow: var(--shadow-glow-accent);
+    transition: border-color var(--duration-base) var(--ease-out-expo),
+      background-color var(--duration-base) var(--ease-out-expo);
+  }
+
+  .cta-pill:hover {
+    background: var(--color-surface-200);
+    border-color: var(--color-primary-300);
+  }
+
+  /*
+   * Etched panel — the reference's default card: near-black fill, white/10
+   * hairline border, and a 1px white/4 top edge instead of a drop shadow.
+   */
+  .panel {
+    background: var(--color-surface-0);
+    border: 1px solid var(--color-surface-300);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-edge);
   }
 
   .page-enter-active {

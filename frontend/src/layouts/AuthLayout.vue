@@ -8,7 +8,7 @@ withDefaults(defineProps<{ title?: string; subtitle?: string }>(), {
 </script>
 
 <template>
-  <div class="aurora-backdrop min-h-screen bg-surface-100 flex items-center justify-center p-6">
+  <div class="aurora-backdrop-subtle min-h-screen bg-surface-100 flex items-center justify-center p-6">
     <div class="w-full max-w-[440px] flex flex-col items-center gap-6">
       <div class="flex items-center gap-2.5">
         <img :src="logoIcon" alt="ExpenseWise" class="w-9 h-9 object-contain" />

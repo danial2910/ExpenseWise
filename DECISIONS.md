@@ -2,6 +2,72 @@
 
 Non-obvious decisions and their rationale, logged as they're made.
 
+## 2026-08-20 — Design system re-authored from measured Nexora values
+
+The 2026-08-18/19 redesign was built from a visual reading of the Nexora
+reference. This pass re-derives it from *measured* values instead: the
+reference renders inside a same-origin iframe on aura.build, so its computed
+styles were read directly rather than eyeballed from screenshots. Four
+findings contradicted the previous interpretation, and the token layer was
+rewritten around them:
+
+- **The base is near-black (#030711), not navy.** The previous ramp used an
+  opaque OKLCH navy sequence at hue 258°. The reference has one near-black
+  ground and builds every level of depth as a white-alpha overlay on it
+  (white/3 for cards, /5 and /8 for fills). The surface ramp now follows
+  that: two opaque anchors, everything between them alpha.
+- **Borders are white/10.** By a wide margin the single most-used value on
+  the reference (121 occurrences vs 12 for the next). `surface-300` was
+  white/14; it is now white/10.
+- **There are two accents, not one.** Cyan (#67e8f9 / #22d3ee) and emerald
+  (#6ee7b7) appear as a pair throughout. Emerald was previously reachable
+  only as an aurora gradient stop; it is now a first-class `accent` ramp.
+- **Inter alone, including display.** The reference sets its 72px headline
+  in Inter at **weight 400**, tracking -0.025em, line-height 1.0. The app
+  was using Space Grotesk at semibold — a heavier, more geometric voice than
+  the reference has. Space Grotesk is removed (dependency dropped), and
+  `--font-display` now points at Inter with a 400 default.
+
+Decisions worth recording about *how* this was applied:
+
+- **The token names were kept identical.** Every view already consumes
+  `bg-surface-0`, `border-surface-300`, `text-surface-500` and so on, so
+  re-authoring only the values re-skins all 22 views with no view edits and
+  no risk to the `data-testid` contract the Playwright suite depends on.
+  This is why the change is small in diff and large in effect.
+- **The aurora is one masked hue field, not four radial blobs.** The first
+  attempt used four separate radial gradients and read as coloured eggs. The
+  reference's curtains are continuous, so `.aurora-backdrop` is now a single
+  linear hue sweep (emerald → teal → blue → indigo) faded in and out
+  vertically by a mask, plus a separate horizon layer. `.aurora-backdrop-subtle`
+  composites the *same* gradients at lower opacity for chrome (header, auth
+  panel) rather than defining its own stops, so the two cannot drift.
+- **No `filter: blur()` in the aurora, and no negative insets.** Blur would
+  force overflow clipping on the host, which would clip any popup rendered
+  inside the app header. Negative insets (used briefly for the horizon) put
+  a horizontal scrollbar on the whole document. Both avoided; softness comes
+  from the gradient stops.
+- **Primary buttons are dark pills with a cyan ring and glow**, not flat
+  cyan fills — the reference never fills a CTA with its accent. Colours are
+  set in `theme/preset.ts` so every PrimeVue Button inherits them; only the
+  glow lives in `style.css`, because PrimeVue exposes no shadow token for
+  the button root. The selector there is a long `:not()` chain because
+  PrimeVue v4 emits a severity class only for *non*-primary severities, so
+  "primary" is the absence of all of them and offers no positive hook. It
+  sits in `tailwind-components`, which the layer order puts above
+  `primevue`, so it needs no `!important`.
+- **Only landing-page display headings were unbolded**, not app page titles.
+  The reference's 400 weight applies to its 72px display type; its small
+  headings measure at 600. App `<h1>`s are 24px chrome, so they stay
+  semibold — matching the reference's own scale rather than applying its
+  display weight everywhere.
+
+Verified: `npm run build` (`vue-tsc -b && vite build`) clean; landing hero,
+landing feature section, and the login surface checked in-browser. The
+Playwright suite was **not** run — Docker Desktop is not running in this
+environment, so there is no local Postgres or backend to run it against.
+No `data-testid` was added, removed, or renamed by this change.
+
 ## 2026-08-19 — UI redesign Phase 7 (final): cross-app polish, audit & QA
 
 Whole-app sweep after all 8 build phases — no new features, fixed drift the

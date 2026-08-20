@@ -50,7 +50,7 @@ const steps = [
 <template>
   <div class="min-h-screen bg-surface-100">
     <!-- nav -->
-    <header class="aurora-backdrop sticky top-0 z-50 bg-surface-100/75 backdrop-blur-xl border-b border-surface-200">
+    <header class="aurora-backdrop-subtle sticky top-0 z-50 bg-surface-100/75 backdrop-blur-xl border-b border-surface-200">
       <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <a href="#" class="flex items-center gap-2.5">
           <img :src="logoIcon" alt="ExpenseWise" class="w-8 h-8 object-contain" />
@@ -113,7 +113,7 @@ const steps = [
             Personal finance, built to stay out of your way
           </span>
 
-          <h1 class="font-display text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight leading-[1.08] text-surface-900">
+          <h1 class="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-normal tracking-tight leading-[1.05] text-surface-900">
             Take control of your money.
             <br />
             One dashboard for everything.
@@ -128,7 +128,7 @@ const steps = [
             <router-link
               data-testid="landing-hero-get-started-button"
               to="/register"
-              class="inline-flex items-center gap-2 bg-primary-500 text-surface-100 text-sm font-semibold px-6 py-3.5 rounded-full shadow-glow-accent active:scale-[0.98] transition-transform duration-fast ease-out-expo"
+              class="cta-pill inline-flex items-center gap-2 text-sm font-semibold px-6 py-3.5 rounded-full active:scale-[0.98]"
             >
               Get Started
               <i class="pi pi-arrow-right text-xs" />
@@ -157,7 +157,7 @@ const steps = [
           <div v-reveal class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
             <div class="flex flex-col gap-3 max-w-xl">
               <span class="font-mono text-xs font-semibold text-primary-400 tracking-wide">// FEATURES</span>
-              <h2 class="font-display text-3xl md:text-4xl font-semibold tracking-tight leading-tight">
+              <h2 class="font-display text-3xl md:text-4xl font-normal tracking-tight leading-tight">
                 <span class="text-surface-900">Everything you need to</span>
                 <br />
                 <span class="text-primary-400">manage your money.</span>
@@ -196,7 +196,7 @@ const steps = [
       <section id="preview" class="px-4 sm:px-6 lg:px-8 py-20">
         <div class="max-w-5xl mx-auto flex flex-col gap-10">
           <div v-reveal class="flex flex-col items-center text-center gap-3">
-            <h2 class="font-display text-3xl md:text-4xl font-semibold tracking-tight text-surface-900">See your money, clearly.</h2>
+            <h2 class="font-display text-3xl md:text-4xl font-normal tracking-tight text-surface-900">See your money, clearly.</h2>
             <p class="text-sm md:text-base text-surface-500 max-w-lg leading-relaxed">
               A live preview of the dashboard waiting for you after sign-up. The numbers
               below are illustrative and yours will be real.
@@ -272,16 +272,16 @@ const steps = [
       </section>
 
       <!-- closing CTA -->
-      <section class="aurora-backdrop px-4 sm:px-6 lg:px-8 py-20">
+      <section class="aurora-backdrop-subtle px-4 sm:px-6 lg:px-8 py-20">
         <div v-reveal class="max-w-2xl mx-auto text-center flex flex-col items-center gap-6">
-          <h2 class="font-display text-3xl md:text-4xl font-semibold tracking-tight text-surface-900">Ready to take control?</h2>
+          <h2 class="font-display text-3xl md:text-4xl font-normal tracking-tight text-surface-900">Ready to take control?</h2>
           <p class="text-sm md:text-base text-surface-500">
             Create a free account and see your first budget come together in minutes.
           </p>
           <router-link
             data-testid="landing-cta-get-started-button"
             to="/register"
-            class="inline-flex items-center gap-2 bg-primary-500 text-surface-100 text-sm font-semibold px-6 py-3.5 rounded-full shadow-glow-accent active:scale-[0.98] transition-transform duration-fast ease-out-expo"
+            class="cta-pill inline-flex items-center gap-2 text-sm font-semibold px-6 py-3.5 rounded-full active:scale-[0.98]"
           >
             Get Started
             <i class="pi pi-arrow-right text-xs" />

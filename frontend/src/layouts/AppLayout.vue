@@ -118,7 +118,7 @@ async function onLogout() {
 
     <div class="flex-1 flex flex-col min-w-0">
       <!-- Desktop/tablet header — hidden below md -->
-      <header class="aurora-backdrop hidden md:flex h-16 shrink-0 items-center justify-between px-6 lg:px-8 border-b border-surface-200 bg-surface-100/80 backdrop-blur-xl">
+      <header class="aurora-backdrop-subtle hidden md:flex h-16 shrink-0 items-center justify-between px-6 lg:px-8 border-b border-surface-200 bg-surface-100/80 backdrop-blur-xl">
         <span class="font-display text-lg font-semibold tracking-tight text-surface-900">{{ title }}</span>
         <div class="flex items-center gap-4">
           <div class="flex items-center gap-2.5">
@@ -142,7 +142,7 @@ async function onLogout() {
       <!-- Mobile header — hidden from md up -->
       <header
         data-testid="mobile-header"
-        class="aurora-backdrop flex md:hidden h-14 shrink-0 items-center justify-between px-4 border-b border-surface-200 bg-surface-100/80 backdrop-blur-xl"
+        class="aurora-backdrop-subtle flex md:hidden h-14 shrink-0 items-center justify-between px-4 border-b border-surface-200 bg-surface-100/80 backdrop-blur-xl"
       >
         <span class="font-display text-lg font-semibold tracking-tight text-surface-900">{{ title }}</span>
         <button
