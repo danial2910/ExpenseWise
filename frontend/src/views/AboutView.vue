@@ -19,7 +19,7 @@ const appVersion = __APP_VERSION__
         <p class="text-sm text-surface-500 mt-1">App version, terms, and support</p>
       </div>
 
-      <div class="bg-surface-0 border border-surface-200 rounded-xl p-6" data-testid="about-section">
+      <div class="bg-surface-0 border border-surface-300 rounded-xl p-6" data-testid="about-section">
         <div class="flex items-center justify-between py-3 border-b border-surface-100">
           <p class="text-sm font-medium text-surface-900">App version</p>
           <span data-testid="about-app-version" class="text-[13px] text-surface-500 tabular-nums">v{{ appVersion }}</span>

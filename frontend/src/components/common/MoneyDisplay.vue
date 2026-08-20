@@ -12,7 +12,7 @@ const props = withDefaults(
     amount: number | string
     // When true, prefixes a '+' for income-style positive amounts and a
     // '−' for negative ones. Color is intentionally NOT decided here — the
-    // caller wraps this component in its own text-green-700/text-red-600
+    // caller wraps this component in its own text-success/text-danger
     // class, since "income vs expense" is a domain decision, not a
     // formatting one.
     sign?: boolean

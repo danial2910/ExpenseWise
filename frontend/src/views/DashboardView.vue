@@ -129,14 +129,14 @@ const kpiCards = computed(() => {
     {
       testid: 'summary-balance',
       label: 'Total Balance',
-      icon: 'pi-wallet',
+      accent: 'bg-primary-500',
       amount: summary.overallBalance,
       tone: toNumber(summary.overallBalance) < 0 ? 'text-danger' : 'text-surface-900',
     },
     {
       testid: 'summary-income',
       label: 'Income',
-      icon: 'pi-arrow-up',
+      accent: 'bg-success',
       amount: summary.thisMonthIncome,
       tone: 'text-success',
       sparkline: incomeSeries.value.length > 1 ? sparklineData(incomeSeries.value, successColor.value) : null,
@@ -144,7 +144,7 @@ const kpiCards = computed(() => {
     {
       testid: 'summary-expense',
       label: 'Expense',
-      icon: 'pi-arrow-down',
+      accent: 'bg-danger',
       amount: summary.thisMonthExpense,
       tone: 'text-danger',
       sparkline: expenseSeries.value.length > 1 ? sparklineData(expenseSeries.value, dangerColor.value) : null,
@@ -152,7 +152,7 @@ const kpiCards = computed(() => {
     {
       testid: 'summary-budget-remaining',
       label: 'Budget Remaining',
-      icon: 'pi-shield',
+      accent: 'bg-warning',
       amount: remaining,
       tone: remaining !== null && toNumber(remaining) < 0 ? 'text-danger' : 'text-surface-900',
       ring: true,
@@ -321,26 +321,26 @@ function signedAmount(tx: { type: string; amount: number | string }): number {
         retry-testid="dashboard-retry-button"
         title="Couldn't load your dashboard"
         description="Something went wrong while fetching your data. Check your connection and try again."
-        class="bg-surface-0 border border-surface-200 rounded-xl"
+        class="bg-surface-0 border border-surface-300 rounded-xl"
         @retry="loadDashboard"
       />
 
       <!-- loading state -->
       <div v-else-if="loadState === 'loading'" data-testid="dashboard-loading-skeleton" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div v-for="n in 4" :key="n" class="lg:col-span-3 bg-surface-0 border border-surface-200 rounded-xl p-5 flex flex-col gap-2">
+        <div v-for="n in 4" :key="n" class="lg:col-span-3 bg-surface-0 border border-surface-300 rounded-xl p-5 flex flex-col gap-2">
           <div class="w-20 h-3 rounded bg-surface-200 animate-pulse" />
           <div class="w-24 h-7 rounded bg-surface-200 animate-pulse" />
         </div>
-        <div class="lg:col-span-7 bg-surface-0 border border-surface-200 rounded-xl p-6">
+        <div class="lg:col-span-7 bg-surface-0 border border-surface-300 rounded-xl p-6">
           <div class="w-full h-48 rounded bg-surface-200 animate-pulse" />
         </div>
-        <div class="lg:col-span-5 bg-surface-0 border border-surface-200 rounded-xl p-6">
+        <div class="lg:col-span-5 bg-surface-0 border border-surface-300 rounded-xl p-6">
           <div class="w-40 h-40 rounded-full bg-surface-200 animate-pulse mx-auto" />
         </div>
-        <div class="lg:col-span-7 bg-surface-0 border border-surface-200 rounded-xl p-6">
+        <div class="lg:col-span-7 bg-surface-0 border border-surface-300 rounded-xl p-6">
           <div class="w-full h-48 rounded bg-surface-200 animate-pulse" />
         </div>
-        <div class="lg:col-span-5 bg-surface-0 border border-surface-200 rounded-xl p-6">
+        <div class="lg:col-span-5 bg-surface-0 border border-surface-300 rounded-xl p-6">
           <div class="w-full h-48 rounded bg-surface-200 animate-pulse" />
         </div>
       </div>
@@ -351,7 +351,7 @@ function signedAmount(tx: { type: string; amount: number | string }): number {
         icon="pi-chart-bar"
         title="Welcome to ExpenseWise"
         description="Your dashboard will fill in with income, spending, and budget insights as soon as you log a transaction."
-        class="bg-surface-0 border border-surface-200 rounded-xl"
+        class="bg-surface-0 border border-surface-300 rounded-xl"
       >
         <template #action>
           <router-link
@@ -372,13 +372,16 @@ function signedAmount(tx: { type: string; amount: number | string }): number {
           v-for="card in kpiCards"
           :key="card.testid"
           :data-testid="card.testid"
-          class="lg:col-span-3 sm:col-span-1 bg-surface-0 border border-surface-200 rounded-xl p-5 flex flex-col gap-3"
+          class="lg:col-span-3 sm:col-span-1 bg-surface-0 border border-surface-300 shadow-edge rounded-md p-5 flex flex-col gap-3"
         >
-          <div class="flex items-center gap-2">
-            <div class="w-7 h-7 rounded-lg bg-surface-50 flex items-center justify-center text-surface-600 shrink-0">
-              <i :class="['pi', card.icon]" class="text-xs" />
-            </div>
-            <span class="text-[11px] font-semibold text-surface-500 uppercase tracking-wide truncate">{{ card.label }}</span>
+          <!-- Reference stat-tile signature: a short accent rule above a
+               muted label. Each metric keeps its own semantic hue, which is
+               what gives the KPI row its multi-coloured read. The icon chip
+               this replaces was decorative — the label already names the
+               metric. -->
+          <div class="flex flex-col gap-2.5">
+            <span class="h-[3px] w-6 rounded-full shrink-0" :class="card.accent" />
+            <span class="text-xs font-medium text-surface-500 truncate">{{ card.label }}</span>
           </div>
 
           <div class="flex items-end justify-between gap-3">
@@ -408,7 +411,7 @@ function signedAmount(tx: { type: string; amount: number | string }): number {
         </div>
 
         <!-- Income vs Expense (line/area) -->
-        <div class="lg:col-span-7 bg-surface-0 border border-surface-200 rounded-xl p-6">
+        <div class="lg:col-span-7 bg-surface-0 border border-surface-300 rounded-xl p-6">
           <div class="flex items-center justify-between mb-1">
             <span class="text-sm font-semibold text-surface-900">Income vs Expense</span>
             <div class="flex items-center gap-4">
@@ -427,7 +430,7 @@ function signedAmount(tx: { type: string; amount: number | string }): number {
         </div>
 
         <!-- Spending by Category (donut) -->
-        <div class="lg:col-span-5 bg-surface-0 border border-surface-200 rounded-xl p-6">
+        <div class="lg:col-span-5 bg-surface-0 border border-surface-300 rounded-xl p-6">
           <span class="text-sm font-semibold text-surface-900 block mb-4">Spending by Category</span>
           <div v-if="donutChartData" class="flex flex-col items-center gap-6">
             <div data-testid="dashboard-category-donut" class="relative w-40 h-40 shrink-0">
@@ -454,7 +457,7 @@ function signedAmount(tx: { type: string; amount: number | string }): number {
         </div>
 
         <!-- Recent Transactions (table) -->
-        <div class="lg:col-span-7 bg-surface-0 border border-surface-200 rounded-xl overflow-hidden">
+        <div class="lg:col-span-7 bg-surface-0 border border-surface-300 rounded-xl overflow-hidden">
           <div class="flex items-center justify-between px-6 py-4 border-b border-surface-200 gap-3">
             <span class="text-sm font-semibold text-surface-900">Recent Transactions</span>
             <div class="flex items-center gap-4 shrink-0">
@@ -532,7 +535,7 @@ function signedAmount(tx: { type: string; amount: number | string }): number {
         </div>
 
         <!-- Budget Utilisation (activity-feed panel) -->
-        <div class="lg:col-span-5 bg-surface-0 border border-surface-200 rounded-xl p-6 flex flex-col">
+        <div class="lg:col-span-5 bg-surface-0 border border-surface-300 rounded-xl p-6 flex flex-col">
           <div class="flex items-center justify-between mb-3">
             <span class="text-sm font-semibold text-surface-900">Budget Utilisation</span>
             <span

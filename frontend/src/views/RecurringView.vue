@@ -321,13 +321,13 @@ async function confirmDelete() {
         retry-testid="recurring-retry-button"
         title="Couldn't load recurring rules"
         description="Something went wrong. Check your connection and try again."
-        class="bg-surface-0 border border-surface-200 rounded-xl"
+        class="bg-surface-0 border border-surface-300 rounded-xl"
         @retry="loadRules"
       />
 
       <!-- loading state -->
       <div v-else-if="loadState === 'loading'" data-testid="recurring-loading-skeleton" class="flex flex-col gap-3">
-        <div class="bg-surface-0 border border-surface-200 rounded-xl p-6 flex flex-col gap-3">
+        <div class="bg-surface-0 border border-surface-300 rounded-xl p-6 flex flex-col gap-3">
           <div v-for="n in 6" :key="n" class="w-full h-[52px] rounded-lg bg-surface-200 animate-pulse" />
         </div>
       </div>
@@ -342,7 +342,7 @@ async function confirmDelete() {
           icon="pi-sync"
           title="No recurring rules yet"
           description="Set up rent, salary, or subscriptions to auto-generate transactions on schedule."
-          class="bg-surface-0 border border-surface-200 rounded-xl"
+          class="bg-surface-0 border border-surface-300 rounded-xl"
         >
           <template #action>
             <Button
@@ -358,7 +358,7 @@ async function confirmDelete() {
 
         <template v-else>
           <!-- due soon -->
-          <div v-if="upcoming.length > 0" data-testid="recurring-due-soon" class="bg-surface-0 border border-surface-200 rounded-xl p-4 sm:px-6 sm:py-5">
+          <div v-if="upcoming.length > 0" data-testid="recurring-due-soon" class="bg-surface-0 border border-surface-300 rounded-xl p-4 sm:px-6 sm:py-5">
             <p class="text-sm font-semibold text-surface-900 mb-3.5">Due soon</p>
             <div class="flex gap-4 flex-wrap">
               <div
@@ -384,7 +384,7 @@ async function confirmDelete() {
           </div>
 
           <!-- table -->
-          <div data-testid="recurring-table" class="bg-surface-0 border border-surface-200 rounded-xl overflow-hidden">
+          <div data-testid="recurring-table" class="bg-surface-0 border border-surface-300 rounded-xl overflow-hidden">
             <div
               class="hidden md:grid grid-cols-[1fr_70px_90px_70px_80px_80px_70px_40px] lg:grid-cols-[1fr_100px_130px_100px_110px_110px_90px_60px] gap-2 lg:gap-3 px-3 lg:px-5 py-3 border-b border-surface-200 bg-surface-50"
             >

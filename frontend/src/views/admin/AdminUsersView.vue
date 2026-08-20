@@ -307,12 +307,12 @@ async function runConfirm() {
         retry-testid="admin-users-retry-button"
         title="Couldn't load users"
         description="Something went wrong while fetching user accounts. Try again."
-        class="bg-surface-0 border border-surface-200 rounded-xl"
+        class="bg-surface-0 border border-surface-300 rounded-xl"
         @retry="loadUsers"
       />
 
       <!-- loading state -->
-      <div v-else-if="loadState === 'loading'" data-testid="admin-users-loading-skeleton" class="bg-surface-0 border border-surface-200 rounded-xl overflow-hidden">
+      <div v-else-if="loadState === 'loading'" data-testid="admin-users-loading-skeleton" class="bg-surface-0 border border-surface-300 rounded-xl overflow-hidden">
         <div v-for="n in 8" :key="n" class="flex items-center gap-4 px-5 py-3.5 border-b border-surface-100">
           <div class="w-8 h-8 rounded-lg bg-surface-200 animate-pulse shrink-0" />
           <div class="flex-1 h-3.5 rounded bg-surface-200 animate-pulse" />
@@ -322,7 +322,7 @@ async function runConfirm() {
       </div>
 
       <!-- ready state -->
-      <div v-else class="bg-surface-0 border border-surface-200 rounded-xl overflow-hidden">
+      <div v-else class="bg-surface-0 border border-surface-300 rounded-xl overflow-hidden">
         <EmptyState
           v-if="users.length === 0"
           testid="admin-users-empty-state"
@@ -566,7 +566,7 @@ async function runConfirm() {
 
         <div>
           <p class="text-xs font-semibold text-surface-600 mb-2.5">Feature access</p>
-          <div class="flex flex-col border border-surface-200 rounded-lg overflow-hidden">
+          <div class="flex flex-col border border-surface-300 rounded-lg overflow-hidden">
             <div
               v-for="feature in ALL_FEATURES"
               :key="feature"

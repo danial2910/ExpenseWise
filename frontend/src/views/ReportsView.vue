@@ -294,7 +294,7 @@ function extractErrorMessage(error: unknown, fallback: string): string {
           </button>
         </div>
 
-        <div class="flex items-center gap-1.5 bg-surface-0 border border-surface-200 rounded-lg px-2 py-1.5">
+        <div class="flex items-center gap-1.5 bg-surface-0 border border-surface-300 rounded-lg px-2 py-1.5">
           <button
             data-testid="report-prev-period-button"
             class="w-11 h-11 lg:w-7 lg:h-7 rounded-md flex items-center justify-center text-surface-600 hover:bg-surface-50 transition-colors duration-fast ease-out-expo"
@@ -363,7 +363,7 @@ function extractErrorMessage(error: unknown, fallback: string): string {
         retry-testid="reports-retry-button"
         title="Couldn't generate this report"
         description="Something went wrong while fetching your data. Check your connection and try again."
-        class="bg-surface-0 border border-surface-200 rounded-xl"
+        class="bg-surface-0 border border-surface-300 rounded-xl"
         @retry="loadReport"
       />
 
@@ -371,7 +371,7 @@ function extractErrorMessage(error: unknown, fallback: string): string {
         v-else-if="loadState === 'loading'"
         testid="reports-loading-skeleton"
         label="Generating your report — this can take up to 10 seconds"
-        class="bg-surface-0 border border-surface-200 rounded-xl"
+        class="bg-surface-0 border border-surface-300 rounded-xl"
       />
 
       <EmptyState
@@ -380,26 +380,29 @@ function extractErrorMessage(error: unknown, fallback: string): string {
         icon="pi-chart-bar"
         :title="`No data for ${periodLabel}`"
         description="There are no transactions recorded for this period yet. Try a different period or add a transaction."
-        class="bg-surface-0 border border-surface-200 rounded-xl"
+        class="bg-surface-0 border border-surface-300 rounded-xl"
       />
 
       <!-- ready state -->
       <div v-else data-testid="reports-content" class="flex flex-col gap-6">
         <div class="grid grid-cols-3 gap-3 sm:gap-4">
-          <div data-testid="summary-income" class="bg-surface-0 border border-surface-200 rounded-xl p-4 sm:p-5">
-            <p class="text-[10px] sm:text-xs font-semibold text-surface-500 uppercase tracking-wide">Total Income</p>
+          <div data-testid="summary-income" class="bg-surface-0 border border-surface-300 rounded-xl p-4 sm:p-5">
+            <span class="block h-[3px] w-6 rounded-full bg-success" />
+            <p class="text-[11px] sm:text-xs font-medium text-surface-500 mt-2.5">Total Income</p>
             <p class="text-base sm:text-lg lg:text-[22px] font-bold text-success mt-1.5 tabular-nums font-display">
               + <MoneyDisplay :amount="report!.totalIncome" />
             </p>
           </div>
-          <div data-testid="summary-expense" class="bg-surface-0 border border-surface-200 rounded-xl p-4 sm:p-5">
-            <p class="text-[10px] sm:text-xs font-semibold text-surface-500 uppercase tracking-wide">Total Expenses</p>
+          <div data-testid="summary-expense" class="bg-surface-0 border border-surface-300 rounded-xl p-4 sm:p-5">
+            <span class="block h-[3px] w-6 rounded-full bg-danger" />
+            <p class="text-[11px] sm:text-xs font-medium text-surface-500 mt-2.5">Total Expenses</p>
             <p class="text-base sm:text-lg lg:text-[22px] font-bold text-danger mt-1.5 tabular-nums font-display">
               &minus; <MoneyDisplay :amount="report!.totalExpense" />
             </p>
           </div>
-          <div data-testid="summary-net" class="bg-surface-0 border border-surface-200 rounded-xl p-4 sm:p-5">
-            <p class="text-[10px] sm:text-xs font-semibold text-surface-500 uppercase tracking-wide">Net Savings</p>
+          <div data-testid="summary-net" class="bg-surface-0 border border-surface-300 rounded-xl p-4 sm:p-5">
+            <span class="block h-[3px] w-6 rounded-full bg-primary-500" />
+            <p class="text-[11px] sm:text-xs font-medium text-surface-500 mt-2.5">Net Savings</p>
             <p class="text-base sm:text-lg lg:text-[22px] font-bold mt-1.5 tabular-nums font-display" :class="netColorClass">
               {{ netPrefix }} <MoneyDisplay :amount="Math.abs(netBalance)" />
             </p>
@@ -409,7 +412,7 @@ function extractErrorMessage(error: unknown, fallback: string): string {
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div
             data-testid="report-category-breakdown"
-            class="order-2 lg:order-1 lg:col-span-7 bg-surface-0 border border-surface-200 rounded-xl overflow-hidden"
+            class="order-2 lg:order-1 lg:col-span-7 bg-surface-0 border border-surface-300 rounded-xl overflow-hidden"
           >
             <div class="px-5 py-4 border-b border-surface-200 text-sm font-semibold text-surface-900">Category Breakdown</div>
             <div class="hidden lg:grid grid-cols-[1fr_120px_100px_140px] px-5 py-2.5 bg-surface-50 border-b border-surface-200">
@@ -453,7 +456,7 @@ function extractErrorMessage(error: unknown, fallback: string): string {
             </div>
           </div>
 
-          <div class="order-1 lg:order-2 lg:col-span-5 bg-surface-0 border border-surface-200 rounded-xl p-4 lg:p-6">
+          <div class="order-1 lg:order-2 lg:col-span-5 bg-surface-0 border border-surface-300 rounded-xl p-4 lg:p-6">
             <p class="text-sm font-semibold text-surface-900 mb-5">{{ chartTitle }}</p>
             <div data-testid="report-trend-chart" class="h-40 lg:h-52">
               <Chart type="line" :data="trendChartData" :options="trendChartOptions" class="h-full" />

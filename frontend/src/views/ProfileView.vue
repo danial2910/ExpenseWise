@@ -270,13 +270,13 @@ onMounted(() => {
         retry-testid="profile-retry-button"
         title="Couldn't load your profile"
         description="Something went wrong. Check your connection and try again."
-        class="bg-surface-0 border border-surface-200 rounded-xl"
+        class="bg-surface-0 border border-surface-300 rounded-xl"
         @retry="load"
       />
 
       <!-- loading state -->
       <div v-else-if="loadState === 'loading'" data-testid="profile-loading-skeleton" class="flex flex-col gap-4">
-        <div class="bg-surface-0 border border-surface-200 rounded-xl p-6 flex flex-col gap-4">
+        <div class="bg-surface-0 border border-surface-300 rounded-xl p-6 flex flex-col gap-4">
           <div class="w-18 h-18 rounded-lg bg-surface-200 animate-pulse" style="width: 72px; height: 72px" />
           <div class="w-36 h-4 rounded bg-surface-200 animate-pulse" />
           <div class="w-full h-11 rounded-lg bg-surface-200 animate-pulse" />
@@ -306,7 +306,7 @@ onMounted(() => {
         </div>
 
         <!-- PERSONAL INFORMATION -->
-        <div v-if="activeTab === 'personal'" class="bg-surface-0 border border-surface-200 rounded-xl p-6">
+        <div v-if="activeTab === 'personal'" class="bg-surface-0 border border-surface-300 rounded-xl p-6">
           <Transition name="field-in">
             <div v-if="profileSuccess" class="bg-success-bg border border-success/30 text-success text-[13px] rounded-lg px-3 py-2.5 mb-4">
               Profile updated.
@@ -335,7 +335,7 @@ onMounted(() => {
               <div class="flex items-center gap-2.5">
                 <button
                   data-testid="avatar-upload-button"
-                  class="min-h-9 flex items-center px-3.5 border border-surface-200 rounded-lg text-[13px] font-semibold text-surface-700 hover:border-primary-300 hover:text-primary-300 disabled:opacity-60 transition-colors duration-fast ease-out-expo"
+                  class="min-h-9 flex items-center px-3.5 border border-surface-300 rounded-lg text-[13px] font-semibold text-surface-700 hover:border-primary-300 hover:text-primary-300 disabled:opacity-60 transition-colors duration-fast ease-out-expo"
                   :disabled="avatarUploading"
                   @click="triggerAvatarPicker"
                 >
@@ -388,7 +388,7 @@ onMounted(() => {
                 type="email"
                 :value="email"
                 disabled
-                class="w-full min-h-11 px-3 py-2 rounded-lg text-sm border border-surface-200 bg-surface-50 text-surface-400"
+                class="w-full min-h-11 px-3 py-2 rounded-lg text-sm border border-surface-300 bg-surface-50 text-surface-400"
               />
             </div>
           </div>
@@ -473,7 +473,7 @@ onMounted(() => {
 
         <!-- SECURITY -->
         <div v-else class="flex flex-col gap-4">
-          <div class="bg-surface-0 border border-surface-200 rounded-xl p-6">
+          <div class="bg-surface-0 border border-surface-300 rounded-xl p-6">
             <p class="text-sm font-semibold text-surface-900 mb-1.5">Change password</p>
             <p class="text-[13px] text-surface-500 mb-5">Changing your password will sign you out of all other sessions.</p>
 
@@ -533,7 +533,7 @@ onMounted(() => {
             />
           </div>
 
-          <div class="bg-surface-0 border border-surface-200 rounded-xl p-6">
+          <div class="bg-surface-0 border border-surface-300 rounded-xl p-6">
             <p class="text-sm font-semibold text-surface-900 mb-4">Login history</p>
             <div v-if="loginHistory.length === 0" data-testid="login-history-empty" class="py-4 text-sm text-surface-400">
               No login activity yet.
@@ -583,7 +583,7 @@ onMounted(() => {
             </template>
           </div>
 
-          <div class="bg-surface-0 border border-surface-200 rounded-xl p-6">
+          <div class="bg-surface-0 border border-surface-300 rounded-xl p-6">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div>
                 <p class="text-sm font-semibold text-surface-900">Active sessions</p>

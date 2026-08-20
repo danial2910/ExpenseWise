@@ -93,7 +93,7 @@ const steps = [
           <a href="#how-it-works" class="min-h-11 flex items-center text-sm font-medium text-surface-600" @click="closeMobileMenu">How it works</a>
           <a href="#preview" class="min-h-11 flex items-center text-sm font-medium text-surface-600" @click="closeMobileMenu">Preview</a>
           <div class="flex items-center gap-3 pt-2 mt-2 border-t border-surface-200">
-            <router-link data-testid="landing-mobile-signin-link" to="/login" class="flex-1 min-h-11 flex items-center justify-center text-sm font-semibold text-surface-700 border border-surface-200 rounded-lg">
+            <router-link data-testid="landing-mobile-signin-link" to="/login" class="flex-1 min-h-11 flex items-center justify-center text-sm font-semibold text-surface-700 border border-surface-300 rounded-lg">
               Sign in
             </router-link>
             <router-link data-testid="landing-mobile-get-started-button" to="/register" class="flex-1 min-h-11 flex items-center justify-center text-sm font-semibold text-surface-100 bg-primary-500 rounded-lg">
@@ -108,7 +108,7 @@ const steps = [
       <!-- hero -->
       <section class="aurora-backdrop relative px-4 sm:px-6 lg:px-8 pt-20 pb-24 md:pt-28 md:pb-32 text-center">
         <div class="max-w-3xl mx-auto flex flex-col items-center gap-6">
-          <span class="inline-flex items-center gap-2 rounded-full border border-surface-200 bg-surface-50 px-3.5 py-1.5 text-xs font-medium text-surface-600">
+          <span class="inline-flex items-center gap-2 rounded-full border border-surface-300 bg-surface-50 px-3.5 py-1.5 text-xs font-medium text-surface-600">
             <span class="w-1.5 h-1.5 rounded-full bg-primary-500" />
             Personal finance, built to stay out of your way
           </span>
@@ -168,7 +168,7 @@ const steps = [
             </div>
             <a
               href="#preview"
-              class="shrink-0 inline-flex items-center gap-2 text-sm font-semibold text-surface-700 border border-surface-200 rounded-full px-5 py-2.5 hover:border-primary-300 hover:text-primary-300 transition-colors duration-fast ease-out-expo w-fit"
+              class="shrink-0 inline-flex items-center gap-2 text-sm font-semibold text-surface-700 border border-surface-300 rounded-full px-5 py-2.5 hover:border-primary-300 hover:text-primary-300 transition-colors duration-fast ease-out-expo w-fit"
             >
               See it in action
               <i class="pi pi-arrow-right text-xs" />
@@ -180,7 +180,7 @@ const steps = [
               v-for="feature in features"
               :key="feature.title"
               v-reveal
-              class="bg-surface-0 border border-surface-200 rounded-xl p-6 flex flex-col gap-3 hover:border-primary-300/50 transition-colors duration-fast ease-out-expo"
+              class="bg-surface-0 border border-surface-300 rounded-xl p-6 flex flex-col gap-3 hover:border-primary-300/50 transition-colors duration-fast ease-out-expo"
             >
               <div class="w-10 h-10 rounded-lg bg-primary-50 text-primary-300 flex items-center justify-center">
                 <i :class="['pi', feature.icon]" />
@@ -203,9 +203,9 @@ const steps = [
             </p>
           </div>
 
-          <div v-reveal class="bg-surface-0 border border-surface-200 rounded-xl shadow-soft-lg p-4 sm:p-6 lg:p-8">
+          <div v-reveal class="bg-surface-0 border border-surface-300 rounded-xl shadow-soft-lg p-4 sm:p-6 lg:p-8">
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
-              <div v-for="kpi in previewKpis" :key="kpi.label" class="bg-surface-50 border border-surface-200 rounded-lg p-3.5">
+              <div v-for="kpi in previewKpis" :key="kpi.label" class="bg-surface-50 border border-surface-300 rounded-lg p-3.5">
                 <div class="flex items-center gap-1.5 mb-2">
                   <i :class="['pi', kpi.icon, 'text-surface-500 text-[11px]']" />
                   <span class="text-[10px] font-semibold text-surface-500 uppercase tracking-wide truncate">{{ kpi.label }}</span>
@@ -215,7 +215,7 @@ const steps = [
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
-              <div class="lg:col-span-7 bg-surface-50 border border-surface-200 rounded-lg p-4 sm:p-5">
+              <div class="lg:col-span-7 bg-surface-50 border border-surface-300 rounded-lg p-4 sm:p-5">
                 <div class="flex items-center justify-between mb-4">
                   <span class="text-sm font-semibold text-surface-900">Income vs Expense</span>
                   <div class="flex items-center gap-3 text-xs text-surface-500">
@@ -256,7 +256,7 @@ const steps = [
                 </div>
               </div>
 
-              <div class="lg:col-span-5 bg-surface-50 border border-surface-200 rounded-lg overflow-hidden">
+              <div class="lg:col-span-5 bg-surface-50 border border-surface-300 rounded-lg overflow-hidden">
                 <div class="px-4 py-3 border-b border-surface-200 text-sm font-semibold text-surface-900">Recent Activity</div>
                 <div v-for="row in previewActivity" :key="row.name" class="flex items-center justify-between gap-3 px-4 py-3 border-b border-surface-100 last:border-b-0">
                   <div class="min-w-0">

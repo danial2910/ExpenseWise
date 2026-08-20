@@ -9,7 +9,7 @@ defineProps<{ state: TooltipState }>()
   <Teleport to="body">
     <div
       v-if="state.visible"
-      class="fixed z-50 -translate-x-1/2 -translate-y-[calc(100%+10px)] pointer-events-none bg-surface-0/95 backdrop-blur-xl border border-surface-200 rounded-lg shadow-soft-lg px-3 py-2.5 flex flex-col gap-1.5 min-w-[140px]"
+      class="fixed z-50 -translate-x-1/2 -translate-y-[calc(100%+10px)] pointer-events-none bg-surface-0/95 backdrop-blur-xl border border-surface-300 rounded-lg shadow-soft-lg px-3 py-2.5 flex flex-col gap-1.5 min-w-[140px]"
       :style="{ left: state.x + 'px', top: state.y + 'px' }"
     >
       <span v-if="state.title" class="text-[11px] font-semibold text-surface-500 uppercase tracking-wide">{{ state.title }}</span>

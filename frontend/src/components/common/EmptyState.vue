@@ -13,7 +13,7 @@ withDefaults(
     :data-testid="testid ?? 'empty-state'"
     class="flex flex-col items-center justify-center text-center gap-3 py-16 px-6"
   >
-    <div class="w-12 h-12 rounded-full bg-surface-50 border border-surface-200 flex items-center justify-center">
+    <div class="w-12 h-12 rounded-full bg-surface-50 border border-surface-300 flex items-center justify-center">
       <i :class="['pi', icon, 'text-xl text-surface-500']" />
     </div>
     <div class="flex flex-col gap-1">

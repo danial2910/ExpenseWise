@@ -209,7 +209,7 @@ async function onClear(budgetId: number) {
           <h1 class="font-display text-2xl font-semibold tracking-tight text-surface-900">Budgets</h1>
           <p class="text-sm text-surface-500 mt-1">Plan and track spending limits by category</p>
         </div>
-        <div v-if="monthData" class="flex items-center gap-2 bg-surface-0 border border-surface-200 rounded-lg px-2 py-1.5 self-start">
+        <div v-if="monthData" class="flex items-center gap-2 bg-surface-0 border border-surface-300 rounded-lg px-2 py-1.5 self-start">
           <button
             data-testid="budget-prev-month-button"
             class="w-11 h-11 lg:w-7 lg:h-7 rounded-md flex items-center justify-center text-surface-600 hover:bg-surface-50 transition-colors duration-fast ease-out-expo"
@@ -236,14 +236,14 @@ async function onClear(budgetId: number) {
         retry-testid="budgets-retry-button"
         title="Couldn't load budgets"
         description="Something went wrong while fetching your budgets. Check your connection and try again."
-        class="bg-surface-0 border border-surface-200 rounded-xl"
+        class="bg-surface-0 border border-surface-300 rounded-xl"
         @retry="retry"
       />
 
       <!-- loading state -->
       <div v-else-if="loadState === 'loading'" data-testid="budgets-loading-skeleton" class="flex flex-col gap-4">
-        <div class="bg-surface-0 border border-surface-200 rounded-xl p-6 h-24 animate-pulse" />
-        <div class="bg-surface-0 border border-surface-200 rounded-xl overflow-hidden">
+        <div class="bg-surface-0 border border-surface-300 rounded-xl p-6 h-24 animate-pulse" />
+        <div class="bg-surface-0 border border-surface-300 rounded-xl overflow-hidden">
           <div v-for="n in 6" :key="n" class="p-4 border-b border-surface-100 flex items-center gap-4">
             <div class="w-28 h-3.5 rounded bg-surface-200 animate-pulse" />
             <div class="flex-1 h-3.5 rounded bg-surface-200 animate-pulse" />
@@ -263,7 +263,7 @@ async function onClear(budgetId: number) {
           icon="pi-wallet"
           :title="`No budgets set for ${monthLabel}`"
           description="Set a monthly limit overall or per category to see how your spending tracks against it."
-          class="bg-surface-0 border border-surface-200 rounded-xl"
+          class="bg-surface-0 border border-surface-300 rounded-xl"
         >
           <template #action>
             <Button
@@ -278,7 +278,7 @@ async function onClear(budgetId: number) {
 
         <template v-else>
           <!-- overall budget card -->
-          <div data-testid="overall-budget-card" class="bg-surface-0 border border-surface-200 rounded-xl p-4 md:p-6">
+          <div data-testid="overall-budget-card" class="bg-surface-0 border border-surface-300 rounded-xl p-4 md:p-6">
             <!-- desktop/tablet -->
             <div class="hidden md:block">
               <div class="flex items-center justify-between mb-4">
@@ -385,7 +385,7 @@ async function onClear(budgetId: number) {
           </div>
 
           <!-- per-category table -->
-          <div data-testid="budgets-table" class="bg-surface-0 border border-surface-200 rounded-xl overflow-hidden">
+          <div data-testid="budgets-table" class="bg-surface-0 border border-surface-300 rounded-xl overflow-hidden">
             <div class="hidden md:grid grid-cols-[1fr_120px_120px_120px_90px_140px_110px] px-5 py-3 border-b border-surface-200 bg-surface-50">
               <span class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Category</span>
               <span class="text-xs font-semibold text-surface-500 uppercase tracking-wide text-right">Budget</span>

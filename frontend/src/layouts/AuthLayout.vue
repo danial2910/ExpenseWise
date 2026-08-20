@@ -15,7 +15,7 @@ withDefaults(defineProps<{ title?: string; subtitle?: string }>(), {
         <span class="font-display text-lg font-semibold tracking-tight text-surface-900">ExpenseWise</span>
       </div>
 
-      <div class="w-full bg-surface-0/80 backdrop-blur-xl border border-surface-200 rounded-xl overflow-hidden shadow-soft-lg">
+      <div class="w-full bg-surface-0/80 backdrop-blur-xl border border-surface-300 rounded-xl overflow-hidden shadow-soft-lg">
         <div class="h-0.5 bg-gradient-to-r from-aurora-emerald via-aurora-teal to-aurora-blue" />
         <div class="p-6 md:p-8">
           <h1 v-if="title" class="font-display text-xl font-semibold tracking-tight text-surface-900 mb-1">{{ title }}</h1>

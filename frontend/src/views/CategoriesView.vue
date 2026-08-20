@@ -182,13 +182,13 @@ async function onDelete(category: CategoryResponse) {
         retry-testid="categories-retry-button"
         title="Couldn't load categories"
         description="Something went wrong while fetching your categories. Check your connection and try again."
-        class="bg-surface-0 border border-surface-200 rounded-xl"
+        class="bg-surface-0 border border-surface-300 rounded-xl"
         @retry="loadCategories"
       />
 
       <!-- loading state -->
       <div v-else-if="loadState === 'loading'" data-testid="categories-loading-skeleton" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div v-for="n in 9" :key="n" class="bg-surface-0 border border-surface-200 rounded-xl p-4 flex items-center gap-3">
+        <div v-for="n in 9" :key="n" class="bg-surface-0 border border-surface-300 rounded-xl p-4 flex items-center gap-3">
           <div class="w-10 h-10 rounded-lg bg-surface-200 animate-pulse shrink-0" />
           <div class="flex-1 flex flex-col gap-1.5">
             <div class="w-2/3 h-3.5 rounded bg-surface-200 animate-pulse" />
@@ -206,7 +206,7 @@ async function onDelete(category: CategoryResponse) {
               v-for="category in systemCategories"
               :key="category.id"
               :data-testid="`system-category-card-${category.id}`"
-              class="bg-surface-50 border border-surface-200 rounded-xl p-3 md:p-4 flex items-center gap-3"
+              class="bg-surface-50 border border-surface-300 rounded-xl p-3 md:p-4 flex items-center gap-3"
             >
               <div class="w-9 h-9 md:w-10 md:h-10 rounded-lg bg-surface-100 text-surface-500 flex items-center justify-center shrink-0">
                 <i :class="['pi', categoryIconClass(category.icon)]" />
@@ -256,7 +256,7 @@ async function onDelete(category: CategoryResponse) {
               v-for="category in customCategories"
               :key="category.id"
               :data-testid="`custom-category-card-${category.id}`"
-              class="bg-surface-0 border border-surface-200 rounded-xl p-3 md:p-4 flex items-center gap-3"
+              class="bg-surface-0 border border-surface-300 rounded-xl p-3 md:p-4 flex items-center gap-3"
             >
               <div class="w-9 h-9 md:w-10 md:h-10 rounded-lg bg-primary-50 text-primary-300 flex items-center justify-center shrink-0">
                 <i :class="['pi', categoryIconClass(category.icon)]" />

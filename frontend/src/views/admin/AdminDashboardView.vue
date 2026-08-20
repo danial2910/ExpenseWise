@@ -172,20 +172,20 @@ function joinedDisplay(iso: string): string {
         retry-testid="admin-dashboard-retry-button"
         title="Couldn't load admin analytics"
         description="Something went wrong while fetching usage data. Try again."
-        class="bg-surface-0 border border-surface-200 rounded-xl"
+        class="bg-surface-0 border border-surface-300 rounded-xl"
         @retry="loadDashboard"
       />
 
       <!-- loading state -->
       <div v-else-if="loadState === 'loading'" data-testid="admin-dashboard-loading-skeleton" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div v-for="n in 3" :key="n" class="lg:col-span-4 bg-surface-0 border border-surface-200 rounded-xl p-5 flex flex-col gap-2">
+        <div v-for="n in 3" :key="n" class="lg:col-span-4 bg-surface-0 border border-surface-300 rounded-xl p-5 flex flex-col gap-2">
           <div class="w-24 h-3 rounded bg-surface-200 animate-pulse" />
           <div class="w-28 h-7 rounded bg-surface-200 animate-pulse" />
         </div>
-        <div class="lg:col-span-6 bg-surface-0 border border-surface-200 rounded-xl p-6">
+        <div class="lg:col-span-6 bg-surface-0 border border-surface-300 rounded-xl p-6">
           <div class="w-full h-48 rounded bg-surface-200 animate-pulse" />
         </div>
-        <div class="lg:col-span-6 bg-surface-0 border border-surface-200 rounded-xl p-6">
+        <div class="lg:col-span-6 bg-surface-0 border border-surface-300 rounded-xl p-6">
           <div class="w-full h-48 rounded bg-surface-200 animate-pulse" />
         </div>
       </div>
@@ -196,7 +196,7 @@ function joinedDisplay(iso: string): string {
         icon="pi-chart-bar"
         title="No usage data yet"
         description="Once users sign up and start recording transactions, system-wide analytics will appear here."
-        class="bg-surface-0 border border-surface-200 rounded-xl"
+        class="bg-surface-0 border border-surface-300 rounded-xl"
       />
 
       <!-- ready state -->
@@ -205,7 +205,7 @@ function joinedDisplay(iso: string): string {
           v-for="card in summaryCards"
           :key="card.testid"
           :data-testid="card.testid"
-          class="lg:col-span-4 bg-surface-0 border border-surface-200 rounded-xl p-4 md:p-5 flex flex-col gap-3"
+          class="lg:col-span-4 bg-surface-0 border border-surface-300 rounded-xl p-4 md:p-5 flex flex-col gap-3"
         >
           <div class="flex items-center gap-2">
             <div class="w-7 h-7 rounded-lg bg-surface-50 flex items-center justify-center text-surface-600 shrink-0">
@@ -221,7 +221,7 @@ function joinedDisplay(iso: string): string {
           </div>
         </div>
 
-        <div class="lg:col-span-6 bg-surface-0 border border-surface-200 rounded-xl p-4 lg:p-6">
+        <div class="lg:col-span-6 bg-surface-0 border border-surface-300 rounded-xl p-4 lg:p-6">
           <div class="flex items-baseline justify-between mb-5">
             <span class="text-sm font-semibold text-surface-900">User Signups — last {{ MONTHS }} months</span>
             <span class="text-sm text-surface-500">
@@ -233,7 +233,7 @@ function joinedDisplay(iso: string): string {
           </div>
         </div>
 
-        <div class="lg:col-span-6 bg-surface-0 border border-surface-200 rounded-xl p-4 lg:p-6">
+        <div class="lg:col-span-6 bg-surface-0 border border-surface-300 rounded-xl p-4 lg:p-6">
           <div class="flex items-baseline justify-between mb-5">
             <span class="text-sm font-semibold text-surface-900">Transactions Recorded — last {{ MONTHS }} months</span>
             <span class="text-sm text-surface-500">
@@ -245,7 +245,7 @@ function joinedDisplay(iso: string): string {
           </div>
         </div>
 
-        <div class="lg:col-span-6 bg-surface-0 border border-surface-200 rounded-xl p-4 lg:p-6">
+        <div class="lg:col-span-6 bg-surface-0 border border-surface-300 rounded-xl p-4 lg:p-6">
           <span class="text-sm font-semibold text-surface-900 block mb-5">Feature Usage — % of users active</span>
           <div data-testid="feature-usage-list" class="flex flex-col gap-4">
             <div v-for="usage in dashboard?.featureUsage" :key="usage.feature" :data-testid="`feature-usage-${usage.feature}`">
@@ -260,7 +260,7 @@ function joinedDisplay(iso: string): string {
           </div>
         </div>
 
-        <div class="lg:col-span-6 bg-surface-0 border border-surface-200 rounded-xl overflow-hidden">
+        <div class="lg:col-span-6 bg-surface-0 border border-surface-300 rounded-xl overflow-hidden">
           <div class="px-4 md:px-6 py-3 md:py-4 border-b border-surface-200 text-sm font-semibold text-surface-900">Recent Signups</div>
           <div data-testid="recent-signups-list">
             <div

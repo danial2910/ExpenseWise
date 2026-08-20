@@ -2,6 +2,52 @@
 
 Non-obvious decisions and their rationale, logged as they're made.
 
+## 2026-08-20 — Nexora re-authoring, part 2: app surfaces verified against a live backend
+
+Follow-up to the token rewrite earlier the same day, once Docker/backend/DB
+were available and a signed-in session existed.
+
+- **The stat tile is now one pattern app-wide.** The reference's tile is a
+  short accent rule over a muted sentence-case label over the number — no
+  icon. Adopted on the Dashboard KPI row first (replacing a decorative icon
+  chip; the label already names the metric), which left Transactions' and
+  Reports' summary tiles inconsistent, so both were brought to the same
+  pattern. Each tile keeps its own semantic hue (cyan balance, emerald
+  income, rose expense, amber budget) — that per-metric colouring is what
+  gives the row the reference's multi-coloured read. Table column headers
+  stay uppercase: that is a different element, and the reference uses
+  uppercase micro-labels there too.
+- **95 card borders moved from `surface-200` (white/8) to `surface-300`
+  (white/10).** The codebase was contradicting the token file's own stated
+  roles (300 = default border, 200 = stronger fill), and white/10 is the
+  reference's dominant border by a wide margin. Directional dividers
+  (`border-b`/`border-t`, 24 of them) deliberately stay at white/8 — the
+  reference uses a lighter value for internal rules than for card edges.
+
+Two process notes worth keeping:
+
+- **The first E2E run of this work was invalid and was discarded.**
+  `playwright.config.ts` sets `reuseExistingServer: true` against the *dev*
+  server, so source edits made while the suite runs hot-reload into the
+  pages under test. Any run overlapping an edit session proves nothing. Do
+  not edit `frontend/src` while the suite is running.
+- **A colour audit produced two hits, both correctly left alone.** The
+  `text-green-700`/`text-red-600` in `MoneyDisplay.vue` is inside a comment,
+  not markup (the comment was stale and has been corrected to name
+  `text-success`/`text-danger`); the `#5B6472` in Dashboard/Reports is a
+  defensive fallback used only when a palette ref is null, not a design
+  value. Worth recording so the next audit does not "fix" either.
+
+Verified: `npm run build` clean. `npx playwright test` — **40 passed, 6
+failed**, all six in `ai-assistant.spec.ts` from the external Groq
+dependency being unavailable during the run. That is no regression, and one
+better than the documented 39/45 baseline (the date-rollover-sensitive
+Recurring test passed this time). Dashboard, Transactions, Budgets, Reports,
+Categories, Recurring, Profile, News, AI Assistant and About were each
+checked in-browser against a live backend. **Admin views were not visually
+checked** — the available session is a USER, not an ADMIN; their E2E specs
+pass.
+
 ## 2026-08-20 — Design system re-authored from measured Nexora values
 
 The 2026-08-18/19 redesign was built from a visual reading of the Nexora

@@ -61,7 +61,7 @@ function onImageError(index: number) {
         retry-testid="news-retry-button"
         title="Couldn't load news"
         description="Something went wrong while fetching the latest articles. Try again."
-        class="bg-surface-0 border border-surface-200 rounded-xl"
+        class="bg-surface-0 border border-surface-300 rounded-xl"
         @retry="loadNews"
       />
 
@@ -71,7 +71,7 @@ function onImageError(index: number) {
         icon="pi-lock"
         title="News isn't available on your account"
         description="This feature isn't turned on for you right now. Contact an admin if you'd like it enabled."
-        class="bg-surface-0 border border-surface-200 rounded-xl"
+        class="bg-surface-0 border border-surface-300 rounded-xl"
       />
 
       <!-- loading state -->
@@ -80,7 +80,7 @@ function onImageError(index: number) {
         data-testid="news-loading-skeleton"
         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
       >
-        <div v-for="n in 6" :key="n" class="bg-surface-0 border border-surface-200 rounded-xl overflow-hidden">
+        <div v-for="n in 6" :key="n" class="bg-surface-0 border border-surface-300 rounded-xl overflow-hidden">
           <div class="w-full h-[140px] bg-surface-200 animate-pulse" />
           <div class="p-4 flex flex-col gap-2">
             <div class="w-20 h-3 rounded bg-surface-200 animate-pulse" />
@@ -96,7 +96,7 @@ function onImageError(index: number) {
         icon="pi-inbox"
         title="No articles right now"
         description="Check back later for new headlines."
-        class="bg-surface-0 border border-surface-200 rounded-xl"
+        class="bg-surface-0 border border-surface-300 rounded-xl"
       />
 
       <!-- ready state -->
@@ -105,7 +105,7 @@ function onImageError(index: number) {
           v-for="(article, index) in articles"
           :key="article.url + index"
           :data-testid="`news-article-card-${index}`"
-          class="bg-surface-0 border border-surface-200 rounded-xl overflow-hidden flex flex-col hover:border-surface-300 transition-colors duration-fast ease-out-expo"
+          class="bg-surface-0 border border-surface-300 rounded-xl overflow-hidden flex flex-col hover:border-surface-300 transition-colors duration-fast ease-out-expo"
         >
           <img
             v-if="article.imageUrl && !brokenImages.has(index)"

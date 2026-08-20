@@ -176,7 +176,7 @@ onMounted(async () => {
   <AppLayout title="AI Assistant">
     <div class="flex gap-4 lg:gap-6 h-[calc(100vh-200px)] md:h-[calc(100vh-176px)] lg:h-[calc(100vh-160px)]">
       <!-- conversation rail — persistent sidebar from lg up, a drawer below lg -->
-      <div class="hidden lg:flex w-64 shrink-0 bg-surface-0 border border-surface-200 rounded-xl flex-col overflow-hidden">
+      <div class="hidden lg:flex w-64 shrink-0 bg-surface-0 border border-surface-300 rounded-xl flex-col overflow-hidden">
         <div class="p-4 border-b border-surface-100">
           <Button
             data-testid="ai-new-chat-button"
@@ -216,7 +216,7 @@ onMounted(async () => {
       </div>
 
       <!-- chat -->
-      <div class="flex-1 bg-surface-0 border border-surface-200 rounded-xl flex flex-col min-w-0">
+      <div class="flex-1 bg-surface-0 border border-surface-300 rounded-xl flex flex-col min-w-0">
         <div class="h-14 lg:h-16 shrink-0 flex items-center justify-between px-4 lg:px-6 border-b border-surface-200">
           <button
             data-testid="ai-history-toggle-button"
@@ -272,7 +272,7 @@ onMounted(async () => {
             v-for="(insight, i) in insights"
             :key="i"
             :data-testid="`ai-insight-strip-${i}`"
-            class="min-w-[220px] shrink-0 border border-surface-200 rounded-lg p-3"
+            class="min-w-[220px] shrink-0 border border-surface-300 rounded-lg p-3"
           >
             <span class="text-[10px] font-semibold text-surface-400 uppercase tracking-wide block mb-1">Insight</span>
             <p class="text-xs font-semibold" :class="severityColorClass(insight.severity)">{{ insight.title }}</p>
@@ -304,7 +304,7 @@ onMounted(async () => {
                   v-for="(prompt, i) in SUGGESTED_PROMPTS"
                   :key="i"
                   :data-testid="`ai-suggested-prompt-${i}`"
-                  class="text-left px-3.5 py-3 border border-surface-200 rounded-lg text-sm text-surface-700 hover:bg-surface-50 hover:border-surface-300 transition-colors duration-fast ease-out-expo"
+                  class="text-left px-3.5 py-3 border border-surface-300 rounded-lg text-sm text-surface-700 hover:bg-surface-50 hover:border-surface-300 transition-colors duration-fast ease-out-expo"
                   @click="sendMessage(prompt)"
                 >
                   {{ prompt }}
@@ -361,7 +361,7 @@ onMounted(async () => {
                 data-testid="ai-message-input"
                 type="text"
                 placeholder="Ask about your spending, budgets, or savings…"
-                class="flex-1 min-h-[44px] px-3.5 border border-surface-200 rounded-lg text-sm text-surface-900 bg-surface-0"
+                class="flex-1 min-h-[44px] px-3.5 border border-surface-300 rounded-lg text-sm text-surface-900 bg-surface-0"
                 :disabled="sending"
                 @keydown.enter="onSubmit"
               />
@@ -394,7 +394,7 @@ onMounted(async () => {
               Add transactions to unlock spending insights.
             </div>
             <template v-else>
-              <div v-for="(insight, i) in insights" :key="i" :data-testid="`ai-insight-mobile-${i}`" class="border border-surface-200 rounded-lg p-3.5">
+              <div v-for="(insight, i) in insights" :key="i" :data-testid="`ai-insight-mobile-${i}`" class="border border-surface-300 rounded-lg p-3.5">
                 <span class="text-[11px] font-semibold text-surface-400 uppercase tracking-wide">Insight</span>
                 <p class="text-sm font-semibold mt-1" :class="severityColorClass(insight.severity)">{{ insight.title }}</p>
                 <p class="text-sm text-surface-600 mt-1 leading-relaxed">{{ insight.body }}</p>
@@ -406,7 +406,7 @@ onMounted(async () => {
       </div>
 
       <!-- insights panel — desktop only; tablet uses the horizontal strip above, mobile uses the Insights tab -->
-      <div class="hidden lg:flex w-80 shrink-0 bg-surface-0 border border-surface-200 rounded-xl overflow-y-auto p-5 flex-col gap-4">
+      <div class="hidden lg:flex w-80 shrink-0 bg-surface-0 border border-surface-300 rounded-xl overflow-y-auto p-5 flex-col gap-4">
         <span class="text-sm font-semibold text-surface-900">Spending Analysis</span>
         <div v-if="insightsLoadState === 'loading'" data-testid="ai-insights-loading" class="flex flex-col gap-3">
           <div v-for="n in 3" :key="n" class="h-20 rounded-lg bg-surface-100 animate-pulse" />
@@ -418,7 +418,7 @@ onMounted(async () => {
           Add transactions to unlock spending insights.
         </div>
         <template v-else>
-          <div v-for="(insight, i) in insights" :key="i" :data-testid="`ai-insight-${i}`" class="border border-surface-200 rounded-lg p-3.5">
+          <div v-for="(insight, i) in insights" :key="i" :data-testid="`ai-insight-${i}`" class="border border-surface-300 rounded-lg p-3.5">
             <span class="text-[11px] font-semibold text-surface-400 uppercase tracking-wide">Insight</span>
             <p class="text-sm font-semibold mt-1" :class="severityColorClass(insight.severity)">{{ insight.title }}</p>
             <p class="text-sm text-surface-600 mt-1 leading-relaxed">{{ insight.body }}</p>
